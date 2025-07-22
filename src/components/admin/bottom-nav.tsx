@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Home, Calendar, Bell, User } from 'lucide-react';
+import { Home, Calendar, Mail, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBookings } from '@/hooks/use-bookings';
 
@@ -18,7 +18,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
-    { name: 'notifications', icon: Bell, label: 'Notifications', count: pendingCount },
+    { name: 'notifications', icon: Mail, label: 'Notifications', count: pendingCount },
     { name: 'profile', icon: User, label: 'Profile' },
   ];
 

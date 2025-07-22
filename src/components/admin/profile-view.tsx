@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit, Save } from 'lucide-react';
 
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -41,9 +41,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function ProfileView() {
-  const { user, name, photoURL } = useAuth();
+  const { user, name, photoURL, role } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,6 +54,7 @@ export function ProfileView() {
       phone: '',
       photoURL: photoURL || '',
     },
+    disabled: !isEditing, // Disable form when not in editing mode
   });
   
   React.useEffect(() => {
@@ -61,9 +63,9 @@ export function ProfileView() {
               name: name,
               email: user.email || '',
               photoURL: photoURL || '',
-          })
+          });
       }
-  }, [user, name, photoURL, form]);
+  }, [user, name, photoURL, form, isEditing]);
 
   async function onSubmit(values: FormValues) {
     if (!user) return;
@@ -80,6 +82,7 @@ export function ProfileView() {
         title: 'Profile Updated',
         description: 'Your profile information has been successfully updated.',
       });
+      setIsEditing(false); // Exit editing mode on success
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -91,6 +94,11 @@ export function ProfileView() {
       setLoading(false);
     }
   }
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    form.trigger(); // Re-enable form fields
+  };
 
   return (
     <div className="space-y-4">
@@ -149,7 +157,7 @@ export function ProfileView() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
@@ -164,10 +172,21 @@ export function ProfileView() {
               />
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
+              {isEditing ? (
+                  <Button type="submit" disabled={loading}>
+                      {loading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                          <Save className="mr-2 h-4 w-4" />
+                      )}
+                      Save Changes
+                  </Button>
+              ) : (
+                  <Button type="button" onClick={handleEditClick}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Profile
+                  </Button>
+              )}
             </CardFooter>
           </form>
         </Form>

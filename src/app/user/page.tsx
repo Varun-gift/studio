@@ -15,7 +15,7 @@ import {
   Wrench,
   LogOut,
   Menu,
-  Bell,
+  Mail,
 } from 'lucide-react';
 import {
   Sheet,
@@ -154,7 +154,7 @@ export default function UserDashboard() {
             </h1>
           </div>
           <Button variant="outline" size="icon" className="h-8 w-8">
-            <Bell className="h-4 w-4" />
+            <Mail className="h-4 w-4" />
             <span className="sr-only">Toggle notifications</span>
           </Button>
         </header>
