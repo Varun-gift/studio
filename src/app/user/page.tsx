@@ -18,10 +18,19 @@ import { BookingForm } from '@/components/booking-form';
 import { SupportView } from '@/components/user/support-view';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 
 export default function UserDashboard() {
-  const { user, loading, role, name } = useAuth();
+  const { user, loading, role, name, photoURL } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState('home');
   
@@ -101,10 +110,28 @@ export default function UserDashboard() {
             </div>
              <span className="ml-2">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
           </div>
-            <Button onClick={handleLogout} variant="outline" size="sm" className="hidden md:flex">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={photoURL || ''} alt={name || 'User'} />
+                            <AvatarFallback>{name?.[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setActiveTab('profile')}>
+                        Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </header>
         
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
