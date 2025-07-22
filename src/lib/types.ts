@@ -12,7 +12,6 @@ export interface User {
   vehicleNumber?: string;
   electricianName?: string;
   electricianContact?: string;
-  fcmToken?: string;
 }
 
 export interface Generator {
@@ -63,13 +62,4 @@ export interface Booking {
       startTime: Date;
       endTime: Date;
   }[];
-}
-
-export interface Notification {
-  id: string;
-  bookingId: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  userId: string;
 }

@@ -14,10 +14,10 @@ import {
 import { AmgLogo } from '@/components/amg-logo';
 import { BottomNav } from '@/components/user/bottom-nav';
 import { ProfileView } from '@/components/admin/profile-view';
-import { NotificationsView } from '@/components/admin/notifications-view';
 import { RentalHistory } from '@/components/rental-history';
 import { BookingForm } from '@/components/booking-form';
 import { SupportView } from '@/components/user/support-view';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 export default function UserDashboard() {
@@ -71,7 +71,18 @@ export default function UserDashboard() {
       case 'support':
         return <div className='p-4 md:p-6'><SupportView /></div>;
       case 'notifications':
-        return <div className='p-4 md:p-6'><NotificationsView /></div>;
+        return (
+            <div className='p-4 md:p-6'>
+                 <Card>
+                    <CardHeader>
+                    <CardTitle>Notifications</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <p className="text-muted-foreground">You have no new notifications.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
       case 'profile':
         return <div className='p-4 md:p-6'><ProfileView /></div>;
       default:

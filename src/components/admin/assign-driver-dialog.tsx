@@ -36,7 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { sendFCMNotification } from '@/app/actions';
 
 const formSchema = z.object({
   driverId: z.string().min(1, 'Please select a driver.'),
@@ -100,29 +99,6 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange }: AssignDriv
             title: 'Driver Assigned',
             description: `${selectedDriver.name} has been assigned to the booking.`,
         });
-
-        // Notify driver
-        if (selectedDriver.fcmToken) {
-            sendFCMNotification(
-                selectedDriver.fcmToken,
-                'New Booking Assigned',
-                `You have been assigned a new booking for a ${booking.generatorType} on ${booking.bookingDate.toLocaleDateString()}.`
-            );
-        }
-
-        // Notify user
-        const userDocRef = doc(db, 'users', booking.userId);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-            const bookingUser = userDoc.data() as User;
-            if (bookingUser.fcmToken) {
-                sendFCMNotification(
-                    bookingUser.fcmToken,
-                    'Driver Assigned!',
-                    `${selectedDriver.name} has been assigned to your booking.`
-                );
-            }
-        }
         
         onOpenChange(false);
         form.reset();

@@ -5,8 +5,8 @@ import * as React from 'react';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { BottomNav } from '@/components/admin/bottom-nav';
 import { CalendarView } from '@/components/admin/calendar-view';
-import { NotificationsView } from '@/components/admin/notifications-view';
 import { ProfileView } from '@/components/admin/profile-view';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = React.useState('home');
@@ -18,7 +18,16 @@ export default function AdminPage() {
       case 'calendar':
         return <CalendarView />;
       case 'notifications':
-        return <NotificationsView />;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Notifications are not yet implemented.</p>
+            </CardContent>
+          </Card>
+        );
       case 'profile':
         return <ProfileView />;
       default:

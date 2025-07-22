@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2, Download, Clock, MapPin, CalendarDays } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import Image from 'next/image';
 
@@ -24,7 +24,6 @@ import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { RadioCard } from './ui/radio-card';
-import { sendFCMNotification } from '@/app/actions';
 
 const generatorPrices: { [key: string]: number } = {
   'Cummins': 250,
@@ -147,20 +146,6 @@ export function BookingForm() {
         createdAt: new Date(),
       });
       
-      // Notify admins about the new booking
-      const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
-      const adminSnapshot = await getDocs(adminsQuery);
-      adminSnapshot.forEach(adminDoc => {
-          const admin = adminDoc.data();
-          if (admin.fcmToken) {
-              sendFCMNotification(
-                  admin.fcmToken,
-                  'New Booking Request',
-                  `${name || 'A user'} has submitted a new booking for a ${values.generatorType}.`
-              );
-          }
-      });
-
       toast({
         title: 'Booking Submitted',
         description: 'Your booking request has been received. We will contact you shortly.',

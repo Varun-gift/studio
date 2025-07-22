@@ -3,9 +3,8 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 interface AuthContextType {
   user: User | null;
@@ -65,25 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           (user as any).phone = userData.phone;
 
-          // Request notification permission and get FCM token
-          try {
-            const messaging = getMessaging();
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-              const fcmToken = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE' }); // Replace with your actual VAPID key
-              if (fcmToken) {
-                // Save the FCM token to the user's document in Firestore
-                if (userData.fcmToken !== fcmToken) {
-                    await updateDoc(userDocRef, { fcmToken });
-                }
-              } else {
-                console.log('No registration token available. Request permission to generate one.');
-              }
-            }
-          } catch (error) {
-            console.error('An error occurred while retrieving token. ', error);
-          }
-
         } else {
           setRole('user'); // Default role
           setName(user.displayName);
@@ -107,16 +87,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setLoading(false);
     });
-
-    // Handle incoming messages
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      const messaging = getMessaging();
-      onMessage(messaging, (payload) => {
-        console.log('Message received. ', payload);
-        // You can display a toast or a custom notification UI here
-        // For simplicity, we'll just log it.
-      });
-    }
 
     return () => unsubscribe();
   }, []);
