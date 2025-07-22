@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Edit, Save } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -214,17 +214,12 @@ export function ProfileView() {
             <CardFooter>
               {isEditing ? (
                   <Button type="submit" disabled={loading}>
-                      {loading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                          <Save className="mr-2 h-4 w-4" />
-                      )}
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Save Changes
                   </Button>
               ) : (
                   <Button type="button" onClick={() => setIsEditing(true)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Profile
+                      Save Changes
                   </Button>
               )}
             </CardFooter>
