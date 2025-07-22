@@ -4,7 +4,6 @@ import type { Dispatch, SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GeneratorSizingTool } from '@/components/generator-sizing-tool';
 import type { Rental } from '@/lib/types';
 import { Badge } from './ui/badge';
@@ -24,62 +23,66 @@ interface DashboardProps {
 }
 
 export function Dashboard({ activeTab, setActiveTab }: DashboardProps) {
-  return (
-    <main className="flex-1 overflow-auto p-4 md:p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="dashboard">New Booking</TabsTrigger>
-          <TabsTrigger value="history">Rental History</TabsTrigger>
-          <TabsTrigger value="sizing">Generator Sizing</TabsTrigger>
-        </TabsList>
-        <TabsContent value="dashboard">
-          <BookingForm />
-        </TabsContent>
-        <TabsContent value="history">
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <BookingForm />;
+      case 'history':
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Your Rentals</CardTitle>
               <CardDescription>A log of your past and current generator rentals.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Model</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Invoice</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rentalHistory.map((rental) => (
-                    <TableRow key={rental.id}>
-                      <TableCell>{rental.generatorModel}</TableCell>
-                      <TableCell>{rental.startDate}</TableCell>
-                      <TableCell>{rental.endDate}</TableCell>
-                      <TableCell>
-                        <Badge variant={rental.status === 'Completed' ? 'secondary' : 'default'}>{rental.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">${rental.totalCost.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="icon" disabled={rental.status !== 'Completed'}>
-                          <FileText className="h-4 w-4" />
-                          <span className="sr-only">Download Invoice</span>
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Invoice</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rentalHistory.map((rental) => (
+                      <TableRow key={rental.id}>
+                        <TableCell className="font-medium">{rental.generatorModel}</TableCell>
+                        <TableCell>{rental.startDate}</TableCell>
+                        <TableCell>{rental.endDate}</TableCell>
+                        <TableCell>
+                          <Badge variant={rental.status === 'Completed' ? 'secondary' : 'default'}>{rental.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">₹{rental.totalCost.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="icon" disabled={rental.status !== 'Completed'}>
+                            <FileText className="h-4 w-4" />
+                            <span className="sr-only">Download Invoice</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-        <TabsContent value="sizing">
-          <GeneratorSizingTool />
-        </TabsContent>
-      </Tabs>
+        );
+      case 'sizing':
+        return <GeneratorSizingTool />;
+      default:
+        return <BookingForm />;
+    }
+  };
+
+
+  return (
+    <main className="flex-1 overflow-auto p-4 md:p-6">
+      {renderContent()}
     </main>
   );
 }

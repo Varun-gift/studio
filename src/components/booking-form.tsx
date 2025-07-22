@@ -23,11 +23,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 
-const generatorTypes = ['Cummins', 'Tata', 'Ashoka Leyland', 'Kirloskar'];
+const generatorPrices: { [key: string]: number } = {
+  'Cummins': 5500,
+  'Tata': 6200,
+  'Ashoka Leyland': 7100,
+  'Kirloskar': 8000
+};
+const generatorTypes = Object.keys(generatorPrices);
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
-
-// Rate per KVA per hour
-const KVA_RATE = 0.15; 
 
 const formSchema = z.object({
   generatorType: z.string().min(1, 'Please select a generator type.'),
@@ -61,20 +64,23 @@ export function BookingForm() {
   });
 
   const { watch } = form;
-  const watchedKva = watch('kvaCategory');
+  const watchedGeneratorType = watch('generatorType');
   const watchedHours = watch('usageHours');
   const watchedQuantity = watch('quantity');
 
   useEffect(() => {
-    const kva = parseFloat(watchedKva);
+    const price = generatorPrices[watchedGeneratorType] || 0;
     const hours = parseFloat(watchedHours as any);
     const quantity = parseInt(watchedQuantity as any);
-    if (!isNaN(kva) && !isNaN(hours) && !isNaN(quantity)) {
-      setEstimatedCost(kva * hours * quantity * KVA_RATE);
+    if (!isNaN(price) && price > 0 && !isNaN(hours) && !isNaN(quantity)) {
+      // Simple daily rate calculation for now
+      // Assuming usageHours is per day, and price is per day
+      const days = Math.ceil(hours / 24);
+      setEstimatedCost(price * quantity * days);
     } else {
       setEstimatedCost(0);
     }
-  }, [watchedKva, watchedHours, watchedQuantity]);
+  }, [watchedGeneratorType, watchedHours, watchedQuantity]);
 
   const handlePdfDownload = () => {
     const values = form.getValues();
@@ -87,12 +93,12 @@ export function BookingForm() {
     doc.text(`Generator Type: ${values.generatorType}`, 20, 40);
     doc.text(`KVA Category: ${values.kvaCategory} KVA`, 20, 50);
     doc.text(`Quantity: ${values.quantity}`, 20, 60);
-    doc.text(`Usage Hours: ${values.usageHours} hours`, 20, 70);
+    doc.text(`Usage Hours (total): ${values.usageHours} hours`, 20, 70);
     doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 80);
     doc.text(`Location: ${values.location}`, 20, 90);
 
     doc.setFontSize(16);
-    doc.text(`Estimated Cost: $${estimatedCost.toFixed(2)}`, 20, 110);
+    doc.text(`Estimated Cost: ₹${estimatedCost.toFixed(2)}`, 20, 110);
 
     doc.save('booking-estimate.pdf');
   };
@@ -130,133 +136,136 @@ export function BookingForm() {
   }
 
   return (
-    <Card className="max-w-3xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Book a Generator</CardTitle>
         <CardDescription>Select your generator and enter booking details below.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="generatorType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Generator Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {generatorTypes.map((type) => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="kvaCategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category (KVA)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select KVA" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {kvaCategories.map((kva) => (
-                        <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 1" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="usageHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Usage Hours</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 24" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="bookingDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Pre-booking Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="generatorType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Generator Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {generatorTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type} (₹{generatorPrices[type]}/day)</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="kvaCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category (KVA)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select KVA" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {kvaCategories.map((kva) => (
+                            <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
                       <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <Input type="number" placeholder="e.g., 1" {...field} min="1"/>
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < addDays(new Date(), 7) || date < new Date('1900-01-01')}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Delivery Location</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Enter the full delivery address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="md:col-span-2">
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="usageHours"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Usage Hours</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 24" {...field} min="1"/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Controller
+                  control={form.control}
+                  name="bookingDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Pre-booking Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={'outline'}
+                              className={cn(
+                                'pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                            >
+                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < addDays(new Date(), 7) || date < new Date('1900-01-01')}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery Location</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter the full delivery address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
+
+            <div>
               <Card className="bg-muted/50">
                 <CardHeader>
                   <CardTitle className="text-lg">Dynamic Cost Estimate</CardTitle>
@@ -264,7 +273,7 @@ export function BookingForm() {
                 <CardContent>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Estimated Total:</span>
-                    <span className="text-2xl font-bold">${estimatedCost.toFixed(2)}</span>
+                    <span className="text-2xl font-bold">₹{estimatedCost.toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -276,8 +285,8 @@ export function BookingForm() {
               </Card>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={loading} className="w-full">
+          <CardFooter className="border-t pt-6">
+            <Button type="submit" disabled={loading} className="w-full md:w-auto">
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Booking Request'}
             </Button>
           </CardFooter>
