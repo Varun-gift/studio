@@ -8,11 +8,11 @@ import { DriverManager } from './driver-manager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AdminDashboardProps {
-  onCardClick: (tab: string) => void;
+  activeInnerTab: string | undefined;
+  setActiveInnerTab: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export function AdminDashboard({ onCardClick }: AdminDashboardProps) {
-  const [activeInnerTab, setActiveInnerTab] = React.useState<string | undefined>(undefined);
+export function AdminDashboard({ activeInnerTab, setActiveInnerTab }: AdminDashboardProps) {
 
   // This function allows toggling the tab off by clicking it again.
   const handleValueChange = (value: string) => {
@@ -38,7 +38,7 @@ export function AdminDashboard({ onCardClick }: AdminDashboardProps) {
          </TabsContent>
        </Tabs>
 
-      <StatsCards onCardClick={onCardClick} />
+      <StatsCards onCardClick={() => { /* This can be adjusted if clicking stat cards should change tabs */ }} />
     </div>
   );
 }
