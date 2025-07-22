@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from './ui/textarea';
 
 const generatorTypes = ['Cummins', 'Tata', 'Ashoka Leyland', 'Kirloskar'];
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
@@ -31,10 +32,12 @@ const KVA_RATE = 0.15;
 const formSchema = z.object({
   generatorType: z.string().min(1, 'Please select a generator type.'),
   kvaCategory: z.string().min(1, 'Please select a KVA category.'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
   usageHours: z.coerce.number().min(1, 'Usage hours must be at least 1.'),
   bookingDate: z.date({
     required_error: 'A booking date is required.',
   }),
+  location: z.string().min(10, 'Please enter a complete address.').min(1, "Location is required."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,24 +53,28 @@ export function BookingForm() {
     defaultValues: {
       generatorType: '',
       kvaCategory: '',
+      quantity: 1,
       usageHours: 8,
       bookingDate: addDays(new Date(), 7),
+      location: '',
     },
   });
 
   const { watch } = form;
   const watchedKva = watch('kvaCategory');
   const watchedHours = watch('usageHours');
+  const watchedQuantity = watch('quantity');
 
   useEffect(() => {
     const kva = parseFloat(watchedKva);
     const hours = parseFloat(watchedHours as any);
-    if (!isNaN(kva) && !isNaN(hours)) {
-      setEstimatedCost(kva * hours * KVA_RATE);
+    const quantity = parseInt(watchedQuantity as any);
+    if (!isNaN(kva) && !isNaN(hours) && !isNaN(quantity)) {
+      setEstimatedCost(kva * hours * quantity * KVA_RATE);
     } else {
       setEstimatedCost(0);
     }
-  }, [watchedKva, watchedHours]);
+  }, [watchedKva, watchedHours, watchedQuantity]);
 
   const handlePdfDownload = () => {
     const values = form.getValues();
@@ -79,11 +86,13 @@ export function BookingForm() {
     doc.setFontSize(12);
     doc.text(`Generator Type: ${values.generatorType}`, 20, 40);
     doc.text(`KVA Category: ${values.kvaCategory} KVA`, 20, 50);
-    doc.text(`Usage Hours: ${values.usageHours} hours`, 20, 60);
-    doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 70);
+    doc.text(`Quantity: ${values.quantity}`, 20, 60);
+    doc.text(`Usage Hours: ${values.usageHours} hours`, 20, 70);
+    doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 80);
+    doc.text(`Location: ${values.location}`, 20, 90);
 
     doc.setFontSize(16);
-    doc.text(`Estimated Cost: $${estimatedCost.toFixed(2)}`, 20, 90);
+    doc.text(`Estimated Cost: $${estimatedCost.toFixed(2)}`, 20, 110);
 
     doc.save('booking-estimate.pdf');
   };
@@ -123,8 +132,8 @@ export function BookingForm() {
   return (
     <Card className="max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle>Create a New Booking</CardTitle>
-        <CardDescription>Fill out the form below to request a generator.</CardDescription>
+        <CardTitle>Book a Generator</CardTitle>
+        <CardDescription>Select your generator and enter booking details below.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -173,6 +182,19 @@ export function BookingForm() {
                 </FormItem>
               )}
             />
+             <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 1" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="usageHours"
@@ -217,6 +239,19 @@ export function BookingForm() {
                       />
                     </PopoverContent>
                   </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Delivery Location</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Enter the full delivery address" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
