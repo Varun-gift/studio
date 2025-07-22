@@ -39,19 +39,6 @@ export function useBookings({ status }: UseBookingsProps = {}) {
           createdAt: (data.createdAt as any).toDate(),
         } as Booking;
         allBookings.push(booking);
-
-        // This is a simplified notification creation. 
-        // In a real app, you would have more robust logic to avoid duplicates.
-        if (data.status === 'Pending') {
-            const notifsRef = collection(db, 'notifications');
-            addDoc(notifsRef, {
-                bookingId: doc.id,
-                userId: data.userId, // Assuming admin UID is known or managed globally
-                message: `${data.userName} has submitted a new booking request.`,
-                timestamp: serverTimestamp(),
-                read: false,
-            })
-        }
       });
       setBookings(allBookings);
       setLoading(false);

@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2, Download, Clock, MapPin, CalendarDays } from 'lucide-react';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import Image from 'next/image';
 
@@ -56,7 +56,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function BookingForm() {
-  const { user } = useAuth();
+  const { user, name } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
@@ -134,17 +134,28 @@ export function BookingForm() {
     }
     setLoading(true);
     try {
-      await addDoc(collection(db, 'bookings'), {
+      const bookingDocRef = await addDoc(collection(db, 'bookings'), {
         ...values,
         userId: user.uid,
         userEmail: user.email,
-        userName: user.displayName || 'N/A',
+        userName: name || 'N/A',
         status: 'Pending',
         subtotal: subtotal,
         gstAmount: gstAmount,
         estimatedCost: totalCost,
         createdAt: new Date(),
       });
+      
+      // Create a notification for the new booking
+      const notifsRef = collection(db, 'notifications');
+      await addDoc(notifsRef, {
+        bookingId: bookingDocRef.id,
+        userId: user.uid, // You might want a specific admin ID here
+        message: `${name || 'A user'} has submitted a new booking request.`,
+        timestamp: serverTimestamp(),
+        read: false,
+      });
+
       toast({
         title: 'Booking Submitted',
         description: 'Your booking request has been received. We will contact you shortly.',
