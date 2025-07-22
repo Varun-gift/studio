@@ -18,7 +18,7 @@ import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DriverDashboard() {
-  const { user, loading, name } = useAuth();
+  const { user, loading, name, role } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function DriverDashboard() {
 
 
   useEffect(() => {
-    if (user) {
+    if (user?.uid) {
       setBookingsLoading(true);
       const bookingsQuery = query(collection(db, 'bookings'), where('driverInfo.driverId', '==', user.uid));
       
@@ -51,7 +51,7 @@ export default function DriverDashboard() {
 
       return () => unsubscribe();
     }
-  }, [user]);
+  }, [user?.uid]);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -70,7 +70,7 @@ export default function DriverDashboard() {
   }
 
 
-  if (loading || !user) {
+  if (loading || !user || role !== 'driver') {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />

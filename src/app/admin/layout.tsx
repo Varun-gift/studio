@@ -15,25 +15,25 @@ export default function AdminLayout({
   const router = useRouter();
 
   React.useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-      } else if (role !== 'admin') {
-        // If the user is not an admin, redirect them to their respective dashboard
-        if (role === 'driver') {
-          router.replace('/driver');
-        } else {
-          router.replace('/user');
-        }
-      }
+    if (!loading && !user) {
+      router.replace('/login');
     }
-  }, [user, loading, role, router]);
+  }, [user, loading, router]);
   
-  if (loading || !user || role !== 'admin') {
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="ml-2">Loading & Verifying Access...</p>
+      </div>
+    );
+  }
+  
+  if (role !== 'admin') {
+      return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-2">Verifying Admin Access...</p>
       </div>
     );
   }
