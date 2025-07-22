@@ -23,7 +23,8 @@ export interface Booking {
   id: string;
   userId: string;
   userEmail: string;
-  generatorType: string;
+  generatorType: string; // Keep as string for history, now comma-separated
+  generatorTypes?: string[]; // New field for multiple types
   kvaCategory: string;
   quantity: number;
   usageHours: number;
@@ -41,3 +42,5 @@ export interface Booking {
       endTime: Date;
   }[];
 }
+
+    

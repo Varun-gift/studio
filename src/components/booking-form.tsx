@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
+import { Checkbox } from './ui/checkbox';
 
 const generatorPrices: { [key: string]: number } = {
   'Cummins': 5500,
@@ -33,7 +34,9 @@ const generatorTypes = Object.keys(generatorPrices);
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
 
 const formSchema = z.object({
-  generatorType: z.string().min(1, 'Please select a generator type.'),
+  generatorTypes: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one generator type.",
+  }),
   kvaCategory: z.string().min(1, 'Please select a KVA category.'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
   usageHours: z.coerce.number().min(1, 'Usage hours must be at least 1.'),
@@ -54,7 +57,7 @@ export function BookingForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generatorType: '',
+      generatorTypes: [],
       kvaCategory: '',
       quantity: 1,
       usageHours: 8,
@@ -64,23 +67,29 @@ export function BookingForm() {
   });
 
   const { watch } = form;
-  const watchedGeneratorType = watch('generatorType');
+  const watchedGeneratorTypes = watch('generatorTypes');
   const watchedHours = watch('usageHours');
   const watchedQuantity = watch('quantity');
 
   useEffect(() => {
-    const price = generatorPrices[watchedGeneratorType] || 0;
+    const totalCost = watchedGeneratorTypes.reduce((acc, type) => {
+        const price = generatorPrices[type] || 0;
+        return acc + price;
+    }, 0);
+    
     const hours = parseFloat(watchedHours as any);
     const quantity = parseInt(watchedQuantity as any);
-    if (!isNaN(price) && price > 0 && !isNaN(hours) && !isNaN(quantity)) {
+    
+    if (totalCost > 0 && !isNaN(hours) && !isNaN(quantity)) {
       // Simple daily rate calculation for now
       // Assuming usageHours is per day, and price is per day
       const days = Math.ceil(hours / 24);
-      setEstimatedCost(price * quantity * days);
+      setEstimatedCost(totalCost * quantity * days);
     } else {
       setEstimatedCost(0);
     }
-  }, [watchedGeneratorType, watchedHours, watchedQuantity]);
+  }, [watchedGeneratorTypes, watchedHours, watchedQuantity]);
+
 
   const handlePdfDownload = () => {
     const values = form.getValues();
@@ -90,9 +99,9 @@ export function BookingForm() {
     doc.text('Booking Estimate', 20, 20);
     
     doc.setFontSize(12);
-    doc.text(`Generator Type: ${values.generatorType}`, 20, 40);
+    doc.text(`Generator Types: ${values.generatorTypes.join(', ')}`, 20, 40);
     doc.text(`KVA Category: ${values.kvaCategory} KVA`, 20, 50);
-    doc.text(`Quantity: ${values.quantity}`, 20, 60);
+    doc.text(`Quantity (per type): ${values.quantity}`, 20, 60);
     doc.text(`Usage Hours (total): ${values.usageHours} hours`, 20, 70);
     doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 80);
     doc.text(`Location: ${values.location}`, 20, 90);
@@ -112,6 +121,7 @@ export function BookingForm() {
     try {
       await addDoc(collection(db, 'bookings'), {
         ...values,
+        generatorType: values.generatorTypes.join(', '), // for compatibility with history display
         userId: user.uid,
         userEmail: user.email,
         status: 'Pending',
@@ -139,7 +149,7 @@ export function BookingForm() {
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Book a Generator</CardTitle>
-        <CardDescription>Select your generator and enter booking details below.</CardDescription>
+        <CardDescription>Select your generator(s) and enter booking details below.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -147,22 +157,43 @@ export function BookingForm() {
             <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="generatorType"
-                  render={({ field }) => (
+                  name="generatorTypes"
+                  render={() => (
                     <FormItem>
-                      <FormLabel>Generator Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {generatorTypes.map((type) => (
-                            <SelectItem key={type} value={type}>{type} (₹{generatorPrices[type]}/day)</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Generator Types</FormLabel>
+                        {generatorTypes.map((type) => (
+                            <FormField
+                            key={type}
+                            control={form.control}
+                            name="generatorTypes"
+                            render={({ field }) => {
+                                return (
+                                <FormItem
+                                    key={type}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                    <FormControl>
+                                    <Checkbox
+                                        checked={field.value?.includes(type)}
+                                        onCheckedChange={(checked) => {
+                                        return checked
+                                            ? field.onChange([...(field.value || []), type])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                (value) => value !== type
+                                                )
+                                            )
+                                        }}
+                                    />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                        {type} (₹{generatorPrices[type]}/day)
+                                    </FormLabel>
+                                </FormItem>
+                                )
+                            }}
+                            />
+                        ))}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -194,7 +225,7 @@ export function BookingForm() {
                   name="quantity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Quantity</FormLabel>
+                      <FormLabel>Quantity (per type)</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="e.g., 1" {...field} min="1"/>
                       </FormControl>
@@ -277,7 +308,7 @@ export function BookingForm() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="button" variant="outline" onClick={handlePdfDownload} className="w-full">
+                    <Button type="button" variant="outline" onClick={handlePdfDownload} className="w-full" disabled={form.getValues('generatorTypes').length === 0}>
                         <Download className="mr-2"/>
                         Download Estimate as PDF
                     </Button>
@@ -295,3 +326,5 @@ export function BookingForm() {
     </Card>
   );
 }
+
+    
