@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { CalendarView } from '@/components/admin/calendar-view';
 import { ProfileView } from '@/components/admin/profile-view';
