@@ -6,9 +6,12 @@ export interface User {
   role: 'admin' | 'driver' | 'user';
   createdAt: { seconds: number, nanoseconds: number } | Date;
   photoURL?: string;
-  phone?: string;
+  phone?: string; // driver contact
   company?: string;
   address?: string;
+  vehicleNumber?: string;
+  electricianName?: string;
+  electricianContact?: string;
 }
 
 export interface Generator {
@@ -48,8 +51,12 @@ export interface Booking {
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
   driverInfo?: {
+      driverId: string;
       name: string;
       contact: string;
+      vehicleNumber?: string;
+      electricianName?: string;
+      electricianContact?: string;
   };
   timerLogs?: {
       startTime: Date;

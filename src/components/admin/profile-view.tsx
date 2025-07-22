@@ -39,12 +39,15 @@ const formSchema = z.object({
   photoURL: z.string().url().optional().or(z.literal('')),
   company: z.string().optional(),
   address: z.string().optional(),
+  vehicleNumber: z.string().optional(),
+  electricianName: z.string().optional(),
+  electricianContact: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export function ProfileView() {
-  const { user, name, photoURL, role, company, address } = useAuth();
+  const { user, name, photoURL, role, company, address, vehicleNumber, electricianName, electricianContact } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -58,6 +61,9 @@ export function ProfileView() {
       photoURL: '',
       company: '',
       address: '',
+      vehicleNumber: '',
+      electricianName: '',
+      electricianContact: '',
     },
   });
   
@@ -70,9 +76,12 @@ export function ProfileView() {
               photoURL: photoURL || '',
               company: company || '',
               address: address || '',
+              vehicleNumber: vehicleNumber || '',
+              electricianName: electricianName || '',
+              electricianContact: electricianContact || '',
           });
       }
-  }, [user, name, photoURL, company, address, form]);
+  }, [user, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact, form]);
   
   React.useEffect(() => {
     if (isEditing) {
@@ -96,6 +105,9 @@ export function ProfileView() {
         photoURL: values.photoURL,
         company: values.company,
         address: values.address,
+        vehicleNumber: values.vehicleNumber,
+        electricianName: values.electricianName,
+        electricianContact: values.electricianContact,
       });
       toast({
         title: 'Profile Updated',
@@ -210,6 +222,49 @@ export function ProfileView() {
                   </FormItem>
                 )}
               />
+              {role === 'driver' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="vehicleNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., KA-01-AB-1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="electricianName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Electrician Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Suresh Kumar" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="electricianContact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Electrician Contact</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 9876543210" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </CardContent>
             <CardFooter>
               {isEditing ? (

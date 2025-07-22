@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
+import { getStatusVariant } from '@/lib/utils';
+import { Truck, User, Phone } from 'lucide-react';
 
 export function RentalHistory() {
   const { user } = useAuth();
@@ -46,25 +48,6 @@ export function RentalHistory() {
     return () => unsubscribe();
   }, [user]);
 
-  const getStatusVariant = (status: Booking['status']) => {
-    switch (status) {
-      case 'Active':
-        return 'default';
-      case 'Approved':
-        return 'secondary';
-      case 'Completed':
-        return 'secondary';
-      case 'Pending':
-        return 'outline';
-      case 'Rejected':
-      case 'Cancelled':
-      case 'Voided':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   const renderSkeleton = () => (
     <TableRow>
       <TableCell colSpan={6}>
@@ -92,7 +75,7 @@ export function RentalHistory() {
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Cost</TableHead>
-                <TableHead>Driver</TableHead>
+                <TableHead>Assignment</TableHead>
                 <TableHead>Location</TableHead>
               </TableRow>
             </TableHeader>
@@ -119,7 +102,24 @@ export function RentalHistory() {
                       <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
                     </TableCell>
                     <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
-                    <TableCell>{booking.driverInfo ? `${booking.driverInfo.name} (${booking.driverInfo.contact})` : 'Not Assigned'}</TableCell>
+                    <TableCell>
+                         {booking.driverInfo ? (
+                          <div className='flex flex-col gap-1'>
+                            <div className='flex items-center gap-2'>
+                              <Truck className='size-3 text-muted-foreground' />
+                              <span className='font-medium'>{booking.driverInfo.name}</span>
+                            </div>
+                             <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                              <Phone className='size-3' />
+                              <span>{booking.driverInfo.contact}</span>
+                            </div>
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                              <User className='size-3' />
+                              <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
+                            </div>
+                          </div>
+                          ) : 'Not Assigned'}
+                    </TableCell>
                     <TableCell>{booking.location}</TableCell>
                   </TableRow>
                 ))

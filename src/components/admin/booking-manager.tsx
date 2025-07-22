@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Truck, UserX, Check, XCircle } from 'lucide-react';
+import { MoreHorizontal, Truck, UserX, Check, XCircle, User, Phone } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 
 import { useBookings } from '@/hooks/use-bookings';
@@ -110,7 +110,7 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Cost</TableHead>
-                  <TableHead>Driver</TableHead>
+                  <TableHead>Assignment</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -144,13 +144,22 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                       <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
                       <TableCell>
                         {booking.driverInfo ? (
-                          <div className='flex items-center gap-2'>
-                            <div className='bg-muted rounded-full p-1.5'>
+                          <div className='flex flex-col gap-1'>
+                            <div className='flex items-center gap-2'>
                               <Truck className='size-3 text-muted-foreground' />
+                              <span className='font-medium'>{booking.driverInfo.name}</span>
                             </div>
-                            <span>
-                              {booking.driverInfo.name}
-                            </span>
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground pl-5'>
+                              Vehicle: {booking.driverInfo.vehicleNumber || 'N/A'}
+                            </div>
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                              <User className='size-3' />
+                              <span>Electrician: {booking.driverInfo.electricianName || 'N/A'}</span>
+                            </div>
+                             <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                              <Phone className='size-3' />
+                              <span>Contact: {booking.driverInfo.electricianContact || 'N/A'}</span>
+                            </div>
                           </div>
                           ) : 'Not Assigned'}
                       </TableCell>

@@ -26,6 +26,9 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { Button } from '../ui/button';
+import { MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 
 export function DriverManager() {
@@ -49,11 +52,17 @@ export function DriverManager() {
       });
     }
   };
+  
+  const handleEditProfile = (userId: string) => {
+    // This would typically open a dialog or navigate to a profile edit page
+    // For now, we will just log it. A profile view component would be needed.
+    console.log("Editing profile for user:", userId);
+  }
 
   const renderSkeleton = () => (
     Array.from({ length: 5 }).map((_, index) => (
       <TableRow key={index}>
-        <TableCell colSpan={3}>
+        <TableCell colSpan={4}>
           <Skeleton className="h-8 w-full" />
         </TableCell>
       </TableRow>
@@ -88,6 +97,7 @@ export function DriverManager() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,7 +105,7 @@ export function DriverManager() {
                 renderSkeleton()
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center">
+                  <TableCell colSpan={4} className="text-center">
                     No users found.
                   </TableCell>
                 </TableRow>
@@ -124,6 +134,20 @@ export function DriverManager() {
                           </SelectItem>
                         </SelectContent>
                       </Select>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button variant="ghost" size="icon">
+                             <MoreHorizontal className="h-4 w-4" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                           <DropdownMenuItem onClick={() => handleEditProfile(user.id)}>
+                             Edit Profile
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

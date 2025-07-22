@@ -57,9 +57,13 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange }: AssignDriv
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      driverId: booking.driverInfo?.name || '', // Note: we store name, not ID, in driverInfo. This might need a rethink. For now, this is a placeholder.
+      driverId: booking.driverInfo?.driverId || '',
     },
   });
+  
+  React.useEffect(() => {
+      form.reset({ driverId: booking.driverInfo?.driverId || '' });
+  }, [booking, form]);
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -74,8 +78,12 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange }: AssignDriv
     try {
       await updateDoc(bookingRef, {
         driverInfo: {
+          driverId: selectedDriver.id,
           name: selectedDriver.name,
-          contact: selectedDriver.email, // Assuming email as contact for now
+          contact: selectedDriver.phone || selectedDriver.email,
+          vehicleNumber: selectedDriver.vehicleNumber,
+          electricianName: selectedDriver.electricianName,
+          electricianContact: selectedDriver.electricianContact,
         },
         status: 'Approved',
       });

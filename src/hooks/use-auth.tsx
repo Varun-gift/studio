@@ -14,6 +14,9 @@ interface AuthContextType {
   photoURL: string | null;
   company: string | null;
   address: string | null;
+  vehicleNumber: string | null;
+  electricianName: string | null;
+  electricianContact: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +27,9 @@ const AuthContext = createContext<AuthContextType>({
   photoURL: null,
   company: null,
   address: null,
+  vehicleNumber: null,
+  electricianName: null,
+  electricianContact: null,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -34,6 +40,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [company, setCompany] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
+  const [vehicleNumber, setVehicleNumber] = useState<string | null>(null);
+  const [electricianName, setElectricianName] = useState<string | null>(null);
+  const [electricianContact, setElectricianContact] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -47,6 +56,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setPhotoURL(userData.photoURL || user.photoURL);
           setCompany(userData.company);
           setAddress(userData.address);
+          setVehicleNumber(userData.vehicleNumber);
+          setElectricianName(userData.electricianName);
+          setElectricianContact(userData.electricianContact);
+          
           // This is a bit of a hack to add properties to the user object
           // A better approach would be to not spread the user object from firebase
           // but to create a new user object with the properties we need.
@@ -57,6 +70,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setPhotoURL(user.photoURL);
           setCompany(null);
           setAddress(null);
+          setVehicleNumber(null);
+          setElectricianName(null);
+          setElectricianContact(null);
         }
       } else {
         setUser(null);
@@ -65,6 +81,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setPhotoURL(null);
         setCompany(null);
         setAddress(null);
+        setVehicleNumber(null);
+        setElectricianName(null);
+        setElectricianContact(null);
       }
       setLoading(false);
     });
@@ -73,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address }}>
+    <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact }}>
       {children}
     </AuthContext.Provider>
   );
