@@ -41,8 +41,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AssignDriverDialog } from './assign-driver-dialog';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-export function BookingManager() {
-  const { bookings, loading } = useBookings();
+interface BookingManagerProps {
+  statusFilter?: Booking['status'] | null;
+}
+
+export function BookingManager({ statusFilter }: BookingManagerProps) {
+  const { bookings, loading } = useBookings({ status: statusFilter });
   const { toast } = useToast();
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
   const [isAssignDriverOpen, setIsAssignDriverOpen] = React.useState(false);
@@ -79,12 +83,19 @@ export function BookingManager() {
       </TableRow>
     ))
   );
+  
+  const getTitle = () => {
+      if(statusFilter) {
+          return `${statusFilter} Bookings`;
+      }
+      return 'All Bookings';
+  }
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Booking Manager</CardTitle>
+          <CardTitle>{getTitle()}</CardTitle>
           <CardDescription>
             View and manage all customer bookings.
           </CardDescription>

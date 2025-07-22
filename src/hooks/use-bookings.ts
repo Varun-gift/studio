@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { Booking } from '@/lib/types';
 
 interface UseBookingsProps {
-  status?: Booking['status'];
+  status?: Booking['status'] | null;
 }
 
 export function useBookings({ status }: UseBookingsProps = {}) {
@@ -21,6 +21,8 @@ export function useBookings({ status }: UseBookingsProps = {}) {
 
     if (status) {
         q = query(bookingsRef, where('status', '==', status), orderBy('createdAt', 'desc'));
+    } else if (status === null) {
+        q = query(bookingsRef, orderBy('createdAt', 'desc'));
     } else {
         q = query(bookingsRef, orderBy('createdAt', 'desc'));
     }

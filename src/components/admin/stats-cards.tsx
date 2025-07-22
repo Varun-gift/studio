@@ -6,16 +6,21 @@ import { Users, Package, Clock, CheckCircle, Truck } from 'lucide-react';
 import { useAdminStats } from '@/hooks/use-admin-stats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Booking } from '@/lib/types';
 
-export function StatsCards() {
+interface StatsCardsProps {
+    onCardClick: (tab: string, filter?: Booking['status'] | null) => void;
+}
+
+export function StatsCards({ onCardClick }: StatsCardsProps) {
   const { stats, loading } = useAdminStats();
 
   const statItems = [
-    { title: 'Total Users', value: stats.totalUsers, key: 'totalUsers', icon: Users },
-    { title: 'Total Bookings', value: stats.totalBookings, key: 'totalBookings', icon: Package },
-    { title: 'Pending Bookings', value: stats.pendingBookings, key: 'pendingBookings', icon: Clock },
-    { title: 'Approved Bookings', value: stats.approvedBookings, key: 'approvedBookings', icon: CheckCircle },
-    { title: 'Active Bookings', value: stats.activeBookings, key: 'activeBookings', icon: Truck },
+    { title: 'Total Users', value: stats.totalUsers, key: 'totalUsers', icon: Users, tab: 'drivers' },
+    { title: 'Total Bookings', value: stats.totalBookings, key: 'totalBookings', icon: Package, tab: 'bookings', filter: null },
+    { title: 'Pending Bookings', value: stats.pendingBookings, key: 'pendingBookings', icon: Clock, tab: 'bookings', filter: 'Pending' },
+    { title: 'Approved Bookings', value: stats.approvedBookings, key: 'approvedBookings', icon: CheckCircle, tab: 'bookings', filter: 'Approved' },
+    { title: 'Active Bookings', value: stats.activeBookings, key: 'activeBookings', icon: Truck, tab: 'bookings', filter: 'Active' },
   ];
 
   if (loading) {
@@ -39,7 +44,7 @@ export function StatsCards() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       {statItems.map((item) => (
-        <Card key={item.title}>
+        <Card key={item.title} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onCardClick(item.tab, item.filter)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
             <item.icon className="h-4 w-4 text-muted-foreground" />
