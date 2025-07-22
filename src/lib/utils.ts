@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 export const getStatusVariant = (status: Booking['status']) => {
     switch (status) {
       case 'Active':
-        return 'default';
+        return 'success';
       case 'Approved':
         return 'secondary';
       case 'Completed':
