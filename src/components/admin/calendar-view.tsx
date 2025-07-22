@@ -17,17 +17,8 @@ export function CalendarView() {
     ? bookings.filter((booking) => format(booking.bookingDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
     : [];
     
-  const renderDayWithBookings = (day: Date): React.ReactNode => {
-    const dayBookings = bookings.filter(b => format(b.bookingDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
-    if (dayBookings.length > 0) {
-      return (
-        <div className="relative">
-          {format(day, 'd')}
-          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-primary" />
-        </div>
-      );
-    }
-    return format(day, 'd');
+  const dayHasBooking = (day: Date) => {
+    return bookings.some(b => format(b.bookingDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
   };
 
   return (
@@ -42,8 +33,26 @@ export function CalendarView() {
                 selected={date}
                 onSelect={setDate}
                 className="rounded-md border p-0"
+                modifiers={{
+                    booked: dayHasBooking
+                }}
+                modifiersStyles={{
+                    booked: {
+                        position: 'relative',
+                    }
+                }}
                 components={{
-                    Day: ({ date }) => <div className="relative p-4">{renderDayWithBookings(date)}</div>
+                    Day: ({ date, ...props }) => {
+                        const hasBooking = dayHasBooking(date);
+                        return (
+                          <div className='relative p-4' onClick={() => setDate(date)}>
+                            {format(date, 'd')}
+                            {hasBooking && (
+                              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary" />
+                            )}
+                          </div>
+                        );
+                    }
                 }}
             />
         </CardContent>

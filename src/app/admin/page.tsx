@@ -28,7 +28,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 pb-20">
         {renderContent()}
       </div>
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />

@@ -93,83 +93,85 @@ export function ProfileView() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
-        <CardDescription>
-          Manage your personal information.
-        </CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-             <FormField
-              control={form.control}
-              name="photoURL"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={field.value || undefined} alt={form.watch('name')} />
-                    <AvatarFallback>{form.watch('name')?.[0].toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1'>
-                    <FormLabel>Profile Picture URL</FormLabel>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Profile</CardTitle>
+          <CardDescription>
+            Manage your personal information.
+          </CardDescription>
+        </CardHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="photoURL"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={field.value || undefined} alt={form.watch('name')} />
+                      <AvatarFallback>{form.watch('name')?.[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1'>
+                      <FormLabel>Profile Picture URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/image.png" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.png" {...field} />
+                      <Input placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="m@example.com" {...field} disabled />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+1 234 567 890" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="m@example.com" {...field} disabled />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 234 567 890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
+      </Card>
+    </div>
   );
 }
