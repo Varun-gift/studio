@@ -33,9 +33,9 @@ const generatorPrices: { [key: string]: number } = {
 };
 
 const generatorTypes = [
-    { name: 'Cummins', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
-    { name: 'Tata', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
     { name: 'Ashoka Leyland', icon: 'https://placehold.co/40x40.png', hint: 'truck generator' },
+    { name: 'Tata', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
+    { name: 'Cummins', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
     { name: 'Kirloskar', icon: 'https://placehold.co/40x40.png', hint: 'industrial engine' },
 ];
 
@@ -66,7 +66,7 @@ export function BookingForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generatorType: 'Cummins',
+      generatorType: 'Ashoka Leyland',
       kvaCategory: '62',
       quantity: 1,
       usageHours: 8,
@@ -177,7 +177,7 @@ export function BookingForm() {
                             <RadioGroup
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
-                                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
+                                className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4"
                             >
                                 {generatorTypes.map((type) => (
                                     <FormItem key={type.name}>
