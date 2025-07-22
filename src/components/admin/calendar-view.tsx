@@ -17,9 +17,7 @@ export function CalendarView() {
     ? bookings.filter((booking) => format(booking.bookingDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
     : [];
     
-  const dayHasBooking = (day: Date) => {
-    return bookings.some(b => format(b.bookingDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
-  };
+  const bookedDays = bookings.map(b => b.bookingDate);
 
   return (
     <div className="space-y-4">
@@ -27,32 +25,17 @@ export function CalendarView() {
         <CardHeader>
             <CardTitle>Booking Calendar</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex justify-center">
             <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
-                className="rounded-md border p-0"
+                className="rounded-md border"
                 modifiers={{
-                    booked: dayHasBooking
+                    booked: bookedDays,
                 }}
-                modifiersStyles={{
-                    booked: {
-                        position: 'relative',
-                    }
-                }}
-                components={{
-                    Day: ({ date, ...props }) => {
-                        const hasBooking = dayHasBooking(date);
-                        return (
-                          <div className='relative p-4' onClick={() => setDate(date)}>
-                            {format(date, 'd')}
-                            {hasBooking && (
-                              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary" />
-                            )}
-                          </div>
-                        );
-                    }
+                 modifiersClassNames={{
+                    booked: 'bg-primary/20 rounded-full',
                 }}
             />
         </CardContent>
