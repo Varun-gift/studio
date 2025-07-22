@@ -1,4 +1,11 @@
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'driver' | 'user';
+  createdAt: { seconds: number, nanoseconds: number } | Date;
+}
 
 export interface Generator {
   id: string;
