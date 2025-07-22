@@ -1,22 +1,15 @@
 
 'use client';
 import type { Dispatch, SetStateAction } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GeneratorSizingTool } from '@/components/generator-sizing-tool';
-import type { Generator, Rental } from '@/lib/types';
+import type { Rental } from '@/lib/types';
 import { Badge } from './ui/badge';
-import { FileText, Fuel, Zap } from 'lucide-react';
-
-const availableGenerators: Generator[] = [
-  { id: '1', model: 'GenMax 5000D', capacity: '5 kW', fuelType: 'Diesel', imageUrl: 'https://placehold.co/600x400', hourlyRate: 15, status: 'Available' },
-  { id: '2', model: 'PowerUp 10000G', capacity: '10 kW', fuelType: 'Gasoline', imageUrl: 'https://placehold.co/600x400', hourlyRate: 25, status: 'Available' },
-  { id: '3', model: 'QuietForce 3500P', capacity: '3.5 kW', fuelType: 'Propane', imageUrl: 'https://placehold.co/600x400', hourlyRate: 12, status: 'Rented' },
-  { id: '4', model: 'MegaWatt 20D', capacity: '20 kW', fuelType: 'Diesel', imageUrl: 'https://placehold.co/600x400', hourlyRate: 40, status: 'Maintenance' },
-];
+import { FileText } from 'lucide-react';
+import { BookingForm } from './booking-form';
 
 const rentalHistory: Rental[] = [
   { id: 'R1', generatorModel: 'GenMax 5000D', startDate: '2023-05-01', endDate: '2023-05-05', status: 'Completed', totalCost: 1800 },
@@ -35,48 +28,12 @@ export function Dashboard({ activeTab, setActiveTab }: DashboardProps) {
     <main className="flex-1 overflow-auto p-4 md:p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="dashboard">Book a Generator</TabsTrigger>
+          <TabsTrigger value="dashboard">New Booking</TabsTrigger>
           <TabsTrigger value="history">Rental History</TabsTrigger>
           <TabsTrigger value="sizing">Generator Sizing</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {availableGenerators.map((gen) => (
-              <Card key={gen.id} className="flex flex-col">
-                <CardHeader className="p-0">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={gen.imageUrl}
-                      alt={gen.model}
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-t-lg"
-                      data-ai-hint="generator industrial"
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 p-4">
-                  <CardTitle>{gen.model}</CardTitle>
-                  <div className="mt-2 space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-primary" />
-                      <span>{gen.capacity}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4 text-primary" />
-                      <span>{gen.fuelType}</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0 flex justify-between items-center">
-                  <p className="text-lg font-semibold">${gen.hourlyRate}<span className="text-sm font-normal text-muted-foreground">/hr</span></p>
-                  <Button disabled={gen.status !== 'Available'} variant={gen.status !== 'Available' ? "secondary" : "default"}>
-                    {gen.status === 'Available' ? 'Rent Now' : gen.status}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          <BookingForm />
         </TabsContent>
         <TabsContent value="history">
           <Card>

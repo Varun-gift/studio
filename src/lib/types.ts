@@ -1,4 +1,5 @@
 
+
 export interface Generator {
   id: string;
   model: string;
@@ -16,4 +17,17 @@ export interface Rental {
   endDate: string;
   status: 'Upcoming' | 'Active' | 'Completed';
   totalCost: number;
+}
+
+export interface Booking {
+  id?: string;
+  userId: string;
+  userEmail: string;
+  generatorType: string;
+  kvaCategory: string;
+  usageHours: number;
+  bookingDate: Date;
+  status: 'Pending' | 'Confirmed' | 'Active' | 'Completed' | 'Cancelled';
+  estimatedCost: number;
+  createdAt: Date;
 }
