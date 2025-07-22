@@ -35,7 +35,7 @@ export function AdminDashboard({ activeInnerTab, setActiveInnerTab, bookingFilte
   return (
     <div className="space-y-4">
       <Tabs value={activeInnerTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="bookings">All Bookings</TabsTrigger>
             <TabsTrigger value="drivers">Users & Drivers</TabsTrigger>
         </TabsList>
@@ -44,12 +44,16 @@ export function AdminDashboard({ activeInnerTab, setActiveInnerTab, bookingFilte
             {/* StatsCards are always visible */}
             <StatsCards onCardClick={handleCardClick} />
             
-            <TabsContent value="bookings">
-                <BookingsView statusFilter={bookingFilter as Booking['status'] | null} />
-            </TabsContent>
-            <TabsContent value="drivers">
-                <DriverManager />
-            </TabsContent>
+            {activeInnerTab === 'bookings' && (
+                <TabsContent value="bookings" className="mt-0">
+                    <BookingsView statusFilter={bookingFilter as Booking['status'] | null} />
+                </TabsContent>
+            )}
+            {activeInnerTab === 'drivers' && (
+                <TabsContent value="drivers" className="mt-0">
+                    <DriverManager />
+                </TabsContent>
+            )}
         </div>
       </Tabs>
     </div>
