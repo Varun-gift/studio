@@ -12,7 +12,7 @@ import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, User as UserIcon, LogOut, Settings, Package } from 'lucide-react';
+import { Home, Calendar, Bell, User as UserIcon, LogOut, Settings, Package, Users } from 'lucide-react';
 import { DriverManager } from '@/components/admin/driver-manager';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -25,12 +25,22 @@ import { BookingsView } from '@/components/admin/bookings-view';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = React.useState('home');
+  const [activeInnerTab, setActiveInnerTab] = React.useState('');
+  const [bookingFilter, setBookingFilter] = React.useState<string | null>(null);
+
   const { name, photoURL } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
+  };
+  
+  const handleSidebarSelect = (tab: string) => {
+    setActiveTab(tab);
+    // Reset inner tabs when switching main pages
+    setActiveInnerTab('');
+    setBookingFilter(null);
   };
 
   const navItems = [
@@ -42,13 +52,23 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <AdminDashboard />;
+        return <AdminDashboard 
+                    activeInnerTab={activeInnerTab} 
+                    setActiveInnerTab={setActiveInnerTab}
+                    setBookingFilter={setBookingFilter}
+                    bookingFilter={bookingFilter}
+                />;
       case 'calendar':
         return <CalendarView />;
       case 'profile':
         return <ProfileView />;
       default:
-        return <AdminDashboard />;
+        return <AdminDashboard 
+                    activeInnerTab={activeInnerTab} 
+                    setActiveInnerTab={setActiveInnerTab}
+                    setBookingFilter={setBookingFilter}
+                    bookingFilter={bookingFilter}
+                />;
     }
   };
 
@@ -56,7 +76,7 @@ export default function AdminPage() {
      <div className="flex min-h-screen w-full bg-muted/40">
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSidebarSelect}
         navItems={navItems}
       />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
@@ -80,7 +100,7 @@ export default function AdminPage() {
                       {navItems.map(item => (
                            <button
                             key={item.name}
-                            onClick={() => setActiveTab(item.name)}
+                            onClick={() => handleSidebarSelect(item.name)}
                             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                             >
                                 <item.icon className="h-5 w-5" />
@@ -109,7 +129,7 @@ export default function AdminPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={() => setActiveTab('profile')}>Profile</DropdownMenuItem>
+               <DropdownMenuItem onClick={() => handleSidebarSelect('profile')}>Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />

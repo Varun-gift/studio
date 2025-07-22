@@ -6,28 +6,46 @@ import { StatsCards } from './stats-cards';
 import { DriverManager } from './driver-manager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookingsView } from './bookings-view';
+import type { Booking } from '@/lib/types';
 
-export function AdminDashboard() {
-  const [activeTab, setActiveTab] = React.useState('');
+interface AdminDashboardProps {
+  activeInnerTab: string;
+  setActiveInnerTab: (tab: string) => void;
+  bookingFilter: string | null;
+  setBookingFilter: (filter: string | null) => void;
+}
+
+export function AdminDashboard({ activeInnerTab, setActiveInnerTab, bookingFilter, setBookingFilter }: AdminDashboardProps) {
 
   const handleTabChange = (tabName: string) => {
-    setActiveTab(prev => (prev === tabName ? '' : tabName));
+    if (activeInnerTab === tabName) {
+      setActiveInnerTab('');
+      setBookingFilter(null);
+    } else {
+      setActiveInnerTab(tabName);
+      setBookingFilter(null); // Reset filter when switching main tabs
+    }
   };
+  
+  const handleCardClick = (tab: string, filter?: Booking['status'] | null) => {
+    setActiveInnerTab(tab);
+    setBookingFilter(filter || null);
+  }
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs value={activeInnerTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
             <TabsTrigger value="bookings">All Bookings</TabsTrigger>
             <TabsTrigger value="drivers">Users & Drivers</TabsTrigger>
         </TabsList>
         
         <div className="mt-4 space-y-4">
-            {/* StatsCards are always visible if no tab is selected, or above tab content */}
-            {activeTab === '' && <StatsCards onCardClick={() => { /* Placeholder */ }} />}
+            {/* StatsCards are always visible */}
+            <StatsCards onCardClick={handleCardClick} />
             
             <TabsContent value="bookings">
-                <BookingsView />
+                <BookingsView statusFilter={bookingFilter as Booking['status'] | null} />
             </TabsContent>
             <TabsContent value="drivers">
                 <DriverManager />

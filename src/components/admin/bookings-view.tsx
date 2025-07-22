@@ -4,12 +4,34 @@
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookingManager } from './booking-manager';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
+import type { Booking } from '@/lib/types';
 
-export function BookingsView() {
+interface BookingsViewProps {
+  statusFilter?: Booking['status'] | null;
+}
+
+export function BookingsView({ statusFilter }: BookingsViewProps) {
+  const [activeTab, setActiveTab] = React.useState('all');
+
+  // When a filter is passed from the stats card, switch to the correct tab.
+  React.useEffect(() => {
+    if (statusFilter) {
+      setActiveTab(statusFilter.toLowerCase());
+    } else {
+      setActiveTab('all');
+    }
+  }, [statusFilter]);
+
+  // Determine the final filter to pass to BookingManager
+  const getFilterForTab = (tab: string): Booking['status'] | null => {
+    if (tab === 'all') return null;
+    return tab.charAt(0).toUpperCase() + tab.slice(1) as Booking['status'];
+  };
+  
+  const currentFilter = getFilterForTab(activeTab);
 
   return (
-      <Tabs defaultValue="all">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className='grid w-full grid-cols-5'>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
@@ -17,21 +39,10 @@ export function BookingsView() {
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
         </TabsList>
-        <TabsContent value="all">
-          <BookingManager statusFilter={null} />
-        </TabsContent>
-        <TabsContent value="pending">
-          <BookingManager statusFilter="Pending" />
-        </TabsContent>
-        <TabsContent value="approved">
-          <BookingManager statusFilter="Approved" />
-        </TabsContent>
-        <TabsContent value="active">
-          <BookingManager statusFilter="Active" />
-        </TabsContent>
-          <TabsContent value="completed">
-          <BookingManager statusFilter="Completed" />
-        </TabsContent>
+        {/* Render only one BookingManager instance with the current filter */}
+        <div className="mt-4">
+            <BookingManager statusFilter={currentFilter} />
+        </div>
       </Tabs>
   );
 }
