@@ -25,6 +25,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 
 export function DriverManager() {
@@ -80,54 +81,57 @@ export function DriverManager() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              renderSkeleton()
-            ) : users.length === 0 ? (
+        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-center">
-                  No users found.
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
               </TableRow>
-            ) : (
-              users.map((user: User) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Select
-                      defaultValue={user.role}
-                      onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                         <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">
-                            <Badge variant={getRoleVariant('user') as any} className="capitalize w-full justify-center">User</Badge>
-                        </SelectItem>
-                        <SelectItem value="driver">
-                            <Badge variant={getRoleVariant('driver') as any} className="capitalize w-full justify-center">Driver</Badge>
-                        </SelectItem>
-                        <SelectItem value="admin">
-                            <Badge variant={getRoleVariant('admin') as any} className="capitalize w-full justify-center">Admin</Badge>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                renderSkeleton()
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    No users found.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                users.map((user: User) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Select
+                        defaultValue={user.role}
+                        onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">
+                              <Badge variant={getRoleVariant('user') as any} className="capitalize w-full justify-center">User</Badge>
+                          </SelectItem>
+                          <SelectItem value="driver">
+                              <Badge variant={getRoleVariant('driver') as any} className="capitalize w-full justify-center">Driver</Badge>
+                          </SelectItem>
+                          <SelectItem value="admin">
+                              <Badge variant={getRoleVariant('admin') as any} className="capitalize w-full justify-center">Admin</Badge>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </CardContent>
     </Card>
   );

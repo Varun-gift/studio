@@ -23,28 +23,32 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 border-t bg-background md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 border-t bg-background md:hidden z-20">
       <div className="grid grid-cols-4 h-16">
-        {navItems.map((item) => (
-          <button
-            key={item.name}
-            onClick={() => setActiveTab(item.name)}
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-              activeTab === item.name ? 'text-primary' : 'text-muted-foreground'
-            )}
-          >
-            <div className="relative">
-              <item.icon className="h-6 w-6" />
-              {item.count && item.count > 0 && (
-                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                    {item.count}
-                </span>
-              )}
-            </div>
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+            const isActive = activeTab === item.name;
+            return (
+                <button
+                    key={item.name}
+                    onClick={() => setActiveTab(item.name)}
+                    className={cn(
+                    'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors relative',
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                    )}
+                >
+                    <div className="relative">
+                        <item.icon className="h-6 w-6" />
+                        {item.count && item.count > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-background" />
+                        )}
+                    </div>
+                    <span>{item.label}</span>
+                    {isActive && (
+                        <div className="absolute bottom-0 h-0.5 w-8 bg-primary rounded-full" />
+                    )}
+                </button>
+            );
+        })}
       </div>
     </div>
   );
