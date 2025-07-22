@@ -133,7 +133,7 @@ export function ProfileView() {
                   <FormItem className="flex items-center gap-4">
                     <Avatar className="h-20 w-20">
                       <AvatarImage src={field.value || undefined} alt={form.watch('name')} />
-                      <AvatarFallback>{form.watch('name')?.[0].toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{form.watch('name')?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className='flex-1'>
                       <FormLabel>Profile Picture URL</FormLabel>
