@@ -16,19 +16,30 @@ interface AdminDashboardProps {
 export function AdminDashboard({ onCardClick }: AdminDashboardProps) {
   return (
     <div className="space-y-4">
-      <StatsCards onCardClick={onCardClick} />
       <Tabs defaultValue="bookings">
           <TabsList className='grid w-full grid-cols-2'>
               <TabsTrigger value="bookings">All Bookings</TabsTrigger>
               <TabsTrigger value="users">Users & Drivers</TabsTrigger>
           </TabsList>
           <TabsContent value="bookings">
-              <BookingManager statusFilter={null} />
+              <Card>
+                <CardHeader>
+                    <CardTitle>All Bookings</CardTitle>
+                    <CardDescription>
+                        View and manage all customer bookings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <BookingManager statusFilter={null} />
+                </CardContent>
+              </Card>
           </TabsContent>
           <TabsContent value="users">
               <DriverManager />
           </TabsContent>
       </Tabs>
+
+      <StatsCards onCardClick={onCardClick} />
     </div>
   );
 }

@@ -17,10 +17,10 @@ export function StatsCards({ onCardClick }: StatsCardsProps) {
 
   const statItems = [
     { title: 'Total Users', value: stats.totalUsers, key: 'totalUsers', icon: Users, tab: 'users' },
-    { title: 'Total Bookings', value: stats.totalBookings, key: 'totalBookings', icon: Package, tab: 'home', filter: null },
-    { title: 'Pending Bookings', value: stats.pendingBookings, key: 'pendingBookings', icon: Clock, tab: 'home', filter: 'Pending' },
-    { title: 'Approved Bookings', value: stats.approvedBookings, key: 'approvedBookings', icon: CheckCircle, tab: 'home', filter: 'Approved' },
-    { title: 'Active Bookings', value: stats.activeBookings, key: 'activeBookings', icon: Truck, tab: 'home', filter: 'Active' },
+    { title: 'Total Bookings', value: stats.totalBookings, key: 'totalBookings', icon: Package, tab: 'bookings', filter: null },
+    { title: 'Pending Bookings', value: stats.pendingBookings, key: 'pendingBookings', icon: Clock, tab: 'bookings', filter: 'Pending' },
+    { title: 'Approved Bookings', value: stats.approvedBookings, key: 'approvedBookings', icon: CheckCircle, tab: 'bookings', filter: 'Approved' },
+    { title: 'Active Bookings', value: stats.activeBookings, key: 'activeBookings', icon: Truck, tab: 'bookings', filter: 'Active' },
   ];
 
   if (loading) {
@@ -42,7 +42,7 @@ export function StatsCards({ onCardClick }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {statItems.map((item) => (
         <Card key={item.title} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onCardClick(item.tab)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

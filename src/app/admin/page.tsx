@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { CalendarView } from '@/components/admin/calendar-view';
 import { ProfileView } from '@/components/admin/profile-view';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -46,7 +46,19 @@ export default function AdminPage() {
       case 'home':
         return <AdminDashboard onCardClick={(tab) => setActiveTab(tab)} />;
       case 'bookings':
-        return <BookingsView />;
+         return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Manage Bookings</CardTitle>
+                    <CardDescription>
+                        Review, approve, and assign drivers to bookings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <BookingsView />
+                </CardContent>
+             </Card>
+        );
       case 'users':
         return <DriverManager />;
       case 'calendar':
