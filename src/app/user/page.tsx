@@ -2,23 +2,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
 import * as React from 'react';
 import {
-  History,
-  LayoutDashboard,
   LogOut,
-  Mail,
-  User,
-  Bell
+  Loader2,
 } from 'lucide-react';
 import { AmgLogo } from '@/components/amg-logo';
-import { Dashboard } from '@/components/dashboard';
-import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/user/bottom-nav';
 import { ProfileView } from '@/components/admin/profile-view';
 import { NotificationsView } from '@/components/admin/notifications-view';
@@ -39,15 +32,24 @@ export default function UserDashboard() {
 
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
+    if (!loading) {
+      if (!user) {
+        router.replace('/login');
+      } else if (role !== 'user') {
+        if (role === 'admin') {
+          router.replace('/admin');
+        } else {
+          router.replace('/driver');
+        }
+      }
     }
   }, [user, loading, role, router]);
 
-  if (loading || !user) {
+  if (loading || !user || role !== 'user') {
     return (
         <div className="flex h-screen w-full items-center justify-center">
-            <div>Loading...</div>
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="ml-2">Loading & Verifying Access...</p>
         </div>
     );
   }

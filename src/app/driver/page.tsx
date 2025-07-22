@@ -23,8 +23,16 @@ export default function DriverDashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && (!user || role !== 'driver')) {
-      router.replace('/login');
+    if (!loading) {
+      if (!user) {
+        router.replace('/login');
+      } else if (role !== 'driver') {
+        if (role === 'admin') {
+          router.replace('/admin');
+        } else {
+          router.replace('/user');
+        }
+      }
     }
   }, [user, loading, role, router]);
 
@@ -68,7 +76,12 @@ export default function DriverDashboard() {
 
 
   if (loading || !user || role !== 'driver') {
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="ml-2">Loading & Verifying Access...</p>
+        </div>
+    );
   }
 
   return (
