@@ -35,8 +35,6 @@ export default function AdminPage() {
 
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
-    { name: 'bookings', icon: Package, label: 'Bookings' },
-    { name: 'users', icon: UserIcon, label: 'Users' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
@@ -45,22 +43,6 @@ export default function AdminPage() {
     switch (activeTab) {
       case 'home':
         return <AdminDashboard />;
-      case 'bookings':
-         return (
-             <Card>
-                <CardHeader>
-                    <CardTitle>Manage Bookings</CardTitle>
-                    <CardDescription>
-                        Review, approve, and assign drivers to bookings.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <BookingsView />
-                </CardContent>
-             </Card>
-        );
-      case 'users':
-        return <DriverManager />;
       case 'calendar':
         return <CalendarView />;
       case 'profile':
