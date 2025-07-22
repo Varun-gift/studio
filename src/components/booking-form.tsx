@@ -177,7 +177,7 @@ export function BookingForm() {
                             <RadioGroup
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
-                                className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
                             >
                                 {generatorTypes.map((type) => (
                                     <FormItem key={type.name}>
@@ -336,7 +336,7 @@ export function BookingForm() {
                     <span className="font-medium text-foreground">₹{gstAmount.toFixed(2)}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <Button type="button" variant="outline" onClick={handlePdfDownload} disabled={!form.formState.isValid}>
                         <Download className="mr-2 h-4 w-4"/>
                         Download Estimate as PDF

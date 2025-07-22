@@ -13,6 +13,7 @@ import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
 import { getStatusVariant } from '@/lib/utils';
 import { Truck, User, Phone } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
 
 export function RentalHistory() {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ export function RentalHistory() {
         <CardDescription>A real-time log of your past and current generator rentals.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -120,13 +121,13 @@ export function RentalHistory() {
                           </div>
                           ) : 'Not Assigned'}
                     </TableCell>
-                    <TableCell>{booking.location}</TableCell>
+                    <TableCell className="whitespace-normal max-w-[200px] truncate">{booking.location}</TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

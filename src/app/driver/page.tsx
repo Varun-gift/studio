@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { Loader2, LogOut, Phone, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DriverDashboard() {
   const { user, loading, role, name } = useAuth();
@@ -111,44 +112,46 @@ export default function DriverDashboard() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {bookings.map(booking => (
-                        <Card key={booking.id}>
-                            <CardHeader>
-                                <CardTitle>{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
-                                <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Status</span>
-                                    <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
-                                </div>
-                                <div className="space-y-2">
-                                    <h4 className="font-semibold">Customer Details</h4>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <UserIcon className="h-4 w-4 text-muted-foreground" />
-                                        <span>{booking.userName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <span>{booking.userEmail}</span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground pt-2">
-                                       <span className='font-semibold text-foreground'>Location:</span> {booking.location}
-                                    </p>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex justify-end gap-2">
-                                {booking.status === 'Approved' && (
-                                     <Button onClick={() => handleStatusUpdate(booking.id, 'Active')}>Start Duty</Button>
-                                )}
-                                {booking.status === 'Active' && (
-                                     <Button onClick={() => handleStatusUpdate(booking.id, 'Completed')}>End Duty</Button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
+                <ScrollArea className="w-full">
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {bookings.map(booking => (
+                          <Card key={booking.id} className="min-w-[300px]">
+                              <CardHeader>
+                                  <CardTitle className="truncate">{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
+                                  <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">Status</span>
+                                      <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                                  </div>
+                                  <div className="space-y-2">
+                                      <h4 className="font-semibold">Customer Details</h4>
+                                      <div className="flex items-center gap-2 text-sm">
+                                          <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                          <span className='truncate'>{booking.userName}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm">
+                                          <Phone className="h-4 w-4 text-muted-foreground" />
+                                          <span className="truncate">{booking.userEmail}</span>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground pt-2">
+                                         <span className='font-semibold text-foreground'>Location:</span> <span className="line-clamp-2">{booking.location}</span>
+                                      </p>
+                                  </div>
+                              </CardContent>
+                              <CardFooter className="flex justify-end gap-2">
+                                  {booking.status === 'Approved' && (
+                                       <Button onClick={() => handleStatusUpdate(booking.id, 'Active')}>Start Duty</Button>
+                                  )}
+                                  {booking.status === 'Active' && (
+                                       <Button onClick={() => handleStatusUpdate(booking.id, 'Completed')}>End Duty</Button>
+                                  )}
+                              </CardFooter>
+                          </Card>
+                      ))}
+                  </div>
+                </ScrollArea>
             )}
         </main>
     </div>

@@ -25,7 +25,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -112,14 +112,14 @@ export function DriverManager() {
               ) : (
                 users.map((user: User) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="font-medium truncate">{user.name}</TableCell>
+                    <TableCell className="truncate">{user.email}</TableCell>
                     <TableCell>
                       <Select
                         defaultValue={user.role}
                         onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                       >
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[120px]">
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -154,7 +154,6 @@ export function DriverManager() {
               )}
             </TableBody>
           </Table>
-          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </CardContent>
     </Card>

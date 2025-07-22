@@ -7,32 +7,24 @@ import { StatsCards } from './stats-cards';
 import { BookingManager } from './booking-manager';
 import { DriverManager } from './driver-manager';
 import { Booking } from '@/lib/types';
+import { CalendarView } from './calendar-view';
 
-export function AdminDashboard() {
-  const [activeTab, setActiveTab] = React.useState('overview');
-  const [bookingFilter, setBookingFilter] = React.useState<Booking['status'] | null>(null);
+interface AdminDashboardProps {
+  onCardClick: (tab: string) => void;
+}
 
-  const handleCardClick = (tab: string, filter: Booking['status'] | null = null) => {
-    setBookingFilter(filter);
-    setActiveTab(tab);
-  };
-
+export function AdminDashboard({ onCardClick }: AdminDashboardProps) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList className="grid grid-cols-3 w-full md:w-auto">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="bookings">Bookings</TabsTrigger>
-        <TabsTrigger value="drivers">Users &amp; Drivers</TabsTrigger>
-      </TabsList>
-      <TabsContent value="overview" className="space-y-4">
-        <StatsCards onCardClick={handleCardClick} />
-      </TabsContent>
-      <TabsContent value="bookings">
-        <BookingManager statusFilter={bookingFilter} />
-      </TabsContent>
-      <TabsContent value="drivers">
-        <DriverManager />
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-4">
+      <StatsCards onCardClick={onCardClick} />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="lg:col-span-4">
+          <BookingManager statusFilter={null} />
+        </div>
+        <div className="lg:col-span-3">
+          <DriverManager />
+        </div>
+      </div>
+    </div>
   );
 }

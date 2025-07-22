@@ -39,7 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AssignDriverDialog } from './assign-driver-dialog';
-import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface BookingManagerProps {
   statusFilter?: Booking['status'] | null;
@@ -105,13 +105,13 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
+                  <TableHead className="w-[150px]">Customer</TableHead>
                   <TableHead>Generator</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>Assignment</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead className="min-w-[200px]">Location</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -130,8 +130,8 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                   bookings.map((booking: Booking) => (
                     <TableRow key={booking.id}>
                       <TableCell>
-                        <div className="font-medium">{booking.userName}</div>
-                        <div className="text-sm text-muted-foreground">{booking.userEmail}</div>
+                        <div className="font-medium truncate">{booking.userName}</div>
+                        <div className="text-sm text-muted-foreground truncate">{booking.userEmail}</div>
                       </TableCell>
                       <TableCell>
                         <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
@@ -163,7 +163,7 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                           </div>
                           ) : 'Not Assigned'}
                       </TableCell>
-                      <TableCell>{booking.location}</TableCell>
+                      <TableCell className="whitespace-normal">{booking.location}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -195,7 +195,6 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                 )}
               </TableBody>
             </Table>
-            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </CardContent>
       </Card>

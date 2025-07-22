@@ -65,6 +65,7 @@ export function ProfileView() {
       electricianName: '',
       electricianContact: '',
     },
+    disabled: !isEditing,
   });
   
   React.useEffect(() => {
@@ -89,7 +90,8 @@ export function ProfileView() {
     } else {
         form.control._options.disabled = true;
     }
-    form.reset(form.getValues()); // re-render form with new disabled state
+    // Re-render form with new disabled state
+    form.reset(form.getValues()); 
   }, [isEditing, form]);
 
 
@@ -125,15 +127,26 @@ export function ProfileView() {
       setLoading(false);
     }
   }
+  
+  const handleEditToggle = () => {
+      setIsEditing(prev => !prev);
+  }
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Your Profile</CardTitle>
-          <CardDescription>
-            Manage your personal information.
-          </CardDescription>
+         <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Your Profile</CardTitle>
+              <CardDescription>
+                Manage your personal information. Click edit to make changes.
+              </CardDescription>
+            </div>
+             <Button onClick={handleEditToggle} variant={isEditing ? 'default' : 'outline'}>
+                {isEditing ? 'Cancel' : 'Edit Profile'}
+            </Button>
+          </div>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -157,58 +170,60 @@ export function ProfileView() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="m@example.com" {...field} disabled />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+1 234 567 890" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company / Organisation</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Acme Inc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="m@example.com" {...field} disabled />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+1 234 567 890" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="company"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company / Organisation</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Acme Inc." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
               <FormField
                 control={form.control}
                 name="address"
@@ -223,7 +238,7 @@ export function ProfileView() {
                 )}
               />
               {role === 'driver' && (
-                <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                   <FormField
                     control={form.control}
                     name="vehicleNumber"
@@ -263,21 +278,17 @@ export function ProfileView() {
                       </FormItem>
                     )}
                   />
-                </>
+                </div>
               )}
             </CardContent>
-            <CardFooter>
-              {isEditing ? (
-                  <Button type="submit" disabled={loading}>
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Changes
-                  </Button>
-              ) : (
-                  <Button type="button" onClick={() => setIsEditing(true)}>
-                      Save Changes
-                  </Button>
-              )}
-            </CardFooter>
+            {isEditing && (
+                <CardFooter>
+                    <Button type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </CardFooter>
+            )}
           </form>
         </Form>
       </Card>
