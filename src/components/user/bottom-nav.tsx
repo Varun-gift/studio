@@ -4,7 +4,6 @@
 import * as React from 'react';
 import { Home, History, Bell, User, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { GeneratorBg } from '../generator-bg';
 
 interface BottomNavProps {
   activeTab: string;
@@ -35,9 +34,6 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                         item.isCentral && '-mt-4'
                     )}
                 >
-                    {isActive && !item.isCentral && (
-                        <GeneratorBg />
-                    )}
                     <div className={cn(
                         "rounded-full p-3 flex items-center justify-center relative",
                         item.isCentral && "bg-primary text-primary-foreground shadow-lg"
@@ -45,6 +41,9 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                         <item.icon className="h-6 w-6" />
                     </div>
                     <span className={cn("relative", item.isCentral && "mt-1")}>{item.label}</span>
+                     {isActive && !item.isCentral && (
+                        <div className="absolute bottom-0 h-0.5 w-8 bg-primary rounded-full" />
+                    )}
                 </button>
             );
         })}
