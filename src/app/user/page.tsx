@@ -49,7 +49,7 @@ function NavLink({
 }
 
 export default function UserDashboard() {
-  const { user, loading, role } = useAuth();
+  const { user, loading, role, name } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
@@ -147,7 +147,9 @@ export default function UserDashboard() {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <h1 className="text-lg font-semibold capitalize">{activeTab.replace('-', ' ')}</h1>
+             <h1 className="text-lg font-semibold">
+                {name ? `Welcome back, ${name}` : 'Welcome'}
+            </h1>
           </div>
         </header>
         <Dashboard activeTab={activeTab} setActiveTab={setActiveTab} />

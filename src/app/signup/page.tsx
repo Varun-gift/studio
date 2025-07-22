@@ -18,12 +18,21 @@ import { Loader2 } from 'lucide-react';
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name) {
+      toast({
+        title: "Name required",
+        description: "Please enter your full name.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -31,6 +40,7 @@ export default function SignupPage() {
 
       // Create a user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
+        name: name,
         email: user.email,
         role: 'user', // Default role for new users
         createdAt: new Date(),
@@ -60,10 +70,21 @@ export default function SignupPage() {
             <AmgLogo className="size-12" />
           </div>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
-          <CardDescription>Enter your email and password to sign up.</CardDescription>
+          <CardDescription>Enter your details to sign up.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

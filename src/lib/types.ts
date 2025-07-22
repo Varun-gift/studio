@@ -23,6 +23,7 @@ export interface Booking {
   id: string;
   userId: string;
   userEmail: string;
+  userName: string;
   generatorType: string; // Keep as string for history, now comma-separated
   generatorTypes?: string[]; // New field for multiple types
   kvaCategory: string;
@@ -31,6 +32,8 @@ export interface Booking {
   location: string;
   bookingDate: Date;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
+  subtotal: number;
+  gstAmount: number;
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
   driverInfo?: {
@@ -42,5 +45,3 @@ export interface Booking {
       endTime: Date;
   }[];
 }
-
-    

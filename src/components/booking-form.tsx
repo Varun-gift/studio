@@ -23,15 +23,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
+import { Separator } from './ui/separator';
 
 const generatorPrices: { [key: string]: number } = {
-  'Cummins': 5500,
-  'Tata': 6200,
-  'Ashoka Leyland': 7100,
-  'Kirloskar': 8000
+  'Cummins': 250,
+  'Tata': 280,
+  'Ashoka Leyland': 320,
+  'Kirloskar': 350
 };
 const generatorTypes = Object.keys(generatorPrices);
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
+const GST_RATE = 0.18;
 
 const formSchema = z.object({
   generatorTypes: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -52,7 +54,9 @@ export function BookingForm() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [estimatedCost, setEstimatedCost] = useState(0);
+  const [subtotal, setSubtotal] = useState(0);
+  const [gstAmount, setGstAmount] = useState(0);
+  const [totalCost, setTotalCost] = useState(0);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,7 +76,7 @@ export function BookingForm() {
   const watchedQuantity = watch('quantity');
 
   useEffect(() => {
-    const totalCost = watchedGeneratorTypes.reduce((acc, type) => {
+    const hourlyCost = watchedGeneratorTypes.reduce((acc, type) => {
         const price = generatorPrices[type] || 0;
         return acc + price;
     }, 0);
@@ -80,13 +84,18 @@ export function BookingForm() {
     const hours = parseFloat(watchedHours as any);
     const quantity = parseInt(watchedQuantity as any);
     
-    if (totalCost > 0 && !isNaN(hours) && !isNaN(quantity)) {
-      // Simple daily rate calculation for now
-      // Assuming usageHours is per day, and price is per day
-      const days = Math.ceil(hours / 24);
-      setEstimatedCost(totalCost * quantity * days);
+    if (hourlyCost > 0 && !isNaN(hours) && !isNaN(quantity)) {
+      const currentSubtotal = hourlyCost * quantity * hours;
+      const currentGst = currentSubtotal * GST_RATE;
+      const currentTotal = currentSubtotal + currentGst;
+      
+      setSubtotal(currentSubtotal);
+      setGstAmount(currentGst);
+      setTotalCost(currentTotal);
     } else {
-      setEstimatedCost(0);
+      setSubtotal(0);
+      setGstAmount(0);
+      setTotalCost(0);
     }
   }, [watchedGeneratorTypes, watchedHours, watchedQuantity]);
 
@@ -106,8 +115,12 @@ export function BookingForm() {
     doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 80);
     doc.text(`Location: ${values.location}`, 20, 90);
 
+    doc.setFontSize(14);
+    doc.text(`Subtotal: ₹${subtotal.toFixed(2)}`, 20, 110);
+    doc.text(`GST (18%): ₹${gstAmount.toFixed(2)}`, 20, 120);
+    
     doc.setFontSize(16);
-    doc.text(`Estimated Cost: ₹${estimatedCost.toFixed(2)}`, 20, 110);
+    doc.text(`Total Cost Estimate: ₹${totalCost.toFixed(2)}`, 20, 130);
 
     doc.save('booking-estimate.pdf');
   };
@@ -124,8 +137,11 @@ export function BookingForm() {
         generatorType: values.generatorTypes.join(', '), // for compatibility with history display
         userId: user.uid,
         userEmail: user.email,
+        userName: user.displayName || 'N/A',
         status: 'Pending',
-        estimatedCost: estimatedCost,
+        subtotal: subtotal,
+        gstAmount: gstAmount,
+        estimatedCost: totalCost,
         createdAt: new Date(),
       });
       toast({
@@ -187,7 +203,7 @@ export function BookingForm() {
                                     />
                                     </FormControl>
                                     <FormLabel className="font-normal">
-                                        {type} (₹{generatorPrices[type]}/day)
+                                        {type} (₹{generatorPrices[type]}/hour)
                                     </FormLabel>
                                 </FormItem>
                                 )
@@ -299,12 +315,21 @@ export function BookingForm() {
             <div>
               <Card className="bg-muted/50">
                 <CardHeader>
-                  <CardTitle className="text-lg">Dynamic Cost Estimate</CardTitle>
+                  <CardTitle className="text-lg">Cost Estimate</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Estimated Total:</span>
-                    <span className="text-2xl font-bold">₹{estimatedCost.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span className="font-medium">₹{subtotal.toFixed(2)}</span>
+                  </div>
+                   <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">GST (18%):</span>
+                    <span className="font-medium">₹{gstAmount.toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Cost Estimate:</span>
+                    <span className="text-2xl font-bold">₹{totalCost.toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -326,5 +351,3 @@ export function BookingForm() {
     </Card>
   );
 }
-
-    
