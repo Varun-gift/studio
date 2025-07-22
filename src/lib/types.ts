@@ -12,6 +12,7 @@ export interface User {
   vehicleNumber?: string;
   electricianName?: string;
   electricianContact?: string;
+  fcmToken?: string;
 }
 
 export interface Generator {

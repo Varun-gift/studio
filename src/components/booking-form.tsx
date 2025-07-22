@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2, Download, Clock, MapPin, CalendarDays } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import Image from 'next/image';
 
@@ -24,6 +24,7 @@ import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { RadioCard } from './ui/radio-card';
+import { sendFCMNotification } from '@/app/actions';
 
 const generatorPrices: { [key: string]: number } = {
   'Cummins': 250,
@@ -134,7 +135,7 @@ export function BookingForm() {
     }
     setLoading(true);
     try {
-      const bookingDocRef = await addDoc(collection(db, 'bookings'), {
+      await addDoc(collection(db, 'bookings'), {
         ...values,
         userId: user.uid,
         userEmail: user.email,
@@ -146,14 +147,18 @@ export function BookingForm() {
         createdAt: new Date(),
       });
       
-      // Create a notification for the new booking
-      const notifsRef = collection(db, 'notifications');
-      await addDoc(notifsRef, {
-        bookingId: bookingDocRef.id,
-        userId: user.uid, // You might want a specific admin ID here
-        message: `${name || 'A user'} has submitted a new booking request.`,
-        timestamp: serverTimestamp(),
-        read: false,
+      // Notify admins about the new booking
+      const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
+      const adminSnapshot = await getDocs(adminsQuery);
+      adminSnapshot.forEach(adminDoc => {
+          const admin = adminDoc.data();
+          if (admin.fcmToken) {
+              sendFCMNotification(
+                  admin.fcmToken,
+                  'New Booking Request',
+                  `${name || 'A user'} has submitted a new booking for a ${values.generatorType}.`
+              );
+          }
       });
 
       toast({

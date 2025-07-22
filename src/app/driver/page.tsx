@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, getDocs, QuerySnapshot } from 'firebase/firestore';
 import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import { getStatusVariant } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Loader2, LogOut, Phone, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { sendFCMNotification } from '@/app/actions';
 
 export default function DriverDashboard() {
   const { user, loading, role, name } = useAuth();
@@ -68,6 +69,21 @@ export default function DriverDashboard() {
     try {
         await updateDoc(bookingRef, { status: newStatus });
         toast({ title: "Success", description: `Booking status updated to ${newStatus}` });
+        
+        // Notify admins
+        const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
+        const adminSnapshot = await getDocs(adminsQuery);
+        adminSnapshot.forEach(adminDoc => {
+            const admin = adminDoc.data();
+            if (admin.fcmToken) {
+                sendFCMNotification(
+                    admin.fcmToken,
+                    `Booking ${newStatus}`,
+                    `Driver ${name} has marked a booking as ${newStatus}.`
+                );
+            }
+        });
+
     } catch(error) {
         console.error("Error updating status: ", error);
         toast({ title: "Error", description: "Could not update booking status.", variant: "destructive"});
