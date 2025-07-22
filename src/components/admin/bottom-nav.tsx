@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Home, Calendar, Mail, User } from 'lucide-react';
+import { Home, Calendar, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBookings } from '@/hooks/use-bookings';
 
@@ -18,7 +18,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
-    { name: 'notifications', icon: Mail, label: 'Notifications', count: pendingCount },
+    { name: 'notifications', icon: Bell, label: 'Notifications', count: pendingCount },
     { name: 'profile', icon: User, label: 'Profile' },
   ];
 
@@ -36,10 +36,12 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                     isActive ? 'text-primary' : 'text-muted-foreground'
                     )}
                 >
-                    <div className="relative">
+                    <div className="relative p-1">
                         <item.icon className="h-6 w-6" />
                         {item.count && item.count > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-background" />
+                            <span className="absolute -top-0 -right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white ring-2 ring-background">
+                                {item.count > 9 ? '9+' : item.count}
+                            </span>
                         )}
                     </div>
                     <span>{item.label}</span>
