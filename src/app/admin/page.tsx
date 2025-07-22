@@ -25,19 +25,12 @@ import { BookingsView } from '@/components/admin/bookings-view';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = React.useState('home');
-  const [activeInnerTab, setActiveInnerTab] = React.useState<string | undefined>(undefined);
   const { name, photoURL } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
-  };
-  
-  const handleSetActiveTab = (tab: string) => {
-    setActiveTab(tab);
-    // When the main tab changes, close any open inner tabs on the dashboard
-    setActiveInnerTab(undefined);
   };
 
   const navItems = [
@@ -51,7 +44,7 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <AdminDashboard activeInnerTab={activeInnerTab} setActiveInnerTab={setActiveInnerTab} />;
+        return <AdminDashboard />;
       case 'bookings':
          return (
              <Card>
@@ -73,7 +66,7 @@ export default function AdminPage() {
       case 'profile':
         return <ProfileView />;
       default:
-        return <AdminDashboard activeInnerTab={activeInnerTab} setActiveInnerTab={setActiveInnerTab} />;
+        return <AdminDashboard />;
     }
   };
 
@@ -81,7 +74,7 @@ export default function AdminPage() {
      <div className="flex min-h-screen w-full bg-muted/40">
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={handleSetActiveTab}
+        setActiveTab={setActiveTab}
         navItems={navItems}
       />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
@@ -105,7 +98,7 @@ export default function AdminPage() {
                       {navItems.map(item => (
                            <button
                             key={item.name}
-                            onClick={() => handleSetActiveTab(item.name)}
+                            onClick={() => setActiveTab(item.name)}
                             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                             >
                                 <item.icon className="h-5 w-5" />
@@ -134,7 +127,7 @@ export default function AdminPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={() => handleSetActiveTab('profile')}>Profile</DropdownMenuItem>
+               <DropdownMenuItem onClick={() => setActiveTab('profile')}>Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -148,7 +141,7 @@ export default function AdminPage() {
         </main>
       </div>
        <div className="md:hidden">
-         <BottomNav activeTab={activeTab} setActiveTab={handleSetActiveTab} />
+         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
        </div>
     </div>
   );

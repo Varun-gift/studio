@@ -7,37 +7,9 @@ import { BookingManager } from './booking-manager';
 import { DriverManager } from './driver-manager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface AdminDashboardProps {
-  activeInnerTab: string | undefined;
-  setActiveInnerTab: React.Dispatch<React.SetStateAction<string | undefined>>;
-}
-
-export function AdminDashboard({ activeInnerTab, setActiveInnerTab }: AdminDashboardProps) {
-
-  // This function allows toggling the tab off by clicking it again.
-  const handleValueChange = (value: string) => {
-    if (activeInnerTab === value) {
-      setActiveInnerTab(undefined);
-    } else {
-      setActiveInnerTab(value);
-    }
-  };
-  
+export function AdminDashboard() {
   return (
     <div className="space-y-4">
-       <Tabs value={activeInnerTab} onValueChange={handleValueChange} className="w-full">
-         <TabsList className="grid w-full grid-cols-2">
-           <TabsTrigger value="bookings">All Bookings</TabsTrigger>
-           <TabsTrigger value="users">Users & Drivers</TabsTrigger>
-         </TabsList>
-         <TabsContent value="bookings">
-           <BookingManager statusFilter={null} />
-         </TabsContent>
-         <TabsContent value="users">
-           <DriverManager />
-         </TabsContent>
-       </Tabs>
-
       <StatsCards onCardClick={() => { /* This can be adjusted if clicking stat cards should change tabs */ }} />
     </div>
   );
