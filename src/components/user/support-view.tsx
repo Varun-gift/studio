@@ -29,7 +29,7 @@ export function SupportView() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contact Support</CardTitle>
+        <CardTitle>Ashik Mobile Generators – Support Contacts</CardTitle>
         <CardDescription>
           Our team is here to help. Reach out to us via phone or email.
         </CardDescription>

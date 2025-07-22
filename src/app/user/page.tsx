@@ -95,8 +95,11 @@ export default function UserDashboard() {
     <div className="flex flex-col min-h-screen w-full bg-muted/40">
         <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-10">
           <div className="w-full flex-1 flex items-center gap-2 font-semibold">
-            <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
-             <span className="">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
+            <div className="flex flex-col items-center">
+                <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} />
+                <span className="text-xs font-bold">AMG</span>
+            </div>
+             <span className="ml-2">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
           </div>
             <Button onClick={handleLogout} variant="outline" size="sm" className="hidden md:flex">
                 <LogOut className="mr-2 h-4 w-4" />

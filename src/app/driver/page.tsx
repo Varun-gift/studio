@@ -14,6 +14,7 @@ import { getStatusVariant } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Loader2, LogOut, Phone, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 export default function DriverDashboard() {
   const { user, loading, role, name } = useAuth();
@@ -88,7 +89,11 @@ export default function DriverDashboard() {
     <div className="flex flex-col min-h-screen w-full bg-muted/40">
        <header className="sticky top-0 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-10">
           <div className="flex items-center gap-2 font-semibold">
-             <span className="">Welcome, {name ? name.split(' ')[0] : 'Driver'}</span>
+             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
+             <div className="flex flex-col">
+                <span className="text-xs font-bold">AMG</span>
+                <span className="text-sm">Welcome, {name ? name.split(' ')[0] : 'Driver'}</span>
+             </div>
           </div>
             <Button onClick={handleLogout} variant="outline" size="sm">
                 <LogOut className="mr-2 h-4 w-4" />
