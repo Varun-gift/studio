@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Home, Calendar, Bell, User } from 'lucide-react';
+import { Home, Calendar, Package, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBookings } from '@/hooks/use-bookings';
 
@@ -17,9 +17,9 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
 
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
+    { name: 'bookings', icon: Package, label: 'Bookings' },
+    { name: 'users', icon: User, label: 'Users' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
-    { name: 'notifications', icon: Bell, label: 'Notifications' },
-    { name: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
@@ -40,6 +40,11 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                     <span>{item.label}</span>
                     {isActive && (
                         <div className="absolute bottom-0 h-0.5 w-8 bg-primary rounded-full" />
+                    )}
+                     {item.name === 'bookings' && pendingCount > 0 && (
+                      <div className="absolute top-2 right-4 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
+                        {pendingCount}
+                      </div>
                     )}
                 </button>
             );

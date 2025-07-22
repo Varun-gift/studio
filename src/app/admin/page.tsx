@@ -12,7 +12,7 @@ import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, User as UserIcon, LogOut, Settings } from 'lucide-react';
+import { Home, Calendar, Bell, User as UserIcon, LogOut, Settings, Package } from 'lucide-react';
 import { DriverManager } from '@/components/admin/driver-manager';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNav } from '@/components/admin/bottom-nav';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
+import { BookingsView } from '@/components/admin/bookings-view';
 
 
 export default function AdminPage() {
@@ -34,9 +35,9 @@ export default function AdminPage() {
 
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
-    { name: 'bookings', icon: Calendar, label: 'Bookings' },
+    { name: 'bookings', icon: Package, label: 'Bookings' },
     { name: 'users', icon: UserIcon, label: 'Users' },
-    { name: 'notifications', icon: Bell, label: 'Notifications' },
+    { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
 
@@ -45,20 +46,11 @@ export default function AdminPage() {
       case 'home':
         return <AdminDashboard onCardClick={(tab) => setActiveTab(tab)} />;
       case 'bookings':
-        return <CalendarView />;
+        return <BookingsView />;
       case 'users':
         return <DriverManager />;
-      case 'notifications':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Notifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Notifications are not yet implemented.</p>
-            </CardContent>
-          </Card>
-        );
+      case 'calendar':
+        return <CalendarView />;
       case 'profile':
         return <ProfileView />;
       default:
