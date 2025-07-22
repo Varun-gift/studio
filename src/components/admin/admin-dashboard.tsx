@@ -2,12 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCards } from './stats-cards';
 import { BookingManager } from './booking-manager';
 import { DriverManager } from './driver-manager';
 import { Booking } from '@/lib/types';
-import { CalendarView } from './calendar-view';
 
 interface AdminDashboardProps {
   onCardClick: (tab: string) => void;

@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNav } from '@/components/admin/bottom-nav';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { PanelLeft } from 'lucide-react';
+
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = React.useState('home');
@@ -71,9 +74,38 @@ export default function AdminPage() {
       />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-          <div className="flex items-center gap-2 sm:hidden">
-              <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
-              <h1 className="text-lg font-semibold">AMG</h1>
+          <Sheet>
+              <SheetTrigger asChild>
+                  <Button size="icon" variant="outline" className="sm:hidden">
+                  <PanelLeft className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                  </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="sm:max-w-xs">
+                  <nav className="grid gap-6 text-lg font-medium">
+                      <Link
+                          href="#"
+                          className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                      >
+                          <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} className="h-5 w-5 transition-all group-hover:scale-110" />
+                          <span className="sr-only">AMG</span>
+                      </Link>
+                      {navItems.map(item => (
+                           <button
+                            key={item.name}
+                            onClick={() => setActiveTab(item.name)}
+                            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                            >
+                                <item.icon className="h-5 w-5" />
+                                {item.label}
+                            </button>
+                      ))}
+                  </nav>
+              </SheetContent>
+          </Sheet>
+          <div className="hidden items-center gap-2 sm:flex">
+             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
+             <h1 className="text-lg font-semibold">Ashik Mobile Generators</h1>
           </div>
           <div className="relative ml-auto flex-1 md:grow-0">
             {/* Can add search bar here later */}
