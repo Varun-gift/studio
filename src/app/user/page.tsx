@@ -11,13 +11,13 @@ import {
   LogOut,
   Loader2,
 } from 'lucide-react';
-import { AmgLogo } from '@/components/amg-logo';
 import { BottomNav } from '@/components/user/bottom-nav';
 import { ProfileView } from '@/components/admin/profile-view';
 import { RentalHistory } from '@/components/rental-history';
 import { BookingForm } from '@/components/booking-form';
 import { SupportView } from '@/components/user/support-view';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
 
 
 export default function UserDashboard() {
@@ -95,7 +95,7 @@ export default function UserDashboard() {
     <div className="flex flex-col min-h-screen w-full bg-muted/40">
         <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-10">
           <div className="w-full flex-1 flex items-center gap-2 font-semibold">
-             <AmgLogo className="h-8 w-8" />
+            <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
              <span className="">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
           </div>
             <Button onClick={handleLogout} variant="outline" size="sm" className="hidden md:flex">

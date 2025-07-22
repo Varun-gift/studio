@@ -14,9 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { AmgLogo } from '@/components/amg-logo';
 import { auth } from '@/lib/firebase';
 import { LogOut, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 
 export default function AdminLayout({
@@ -60,7 +60,7 @@ export default function AdminLayout({
     <div className="flex flex-col min-h-screen w-full">
         <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 z-10">
           <div className="w-full flex-1 flex items-center gap-2">
-             <AmgLogo className="h-8 w-8" />
+             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
              <h1 className="text-lg font-semibold md:text-2xl">
                 AMG
             </h1>
