@@ -12,22 +12,23 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onCardClick }: AdminDashboardProps) {
-  const [activeInnerTab, setActiveInnerTab] = React.useState<string | null>(null);
+  const [activeInnerTab, setActiveInnerTab] = React.useState<string | undefined>(undefined);
 
-  const handleTabClick = (value: string) => {
+  // This function allows toggling the tab off by clicking it again.
+  const handleValueChange = (value: string) => {
     if (activeInnerTab === value) {
-      setActiveInnerTab(null); // Deselect if clicked again
+      setActiveInnerTab(undefined);
     } else {
       setActiveInnerTab(value);
     }
   };
-
+  
   return (
     <div className="space-y-4">
-       <Tabs value={activeInnerTab || ''} onValueChange={setActiveInnerTab} className="w-full">
+       <Tabs value={activeInnerTab} onValueChange={handleValueChange} className="w-full">
          <TabsList className="grid w-full grid-cols-2">
-           <TabsTrigger value="bookings" onClick={() => handleTabClick('bookings')}>All Bookings</TabsTrigger>
-           <TabsTrigger value="users" onClick={() => handleTabClick('users')}>Users & Drivers</TabsTrigger>
+           <TabsTrigger value="bookings">All Bookings</TabsTrigger>
+           <TabsTrigger value="users">Users & Drivers</TabsTrigger>
          </TabsList>
          <TabsContent value="bookings">
            <BookingManager statusFilter={null} />
