@@ -18,28 +18,21 @@ import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DriverDashboard() {
-  const { user, loading, role, name } = useAuth();
+  const { user, loading, name } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-      } else if (role !== 'driver') {
-        if (role === 'admin') {
-          router.replace('/admin');
-        } else {
-          router.replace('/user');
-        }
-      }
+    if (!loading && !user) {
+      router.replace('/login');
     }
-  }, [user, loading, role, router]);
+  }, [user, loading, router]);
+
 
   useEffect(() => {
-    if (user && role === 'driver') {
+    if (user) {
       setBookingsLoading(true);
       const bookingsQuery = query(collection(db, 'bookings'), where('driverInfo.driverId', '==', user.uid));
       
@@ -58,7 +51,7 @@ export default function DriverDashboard() {
 
       return () => unsubscribe();
     }
-  }, [user, role]);
+  }, [user]);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -77,7 +70,7 @@ export default function DriverDashboard() {
   }
 
 
-  if (loading || !user || role !== 'driver') {
+  if (loading || !user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
