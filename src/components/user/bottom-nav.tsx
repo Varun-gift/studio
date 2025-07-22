@@ -29,7 +29,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                     key={item.name}
                     onClick={() => setActiveTab(item.name)}
                     className={cn(
-                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors relative',
+                        'flex flex-col items-center justify-center text-xs font-medium transition-colors relative',
                         isActive ? 'text-primary font-bold' : 'text-muted-foreground',
                         item.isCentral && '-mt-4'
                     )}
@@ -40,7 +40,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                     )}>
                         <item.icon className="h-6 w-6" />
                     </div>
-                    <span className={cn("relative", item.isCentral && "mt-1")}>{item.label}</span>
+                    <span className={cn("relative", item.isCentral ? "mt-1" : "-mt-1")}>{item.label}</span>
                 </button>
             );
         })}
