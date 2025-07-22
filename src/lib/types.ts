@@ -5,6 +5,8 @@ export interface User {
   email: string;
   role: 'admin' | 'driver' | 'user';
   createdAt: { seconds: number, nanoseconds: number } | Date;
+  photoURL?: string;
+  phone?: string;
 }
 
 export interface Generator {
@@ -31,8 +33,8 @@ export interface Booking {
   userId: string;
   userEmail: string;
   userName: string;
-  generatorType: string; // Keep as string for history, now comma-separated
-  generatorTypes?: string[]; // New field for multiple types
+  generatorType: string;
+  generatorTypes?: string[]; 
   kvaCategory: string;
   quantity: number;
   usageHours: number;
@@ -51,4 +53,13 @@ export interface Booking {
       startTime: Date;
       endTime: Date;
   }[];
+}
+
+export interface Notification {
+  id: string;
+  bookingId: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  userId: string;
 }

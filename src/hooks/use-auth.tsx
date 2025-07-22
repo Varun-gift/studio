@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   role: string | null;
   name: string | null;
+  photoURL: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   role: null,
   name: null,
+  photoURL: null,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -25,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -35,14 +38,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = userDoc.data();
           setRole(userData.role);
           setName(userData.name);
+          setPhotoURL(userData.photoURL || user.photoURL);
         } else {
           setRole('user'); // Default role
           setName(user.displayName);
+          setPhotoURL(user.photoURL);
         }
       } else {
         setUser(null);
         setRole(null);
         setName(null);
+        setPhotoURL(null);
       }
       setLoading(false);
     });
@@ -51,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, name }}>
+    <AuthContext.Provider value={{ user, loading, role, name, photoURL }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,30 +1,37 @@
 
 'use client';
 
+import * as React from 'react';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
+import { BottomNav } from '@/components/admin/bottom-nav';
+import { CalendarView } from '@/components/admin/calendar-view';
+import { NotificationsView } from '@/components/admin/notifications-view';
+import { ProfileView } from '@/components/admin/profile-view';
 
 export default function AdminPage() {
-  // The authentication check has been temporarily removed to allow direct access
-  // to the admin dashboard for development.
-  //
-  // To re-enable it, you can restore the following code:
-  //
-  // import { useEffect } from 'react';
-  // import { useRouter } from 'next/navigation';
-  // import { useAuth } from '@/hooks/use-auth';
-  //
-  // const { user, loading, role } = useAuth();
-  // const router = useRouter();
-  //
-  // useEffect(() => {
-  //   if (!loading && (!user || role !== 'admin')) {
-  //     router.replace('/login');
-  //   }
-  // }, [user, loading, role, router]);
-  //
-  // if (loading || !user || role !== 'admin') {
-  //   return <div>Loading...</div>; // Or a proper loading spinner
-  // }
+  const [activeTab, setActiveTab] = React.useState('home');
 
-  return <AdminDashboard />;
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return <AdminDashboard />;
+      case 'calendar':
+        return <CalendarView />;
+      case 'notifications':
+        return <NotificationsView />;
+      case 'profile':
+        return <ProfileView />;
+      default:
+        return <AdminDashboard />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto">
+        {renderContent()}
+      </div>
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+    </div>
+  );
 }

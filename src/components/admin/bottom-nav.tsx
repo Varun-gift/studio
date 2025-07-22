@@ -1,0 +1,51 @@
+
+'use client';
+
+import * as React from 'react';
+import { Home, Calendar, Bell, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useBookings } from '@/hooks/use-bookings';
+
+interface BottomNavProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
+    const { bookings } = useBookings({ status: 'Pending' });
+    const pendingCount = bookings.length;
+
+  const navItems = [
+    { name: 'home', icon: Home, label: 'Home' },
+    { name: 'calendar', icon: Calendar, label: 'Calendar' },
+    { name: 'notifications', icon: Bell, label: 'Notifications', count: pendingCount },
+    { name: 'profile', icon: User, label: 'Profile' },
+  ];
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 border-t bg-background md:hidden">
+      <div className="grid grid-cols-4 h-16">
+        {navItems.map((item) => (
+          <button
+            key={item.name}
+            onClick={() => setActiveTab(item.name)}
+            className={cn(
+              'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+              activeTab === item.name ? 'text-primary' : 'text-muted-foreground'
+            )}
+          >
+            <div className="relative">
+              <item.icon className="h-6 w-6" />
+              {item.count && item.count > 0 && (
+                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                    {item.count}
+                </span>
+              )}
+            </div>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
