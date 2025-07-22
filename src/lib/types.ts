@@ -20,14 +20,24 @@ export interface Rental {
 }
 
 export interface Booking {
-  id?: string;
+  id: string;
   userId: string;
   userEmail: string;
   generatorType: string;
   kvaCategory: string;
+  quantity: number;
   usageHours: number;
+  location: string;
   bookingDate: Date;
-  status: 'Pending' | 'Confirmed' | 'Active' | 'Completed' | 'Cancelled';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   estimatedCost: number;
-  createdAt: Date;
+  createdAt: { seconds: number, nanoseconds: number } | Date;
+  driverInfo?: {
+      name: string;
+      contact: string;
+  };
+  timerLogs?: {
+      startTime: Date;
+      endTime: Date;
+  }[];
 }
