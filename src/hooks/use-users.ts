@@ -2,18 +2,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
 
-export function useUsers() {
+interface UseUsersProps {
+  role?: 'admin' | 'driver' | 'user';
+}
+
+export function useUsers({ role }: UseUsersProps = {}) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, orderBy('createdAt', 'desc'));
+    let q;
+
+    if (role) {
+      q = query(usersRef, where('role', '==', role), orderBy('createdAt', 'desc'));
+    } else {
+      q = query(usersRef, orderBy('createdAt', 'desc'));
+    }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const allUsers: User[] = [];
@@ -28,7 +38,7 @@ export function useUsers() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [role]);
 
   return { users, loading };
 }

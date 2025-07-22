@@ -108,13 +108,18 @@ export function DriverManager() {
                       onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                     >
                       <SelectTrigger className="w-[180px]">
-                        <Badge variant={getRoleVariant(user.role) as any} className="capitalize mr-2">{user.role}</Badge>
                          <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="driver">Driver</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="user">
+                            <Badge variant={getRoleVariant('user') as any} className="capitalize w-full justify-center">User</Badge>
+                        </SelectItem>
+                        <SelectItem value="driver">
+                            <Badge variant={getRoleVariant('driver') as any} className="capitalize w-full justify-center">Driver</Badge>
+                        </SelectItem>
+                        <SelectItem value="admin">
+                            <Badge variant={getRoleVariant('admin') as any} className="capitalize w-full justify-center">Admin</Badge>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
