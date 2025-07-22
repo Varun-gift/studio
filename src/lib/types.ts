@@ -7,6 +7,8 @@ export interface User {
   createdAt: { seconds: number, nanoseconds: number } | Date;
   photoURL?: string;
   phone?: string;
+  company?: string;
+  address?: string;
 }
 
 export interface Generator {

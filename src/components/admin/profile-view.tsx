@@ -30,18 +30,21 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Textarea } from '../ui/textarea';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email(),
   phone: z.string().optional(),
   photoURL: z.string().url().optional().or(z.literal('')),
+  company: z.string().optional(),
+  address: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export function ProfileView() {
-  const { user, name, photoURL, role } = useAuth();
+  const { user, name, photoURL, role, company, address } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -49,23 +52,37 @@ export function ProfileView() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: name || '',
-      email: user?.email || '',
+      name: '',
+      email: '',
       phone: '',
-      photoURL: photoURL || '',
+      photoURL: '',
+      company: '',
+      address: '',
     },
-    disabled: !isEditing, // Disable form when not in editing mode
   });
   
   React.useEffect(() => {
-      if(user && name) {
+      if(user) {
           form.reset({
-              name: name,
+              name: name || '',
               email: user.email || '',
+              phone: (user as any).phone || '',
               photoURL: photoURL || '',
+              company: company || '',
+              address: address || '',
           });
       }
-  }, [user, name, photoURL, form, isEditing]);
+  }, [user, name, photoURL, company, address, form]);
+  
+  React.useEffect(() => {
+    if (isEditing) {
+        form.control._options.disabled = false;
+    } else {
+        form.control._options.disabled = true;
+    }
+    form.reset(form.getValues()); // re-render form with new disabled state
+  }, [isEditing, form]);
+
 
   async function onSubmit(values: FormValues) {
     if (!user) return;
@@ -77,12 +94,14 @@ export function ProfileView() {
         name: values.name,
         phone: values.phone,
         photoURL: values.photoURL,
+        company: values.company,
+        address: values.address,
       });
       toast({
         title: 'Profile Updated',
         description: 'Your profile information has been successfully updated.',
       });
-      setIsEditing(false); // Exit editing mode on success
+      setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -94,11 +113,6 @@ export function ProfileView() {
       setLoading(false);
     }
   }
-
-  const handleEditClick = () => {
-    setIsEditing(true);
-    form.trigger(); // Re-enable form fields
-  };
 
   return (
     <div className="space-y-4">
@@ -170,6 +184,32 @@ export function ProfileView() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company / Organisation</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Acme Inc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="123 Main St, Anytown, USA" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
             <CardFooter>
               {isEditing ? (
@@ -182,7 +222,7 @@ export function ProfileView() {
                       Save Changes
                   </Button>
               ) : (
-                  <Button type="button" onClick={handleEditClick}>
+                  <Button type="button" onClick={() => setIsEditing(true)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit Profile
                   </Button>

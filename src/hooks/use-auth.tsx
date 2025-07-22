@@ -12,6 +12,8 @@ interface AuthContextType {
   role: string | null;
   name: string | null;
   photoURL: string | null;
+  company: string | null;
+  address: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +22,8 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   name: null,
   photoURL: null,
+  company: null,
+  address: null,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -28,6 +32,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [company, setCompany] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -39,16 +45,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setRole(userData.role);
           setName(userData.name);
           setPhotoURL(userData.photoURL || user.photoURL);
+          setCompany(userData.company);
+          setAddress(userData.address);
+          // This is a bit of a hack to add properties to the user object
+          // A better approach would be to not spread the user object from firebase
+          // but to create a new user object with the properties we need.
+          (user as any).phone = userData.phone;
         } else {
           setRole('user'); // Default role
           setName(user.displayName);
           setPhotoURL(user.photoURL);
+          setCompany(null);
+          setAddress(null);
         }
       } else {
         setUser(null);
         setRole(null);
         setName(null);
         setPhotoURL(null);
+        setCompany(null);
+        setAddress(null);
       }
       setLoading(false);
     });
@@ -57,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, name, photoURL }}>
+    <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address }}>
       {children}
     </AuthContext.Provider>
   );
