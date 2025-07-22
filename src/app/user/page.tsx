@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import {
   MessageSquare,
   Wrench,
   LogOut,
-  Menu
+  Menu,
+  Bell,
 } from 'lucide-react';
 import {
   Sheet,
@@ -147,18 +149,17 @@ export default function UserDashboard() {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-             <h1 className="text-lg font-semibold">
-                {name ? `Welcome back, ${name}` : 'Welcome'}
+             <h1 className="text-lg font-semibold md:text-2xl">
+                Welcome, {name ? name.split(' ')[0] : 'User'}
             </h1>
           </div>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <Bell className="h-4 w-4" />
+            <span className="sr-only">Toggle notifications</span>
+          </Button>
         </header>
-        <Dashboard activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Dashboard activeTab={activeTab} setActiveTab={setActiveTab} name={name} />
       </div>
     </div>
   );
-}
-
-// Helper component to avoid repetition
-function Link(props: React.ComponentProps<'a'>) {
-    return <a {...props} />;
 }

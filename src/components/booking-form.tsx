@@ -6,24 +6,24 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { addDays, format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2, Download } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Download, Clock, MapPin, CalendarDays } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import jsPDF from 'jspdf';
+import Image from 'next/image';
 
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
-import { Checkbox } from './ui/checkbox';
 import { Separator } from './ui/separator';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { RadioCard } from './ui/radio-card';
 
 const generatorPrices: { [key: string]: number } = {
   'Cummins': 250,
@@ -31,14 +31,19 @@ const generatorPrices: { [key: string]: number } = {
   'Ashoka Leyland': 320,
   'Kirloskar': 350
 };
-const generatorTypes = Object.keys(generatorPrices);
+
+const generatorTypes = [
+    { name: 'Cummins', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
+    { name: 'Tata', icon: 'https://placehold.co/40x40.png', hint: 'engine industrial' },
+    { name: 'Ashoka Leyland', icon: 'https://placehold.co/40x40.png', hint: 'truck generator' },
+    { name: 'Kirloskar', icon: 'https://placehold.co/40x40.png', hint: 'industrial engine' },
+];
+
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
 const GST_RATE = 0.18;
 
 const formSchema = z.object({
-  generatorTypes: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one generator type.",
-  }),
+  generatorType: z.string().min(1, 'Please select a generator type.'),
   kvaCategory: z.string().min(1, 'Please select a KVA category.'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
   usageHours: z.coerce.number().min(1, 'Usage hours must be at least 1.'),
@@ -61,8 +66,8 @@ export function BookingForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generatorTypes: [],
-      kvaCategory: '',
+      generatorType: 'Cummins',
+      kvaCategory: '62',
       quantity: 1,
       usageHours: 8,
       bookingDate: addDays(new Date(), 7),
@@ -71,15 +76,12 @@ export function BookingForm() {
   });
 
   const { watch } = form;
-  const watchedGeneratorTypes = watch('generatorTypes');
+  const watchedGeneratorType = watch('generatorType');
   const watchedHours = watch('usageHours');
   const watchedQuantity = watch('quantity');
 
   useEffect(() => {
-    const hourlyCost = watchedGeneratorTypes.reduce((acc, type) => {
-        const price = generatorPrices[type] || 0;
-        return acc + price;
-    }, 0);
+    const hourlyCost = generatorPrices[watchedGeneratorType] || 0;
     
     const hours = parseFloat(watchedHours as any);
     const quantity = parseInt(watchedQuantity as any);
@@ -97,7 +99,7 @@ export function BookingForm() {
       setGstAmount(0);
       setTotalCost(0);
     }
-  }, [watchedGeneratorTypes, watchedHours, watchedQuantity]);
+  }, [watchedGeneratorType, watchedHours, watchedQuantity]);
 
 
   const handlePdfDownload = () => {
@@ -108,9 +110,9 @@ export function BookingForm() {
     doc.text('Booking Estimate', 20, 20);
     
     doc.setFontSize(12);
-    doc.text(`Generator Types: ${values.generatorTypes.join(', ')}`, 20, 40);
+    doc.text(`Generator Type: ${values.generatorType}`, 20, 40);
     doc.text(`KVA Category: ${values.kvaCategory} KVA`, 20, 50);
-    doc.text(`Quantity (per type): ${values.quantity}`, 20, 60);
+    doc.text(`Quantity: ${values.quantity}`, 20, 60);
     doc.text(`Usage Hours (total): ${values.usageHours} hours`, 20, 70);
     doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 80);
     doc.text(`Location: ${values.location}`, 20, 90);
@@ -120,7 +122,7 @@ export function BookingForm() {
     doc.text(`GST (18%): ₹${gstAmount.toFixed(2)}`, 20, 120);
     
     doc.setFontSize(16);
-    doc.text(`Total Cost Estimate: ₹${totalCost.toFixed(2)}`, 20, 130);
+    doc.text(`Total Cost: ₹${totalCost.toFixed(2)}`, 20, 130);
 
     doc.save('booking-estimate.pdf');
   };
@@ -134,7 +136,6 @@ export function BookingForm() {
     try {
       await addDoc(collection(db, 'bookings'), {
         ...values,
-        generatorType: values.generatorTypes.join(', '), // for compatibility with history display
         userId: user.uid,
         userEmail: user.email,
         userName: user.displayName || 'N/A',
@@ -162,92 +163,95 @@ export function BookingForm() {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Book a Generator</CardTitle>
-        <CardDescription>Select your generator(s) and enter booking details below.</CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Generator Types</h2>
+            <FormField
+                control={form.control}
+                name="generatorType"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                            >
+                                {generatorTypes.map((type) => (
+                                    <FormItem key={type.name}>
+                                        <FormControl>
+                                            <RadioCard value={type.name} className="p-4">
+                                                <div className="flex items-center gap-4">
+                                                    <Image src={type.icon} alt={type.name} width={40} height={40} data-ai-hint={type.hint}/>
+                                                    <div>
+                                                        <p className="font-semibold">{type.name}</p>
+                                                        <p className="text-sm text-muted-foreground">₹{generatorPrices[type.name]}/hr</p>
+                                                    </div>
+                                                </div>
+                                            </RadioCard>
+                                        </FormControl>
+                                    </FormItem>
+                                ))}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+
+        <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Category (KVA)</h2>
+            <FormField
+                control={form.control}
+                name="kvaCategory"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-wrap gap-2"
+                            >
+                                {kvaCategories.map((kva) => (
+                                    <FormItem key={kva}>
+                                        <FormControl>
+                                            <Button 
+                                                type="button"
+                                                variant={field.value === kva ? "default" : "outline"}
+                                                onClick={() => field.onChange(kva)}
+                                                className="rounded-full"
+                                            >
+                                                {field.value === kva && <div className="w-2 h-2 rounded-full bg-primary-foreground mr-2"/>}
+                                                {kva} KVA
+                                            </Button>
+                                        </FormControl>
+                                    </FormItem>
+                                ))}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+        
+        <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Booking Details Input</h2>
             <div className="grid md:grid-cols-2 gap-6">
                 <FormField
-                  control={form.control}
-                  name="generatorTypes"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Generator Types</FormLabel>
-                        {generatorTypes.map((type) => (
-                            <FormField
-                            key={type}
-                            control={form.control}
-                            name="generatorTypes"
-                            render={({ field }) => {
-                                return (
-                                <FormItem
-                                    key={type}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                    <FormControl>
-                                    <Checkbox
-                                        checked={field.value?.includes(type)}
-                                        onCheckedChange={(checked) => {
-                                        return checked
-                                            ? field.onChange([...(field.value || []), type])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                (value) => value !== type
-                                                )
-                                            )
-                                        }}
-                                    />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                        {type} (₹{generatorPrices[type]}/hour)
-                                    </FormLabel>
-                                </FormItem>
-                                )
-                            }}
-                            />
-                        ))}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="kvaCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category (KVA)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Quantity</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select KVA" />
-                          </SelectTrigger>
+                            <Input type="number" placeholder="e.g., 1" {...field} min="1"/>
                         </FormControl>
-                        <SelectContent>
-                          {kvaCategories.map((kva) => (
-                            <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantity (per type)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 1" {...field} min="1"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
                 <FormField
                   control={form.control}
@@ -255,99 +259,96 @@ export function BookingForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Total Usage Hours</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 24" {...field} min="1"/>
-                      </FormControl>
+                        <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                                <Input type="number" placeholder="e.g., 24" {...field} min="1" className="pl-10"/>
+                            </FormControl>
+                        </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <Controller
-                  control={form.control}
-                  name="bookingDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Pre-booking Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < addDays(new Date(), 7) || date < new Date('1900-01-01')}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                    control={form.control}
+                    name="bookingDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Pre-booking Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'pl-3 text-left font-normal justify-start',
+                                    !field.value && 'text-muted-foreground'
+                                )}
+                                >
+                                <CalendarDays className="mr-2 h-4 w-4" />
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < addDays(new Date(), 7) || date < new Date('1900-01-01')}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
-                 <FormField
+                <FormField
                   control={form.control}
                   name="location"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Delivery Location</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter the full delivery address" {...field} />
-                      </FormControl>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                            <Textarea placeholder="Enter the full delivery address" {...field} className="pl-10"/>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
             </div>
-
-            <div>
-              <Card className="bg-muted/50">
-                <CardHeader>
-                  <CardTitle className="text-lg">Cost Estimate</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span className="font-medium">₹{subtotal.toFixed(2)}</span>
-                  </div>
-                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">GST (18%):</span>
-                    <span className="font-medium">₹{gstAmount.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Cost Estimate:</span>
-                    <span className="text-2xl font-bold">₹{totalCost.toFixed(2)}</span>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                    <Button type="button" variant="outline" onClick={handlePdfDownload} className="w-full" disabled={form.getValues('generatorTypes').length === 0}>
-                        <Download className="mr-2"/>
+        </div>
+        
+        <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Cost Estimate</h2>
+            <div className="p-4 border rounded-lg space-y-4 bg-muted/20">
+                <div className="flex justify-between items-center text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span className="font-medium text-foreground">₹{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                    <span>GST (18%)</span>
+                    <span className="font-medium text-foreground">₹{gstAmount.toFixed(2)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                    <Button type="button" variant="outline" onClick={handlePdfDownload} disabled={!form.formState.isValid}>
+                        <Download className="mr-2 h-4 w-4"/>
                         Download Estimate as PDF
                     </Button>
-                </CardFooter>
-              </Card>
+                    <span className="text-2xl font-bold">₹{totalCost.toFixed(2)}</span>
+                </div>
             </div>
-          </CardContent>
-          <CardFooter className="border-t pt-6">
-            <Button type="submit" disabled={loading} className="w-full md:w-auto">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Booking Request'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+        </div>
+
+        <Button type="submit" disabled={loading} className="w-full text-lg py-6">
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Booking Request'}
+        </Button>
+      </form>
+    </Form>
   );
 }
