@@ -20,7 +20,7 @@ export function Dashboard({ activeTab, setActiveTab, name }: DashboardProps) {
           <>
             <div className="mb-6">
               <h1 className="text-3xl font-bold">Book a Generator</h1>
-              <p className="text-muted-foreground">Book a generator atiumed fon generales.</p>
+              <p className="text-muted-foreground">Select your generator and book your rental.</p>
             </div>
             <BookingForm />
           </>
