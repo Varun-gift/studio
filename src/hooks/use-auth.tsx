@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
+import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -44,52 +44,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [electricianName, setElectricianName] = useState<string | null>(null);
   const [electricianContact, setElectricianContact] = useState<string | null>(null);
 
+  const resetState = useCallback(() => {
+    setUser(null);
+    setRole(null);
+    setName(null);
+    setPhotoURL(null);
+    setCompany(null);
+    setAddress(null);
+    setVehicleNumber(null);
+    setElectricianName(null);
+    setElectricianContact(null);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
         const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
+        
+        // Use onSnapshot for real-time updates to user data (like role changes)
+        const docUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setRole(userData.role);
+            setName(userData.name);
+            setPhotoURL(userData.photoURL || user.photoURL);
+            setCompany(userData.company);
+            setAddress(userData.address);
+            setVehicleNumber(userData.vehicleNumber);
+            setElectricianName(userData.electricianName);
+            setElectricianContact(userData.electricianContact);
+            
+            (user as any).phone = userData.phone;
+          } else {
+            // This case might happen if a user is created in Auth but not in Firestore yet.
+            // Or if the document is deleted.
+            setRole('user'); // Fallback to default role
+            setName(user.displayName);
+            setPhotoURL(user.photoURL);
+          }
+          setLoading(false);
+        }, (error) => {
+            console.error("Error fetching user document:", error);
+            resetState();
+        });
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setRole(userData.role);
-          setName(userData.name);
-          setPhotoURL(userData.photoURL || user.photoURL);
-          setCompany(userData.company);
-          setAddress(userData.address);
-          setVehicleNumber(userData.vehicleNumber);
-          setElectricianName(userData.electricianName);
-          setElectricianContact(userData.electricianContact);
-          
-          (user as any).phone = userData.phone;
-
-        } else {
-          setRole('user'); // Default role
-          setName(user.displayName);
-          setPhotoURL(user.photoURL);
-          setCompany(null);
-          setAddress(null);
-          setVehicleNumber(null);
-          setElectricianName(null);
-          setElectricianContact(null);
-        }
+        // Return a cleanup function for the document snapshot listener
+        return () => docUnsubscribe();
       } else {
-        setUser(null);
-        setRole(null);
-        setName(null);
-        setPhotoURL(null);
-        setCompany(null);
-        setAddress(null);
-        setVehicleNumber(null);
-        setElectricianName(null);
-        setElectricianContact(null);
+        resetState();
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    // Return a cleanup function for the auth state listener
+    return () => authUnsubscribe();
+  }, [resetState]);
 
   return (
     <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact }}>
