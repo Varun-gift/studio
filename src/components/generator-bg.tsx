@@ -10,7 +10,7 @@ export function GeneratorBg({ className, ...props }: React.SVGProps<SVGSVGElemen
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 84 36"
       fill="none"
-      className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90px] h-[40px] text-primary/10", className)}
+      className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70px] h-[30px] text-primary/20", className)}
       {...props}
     >
         <path d="M0 8C0 3.58172 3.58172 0 8 0H60V28H0V8Z" fill="currentColor"/>
