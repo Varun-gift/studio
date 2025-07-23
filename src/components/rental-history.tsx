@@ -24,45 +24,54 @@ export function RentalHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-    const bookingsRef = collection(db, 'bookings');
-    const q = query(bookingsRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const bookingsQuery = query(
+      collection(db, 'bookings'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const userBookingsPromises = querySnapshot.docs.map(async (doc) => {
-            const data = doc.data();
-            const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
-            const timersSnapshot = await getDocs(timersCollectionRef);
-            const timers = timersSnapshot.docs.map(d => ({
-                id: d.id,
-                ...d.data(),
-                startTime: (d.data().startTime as any).toDate(),
-                endTime: d.data().endTime ? (d.data().endTime as any).toDate() : undefined,
-            } as TimerLog));
-
+    const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
+      const bookingsData = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          
+          const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
+          const timersSnapshot = await getDocs(timersCollectionRef);
+          
+          const timers = timersSnapshot.docs.map(timerDoc => {
+            const timerData = timerDoc.data();
             return {
-                id: doc.id,
-                ...data,
-                bookingDate: (data.bookingDate as any).toDate(),
-                createdAt: (data.createdAt as any).toDate(),
-                timers,
-            } as Booking;
-        });
+              id: timerDoc.id,
+              ...timerData,
+              startTime: (timerData.startTime as any)?.toDate(),
+              endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
+            } as TimerLog;
+          });
 
-        Promise.all(userBookingsPromises).then(userBookings => {
-            setBookings(userBookings);
-            setLoading(false);
-        });
-
+          return {
+            id: doc.id,
+            ...data,
+            bookingDate: (data.bookingDate as any).toDate(),
+            createdAt: (data.createdAt as any).toDate(),
+            timers,
+          } as Booking;
+        })
+      );
+      setBookings(bookingsData);
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching bookings:", error);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user?.uid]);
   
   const formatDuration = (seconds: number) => {
     if (!seconds || seconds <= 0) return '0s';
@@ -179,8 +188,8 @@ export function RentalHistory() {
                                         {booking.timers?.map(timer => (
                                             <TableRow key={timer.id}>
                                                 <TableCell>{timer.generatorId}</TableCell>
-                                                <TableCell>{timer.status !== 'stopped' || (timer.duration || 0) > 0 ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
-                                                <TableCell>{timer.endTime && timer.status === 'stopped' ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
+                                                <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
+                                                <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
                                                 <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
                                             </TableRow>
                                         ))}
