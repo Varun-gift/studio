@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from './ui/skeleton';
-import { format, formatDistanceStrict } from 'date-fns';
+import { format } from 'date-fns';
 import { getStatusVariant } from '@/lib/utils';
 import { Truck, User, Phone, Timer } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
@@ -65,9 +65,15 @@ export function RentalHistory() {
   }, [user]);
   
   const formatDuration = (seconds: number) => {
-      return formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'hour' }) + ' ' + 
-      formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'minute' }).split(' ')[1] + ' ' +
-      formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'second' }).split(' ')[1];
+    if (!seconds || seconds <= 0) return '0s';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return [
+        hours > 0 ? `${hours}h` : '',
+        minutes > 0 ? `${minutes}m` : '',
+        secs > 0 ? `${secs}s` : '',
+    ].filter(Boolean).join(' ');
   }
 
   const renderSkeleton = () => (
@@ -173,7 +179,7 @@ export function RentalHistory() {
                                         {booking.timers?.map(timer => (
                                             <TableRow key={timer.id}>
                                                 <TableCell>{timer.generatorId}</TableCell>
-                                                <TableCell>{timer.status === 'running' ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
+                                                <TableCell>{timer.status !== 'stopped' || (timer.duration || 0) > 0 ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
                                                 <TableCell>{timer.endTime && timer.status === 'stopped' ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
                                                 <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
                                             </TableRow>
