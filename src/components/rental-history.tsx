@@ -2,18 +2,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Booking } from '@/lib/types';
+import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from './ui/skeleton';
-import { format } from 'date-fns';
+import { format, formatDistanceStrict } from 'date-fns';
 import { getStatusVariant } from '@/lib/utils';
-import { Truck, User, Phone } from 'lucide-react';
+import { Truck, User, Phone, Timer } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Button } from './ui/button';
+import { ChevronDown } from 'lucide-react';
 
 export function RentalHistory() {
   const { user } = useAuth();
@@ -28,19 +31,31 @@ export function RentalHistory() {
     const q = query(bookingsRef, where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const userBookings: Booking[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const booking: Booking = {
-          id: doc.id,
-          ...data,
-          bookingDate: (data.bookingDate as any).toDate(),
-          createdAt: (data.createdAt as any).toDate(),
-        } as Booking;
-        userBookings.push(booking);
-      });
-      setBookings(userBookings);
-      setLoading(false);
+        const userBookingsPromises = querySnapshot.docs.map(async (doc) => {
+            const data = doc.data();
+            const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
+            const timersSnapshot = await getDocs(timersCollectionRef);
+            const timers = timersSnapshot.docs.map(d => ({
+                id: d.id,
+                ...d.data(),
+                startTime: (d.data().startTime as any).toDate(),
+                endTime: d.data().endTime ? (d.data().endTime as any).toDate() : undefined,
+            } as TimerLog));
+
+            return {
+                id: doc.id,
+                ...data,
+                bookingDate: (data.bookingDate as any).toDate(),
+                createdAt: (data.createdAt as any).toDate(),
+                timers,
+            } as Booking;
+        });
+
+        Promise.all(userBookingsPromises).then(userBookings => {
+            setBookings(userBookings);
+            setLoading(false);
+        });
+
     }, (error) => {
       console.error("Error fetching bookings:", error);
       setLoading(false);
@@ -48,6 +63,12 @@ export function RentalHistory() {
 
     return () => unsubscribe();
   }, [user]);
+  
+  const formatDuration = (seconds: number) => {
+      return formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'hour' }) + ' ' + 
+      formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'minute' }).split(' ')[1] + ' ' +
+      formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'second' }).split(' ')[1];
+  }
 
   const renderSkeleton = () => (
     <TableRow>
@@ -77,7 +98,7 @@ export function RentalHistory() {
                 <TableHead>Status</TableHead>
                 <TableHead>Cost</TableHead>
                 <TableHead>Assignment</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead className='text-right'>Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,36 +114,78 @@ export function RentalHistory() {
                 </TableRow>
               ) : (
                 bookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium">
-                        <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
-                        <div className="text-xs text-muted-foreground">Qty: {booking.quantity}</div>
-                    </TableCell>
-                    <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
-                    </TableCell>
-                    <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
-                    <TableCell>
-                         {booking.driverInfo ? (
-                          <div className='flex flex-col gap-1'>
-                            <div className='flex items-center gap-2'>
-                              <Truck className='size-3 text-muted-foreground' />
-                              <span className='font-medium'>{booking.driverInfo.name}</span>
+                  <Collapsible asChild key={booking.id}>
+                    <>
+                    <TableRow>
+                        <TableCell className="font-medium">
+                            <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
+                            <div className="text-xs text-muted-foreground">Qty: {booking.quantity}</div>
+                        </TableCell>
+                        <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
+                        <TableCell>
+                        <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                        </TableCell>
+                        <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
+                        <TableCell>
+                            {booking.driverInfo ? (
+                            <div className='flex flex-col gap-1'>
+                                <div className='flex items-center gap-2'>
+                                <Truck className='size-3 text-muted-foreground' />
+                                <span className='font-medium'>{booking.driverInfo.name}</span>
+                                </div>
+                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                                <Phone className='size-3' />
+                                <span>{booking.driverInfo.contact}</span>
+                                </div>
+                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                                <User className='size-3' />
+                                <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
+                                </div>
                             </div>
-                             <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                              <Phone className='size-3' />
-                              <span>{booking.driverInfo.contact}</span>
-                            </div>
-                            <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                              <User className='size-3' />
-                              <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
-                            </div>
-                          </div>
-                          ) : 'Not Assigned'}
-                    </TableCell>
-                    <TableCell className="whitespace-normal max-w-[200px] truncate">{booking.location}</TableCell>
-                  </TableRow>
+                            ) : 'Not Assigned'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {booking.timers && booking.timers.length > 0 && (
+                            <CollapsibleTrigger asChild>
+                               <Button variant="ghost" size="sm">
+                                  <ChevronDown className="h-4 w-4" />
+                                  <span className="sr-only">Toggle Details</span>
+                               </Button>
+                            </CollapsibleTrigger>
+                          )}
+                        </TableCell>
+                    </TableRow>
+                     <CollapsibleContent asChild>
+                        <tr className="bg-muted/50">
+                            <TableCell colSpan={6}>
+                                <div className="p-4">
+                                <h4 className="font-semibold text-md mb-2 flex items-center gap-2"><Timer className='h-5 w-5' />Timer Logs</h4>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Generator ID</TableHead>
+                                            <TableHead>Start Time</TableHead>
+                                            <TableHead>End Time</TableHead>
+                                            <TableHead>Duration</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {booking.timers?.map(timer => (
+                                            <TableRow key={timer.id}>
+                                                <TableCell>{timer.generatorId}</TableCell>
+                                                <TableCell>{timer.status === 'running' ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
+                                                <TableCell>{timer.endTime && timer.status === 'stopped' ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
+                                                <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                </div>
+                            </TableCell>
+                        </tr>
+                     </CollapsibleContent>
+                    </>
+                  </Collapsible>
                 ))
               )}
             </TableBody>

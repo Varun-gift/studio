@@ -1,21 +1,36 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
-import type { Booking } from '@/lib/types';
+import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, serverTimestamp, getDocs, addDoc } from 'firebase/firestore';
+import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon } from 'lucide-react';
+import { format, formatDistanceToNowStrict } from 'date-fns';
+import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+function TimerDisplay({ startTime }: { startTime: Date }) {
+    const [elapsedTime, setElapsedTime] = useState('');
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setElapsedTime(formatDistanceToNowStrict(startTime, { addSuffix: false }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [startTime]);
+
+    return (
+        <span className="font-mono text-sm font-semibold">{elapsedTime}</span>
+    );
+}
 
 export default function DriverDashboard() {
   const { user, loading, name, role } = useAuth();
@@ -37,13 +52,29 @@ export default function DriverDashboard() {
       const bookingsQuery = query(collection(db, 'bookings'), where('driverInfo.driverId', '==', user.uid));
       
       const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
-        const assignedBookings = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          bookingDate: (doc.data().bookingDate as any).toDate(),
-        } as Booking));
-        setBookings(assignedBookings);
-        setBookingsLoading(false);
+        const assignedBookingsPromises = snapshot.docs.map(async (bookingDoc) => {
+          const bookingData = bookingDoc.data();
+          const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
+          const timersSnapshot = await getDocs(timersCollectionRef);
+          const timers = timersSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            startTime: (doc.data().startTime as any).toDate(),
+            endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : undefined,
+          } as TimerLog));
+          
+          return {
+            id: bookingDoc.id,
+            ...bookingData,
+            bookingDate: (bookingData.bookingDate as any).toDate(),
+            timers,
+          } as Booking;
+        });
+
+        Promise.all(assignedBookingsPromises).then(assignedBookings => {
+            setBookings(assignedBookings);
+            setBookingsLoading(false);
+        })
       }, (error) => {
         console.error("Error fetching driver bookings:", error);
         setBookingsLoading(false);
@@ -52,16 +83,34 @@ export default function DriverDashboard() {
       return () => unsubscribe();
     }
   }, [user?.uid]);
-
-  const handleLogout = async () => {
-    await auth.signOut();
-    router.push('/login');
-  };
   
   const handleStatusUpdate = async (bookingId: string, newStatus: Booking['status']) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     try {
-        await updateDoc(bookingRef, { status: newStatus });
+        if(newStatus === 'Active') {
+            const batch = writeBatch(db);
+            batch.update(bookingRef, { status: newStatus });
+            
+            const booking = bookings.find(b => b.id === bookingId);
+            if(booking && booking.quantity > 0 && (!booking.timers || booking.timers.length === 0)) {
+                const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
+                for (let i = 1; i <= booking.quantity; i++) {
+                    const generatorId = `${booking.generatorType.slice(0, 3).toUpperCase()}-${i}`;
+                    const timerDocRef = doc(timersCollectionRef);
+                     batch.set(timerDocRef, {
+                        generatorId,
+                        status: 'stopped',
+                        startTime: serverTimestamp(),
+                        endTime: serverTimestamp(),
+                    });
+                }
+            }
+             await batch.commit();
+
+        } else {
+             await updateDoc(bookingRef, { status: newStatus });
+        }
+       
         toast({ title: "Success", description: `Booking status updated to ${newStatus}` });
     } catch(error) {
         console.error("Error updating status: ", error);
@@ -69,8 +118,33 @@ export default function DriverDashboard() {
     }
   }
 
+  const handleTimerToggle = async (bookingId: string, timer: TimerLog) => {
+    const timerRef = doc(db, 'bookings', bookingId, 'timers', timer.id);
+    try {
+      if (timer.status === 'running') {
+        const endTime = new Date();
+        const duration = (endTime.getTime() - timer.startTime.getTime()) / 1000; // in seconds
+        await updateDoc(timerRef, { 
+            status: 'stopped',
+            endTime: endTime,
+            duration: duration,
+        });
+        toast({ title: 'Timer Stopped', description: `Timer for ${timer.generatorId} has been stopped.` });
+      } else {
+        await updateDoc(timerRef, { 
+            status: 'running',
+            startTime: new Date(),
+        });
+        toast({ title: 'Timer Started', description: `Timer for ${timer.generatorId} has started.` });
+      }
+    } catch (error) {
+      console.error('Error toggling timer:', error);
+      toast({ title: 'Error', description: 'Could not update timer state.', variant: 'destructive' });
+    }
+  };
 
-  if (loading || !user || role !== 'driver') {
+
+  if (loading || !user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -89,7 +163,7 @@ export default function DriverDashboard() {
                 <span className="text-sm">Welcome, {name ? name.split(' ')[0] : 'Driver'}</span>
              </div>
           </div>
-            <Button onClick={handleLogout} variant="outline" size="sm">
+            <Button onClick={async () => {await auth.signOut(); router.push('/login');}} variant="outline" size="sm">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
             </Button>
@@ -108,12 +182,12 @@ export default function DriverDashboard() {
                 <ScrollArea className="w-full">
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {bookings.map(booking => (
-                          <Card key={booking.id} className="min-w-[300px]">
+                          <Card key={booking.id} className="min-w-[300px] flex flex-col">
                               <CardHeader>
                                   <CardTitle className="truncate">{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
                                   <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
                               </CardHeader>
-                              <CardContent className="space-y-4">
+                              <CardContent className="space-y-4 flex-1">
                                   <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">Status</span>
                                       <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
@@ -132,6 +206,29 @@ export default function DriverDashboard() {
                                          <span className='font-semibold text-foreground'>Location:</span> <span className="line-clamp-2">{booking.location}</span>
                                       </p>
                                   </div>
+                                   {booking.status === 'Active' && booking.timers && booking.timers.length > 0 && (
+                                      <div className="space-y-2 border-t pt-4">
+                                          <h4 className="font-semibold flex items-center gap-2"><Timer className="h-4 w-4"/> Generator Timers</h4>
+                                          {booking.timers.map((timer) => (
+                                            <div key={timer.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50">
+                                              <div className='flex flex-col'>
+                                                 <span className="font-medium text-sm">{timer.generatorId}</span>
+                                                  {timer.status === 'running' ? (
+                                                      <TimerDisplay startTime={timer.startTime} />
+                                                  ) : (
+                                                       <span className="text-xs text-muted-foreground">
+                                                            {timer.duration ? `Used for ${formatDistanceToNowStrict(new Date(0), { addSuffix: false, unit: 'second', roundingMethod: 'floor' })}` : 'Ready'}
+                                                       </span>
+                                                  )}
+                                              </div>
+                                              <Button size="sm" variant={timer.status === 'running' ? 'destructive' : 'default'} onClick={() => handleTimerToggle(booking.id, timer)}>
+                                                 {timer.status === 'running' ? <StopCircle className="mr-2 h-4 w-4"/> : <Play className="mr-2 h-4 w-4"/>}
+                                                {timer.status === 'running' ? 'Stop' : 'Start'}
+                                              </Button>
+                                            </div>
+                                          ))}
+                                      </div>
+                                  )}
                               </CardContent>
                               <CardFooter className="flex justify-end gap-2">
                                   {booking.status === 'Approved' && (

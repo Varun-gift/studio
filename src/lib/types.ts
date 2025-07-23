@@ -25,13 +25,23 @@ export interface Generator {
 }
 
 export interface Rental {
-  id: string;
+  id:string;
   generatorModel: string;
   startDate: string;
   endDate: string;
   status: 'Upcoming' | 'Active' | 'Completed';
   totalCost: number;
 }
+
+export interface TimerLog {
+    id: string;
+    generatorId: string;
+    startTime: Date;
+    endTime?: Date;
+    duration?: number; // in seconds
+    status: 'running' | 'stopped';
+}
+
 
 export interface Booking {
   id: string;
@@ -58,8 +68,5 @@ export interface Booking {
       electricianName?: string;
       electricianContact?: string;
   };
-  timerLogs?: {
-      startTime: Date;
-      endTime: Date;
-  }[];
+  timers?: TimerLog[];
 }
