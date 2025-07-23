@@ -8,12 +8,11 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -38,11 +37,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Create a user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: user.email,
-        role: 'user', // Default role for new users
+        role: 'user', 
         createdAt: new Date(),
       });
 
@@ -63,51 +61,54 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
-          </div>
-          <h1 className="text-xl font-semibold">AMG</h1>
-          <CardTitle className="text-2xl pt-2">Create an Account</CardTitle>
-          <CardDescription>Enter your details to sign up.</CardDescription>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm rounded-2xl shadow-lg">
+        <CardHeader className="text-center space-y-2">
+           <div className="flex justify-center items-center gap-2">
+             <h2 className="text-2xl font-bold tracking-wider">Ashik Mobile Generators</h2>
+           </div>
+           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
+           <CardTitle className="text-2xl pt-4">Join AMG Today</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+             <div className="space-y-2">
+              <Label htmlFor="name" className="sr-only">Full Name</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Full Name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="bg-muted/50 border-0 h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="sr-only">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="Email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                 className="bg-muted/50 border-0 h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="sr-only">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
+                placeholder="Password"
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                 className="bg-muted/50 border-0 h-12"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
             </Button>
           </form>
@@ -116,7 +117,7 @@ export default function SignupPage() {
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Log in
+              Login
             </Link>
           </p>
         </CardFooter>

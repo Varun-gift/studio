@@ -27,7 +27,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { sendPasswordResetLink } from '@/app/actions';
-import Image from 'next/image';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -69,16 +68,16 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-              <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
-          </div>
-          <h1 className="text-xl font-semibold">AMG</h1>
-          <CardTitle className="text-2xl pt-2">Forgot Password</CardTitle>
-          <CardDescription>
-            Enter your email and we'll send you a link to reset your password.
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm rounded-2xl shadow-lg">
+         <CardHeader className="text-center space-y-2">
+           <div className="flex justify-center items-center gap-2">
+             <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
+           </div>
+           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
+           <CardTitle className="text-2xl pt-4">Forgot Password</CardTitle>
+           <CardDescription>
+            Enter your email to receive a reset link.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,19 +100,20 @@ export default function ForgotPasswordPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="sr-only">Email</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="m@example.com"
+                          placeholder="Email"
                           {...field}
+                          className="bg-muted/50 border-0 h-12"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send Reset Link
                 </Button>

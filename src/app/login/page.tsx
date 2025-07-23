@@ -7,12 +7,12 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { AmgLogo } from '@/components/amg-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +26,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Redirect handled by useAuth hook and root page
       router.push('/'); 
     } catch (error: any) {
       toast({
@@ -40,48 +39,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
-          </div>
-          <h1 className="text-xl font-semibold">AMG</h1>
-          <CardTitle className="text-2xl pt-2">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm rounded-2xl shadow-lg">
+        <CardHeader className="text-center space-y-2">
+           <div className="flex justify-center items-center gap-2">
+             <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
+           </div>
+           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
+           <CardTitle className="text-2xl pt-4">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="sr-only">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="Email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-muted/50 border-0 h-12"
               />
             </div>
             <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                        href="/forgot-password"
-                        className="text-sm font-medium text-primary hover:underline"
-                    >
-                        Forgot password?
-                    </Link>
-                </div>
+              <Label htmlFor="password" className="sr-only">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
+                placeholder="Password"
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="bg-muted/50 border-0 h-12"
               />
+               <div className="flex items-center justify-end">
+                    <Link
+                        href="/forgot-password"
+                        className="text-sm font-medium text-muted-foreground hover:text-primary"
+                    >
+                        Forgot Password?
+                    </Link>
+                </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
