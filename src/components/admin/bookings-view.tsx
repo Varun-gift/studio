@@ -32,7 +32,7 @@ export function BookingsView({ statusFilter }: BookingsViewProps) {
 
   return (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5'>
+        <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
