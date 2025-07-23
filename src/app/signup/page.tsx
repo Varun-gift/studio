@@ -66,7 +66,6 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm rounded-2xl shadow-lg">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
              <h2 className="text-2xl font-bold tracking-wider">Ashik Mobile Generators</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
