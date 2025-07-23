@@ -2,55 +2,71 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { StatsCards } from './stats-cards';
 import { DriverManager } from './driver-manager';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookingsView } from './bookings-view';
 import type { Booking } from '@/lib/types';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '../ui/button';
 
-interface AdminDashboardProps {
-  activeInnerTab: string;
-  setActiveInnerTab: (tab: string) => void;
-  bookingFilter: string | null;
-  setBookingFilter: (filter: string | null) => void;
-}
 
-export function AdminDashboard({ activeInnerTab, setActiveInnerTab, bookingFilter, setBookingFilter }: AdminDashboardProps) {
+type View = 'dashboard' | 'bookings' | 'drivers';
+type BookingFilter = Booking['status'] | null;
 
-  const handleTabChange = (tabName: string) => {
-    if (activeInnerTab === tabName) {
-      setActiveInnerTab('');
-      setBookingFilter(null);
-    } else {
-      setActiveInnerTab(tabName);
-      setBookingFilter(null); // Reset filter when switching main tabs
+
+export function AdminDashboard() {
+  const [view, setView] = React.useState<View>('dashboard');
+  const [bookingFilter, setBookingFilter] = React.useState<BookingFilter>(null);
+
+  const handleCardClick = (targetView: View, filter?: BookingFilter) => {
+    setView(targetView);
+    if(filter !== undefined) {
+        setBookingFilter(filter);
     }
-  };
+  }
   
-  const handleCardClick = (tab: string, filter?: Booking['status'] | null) => {
-    setActiveInnerTab(tab);
-    setBookingFilter(filter || null);
+  const handleBack = () => {
+      setView('dashboard');
+      setBookingFilter(null);
   }
 
-  return (
-    <div className="space-y-4">
-      <Tabs value={activeInnerTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="bookings">All Bookings</TabsTrigger>
-            <TabsTrigger value="drivers">Users & Drivers</TabsTrigger>
-        </TabsList>
-        
-        <div className="mt-4 space-y-4">
-          <StatsCards onCardClick={handleCardClick} />
-        
-          <TabsContent value="bookings" className="mt-0">
-              <BookingsView statusFilter={bookingFilter as Booking['status'] | null} />
-          </TabsContent>
-          <TabsContent value="drivers" className="mt-0">
-              <DriverManager />
-          </TabsContent>
+  if (view !== 'dashboard') {
+    return (
+        <div className="space-y-4">
+             <Button variant="outline" size="sm" onClick={handleBack} className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+             </Button>
+            {view === 'bookings' && <BookingsView statusFilter={bookingFilter} />}
+            {view === 'drivers' && <DriverManager />}
         </div>
-      </Tabs>
+    );
+  }
+
+
+  return (
+    <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleCardClick('bookings')}>
+                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Image src="https://placehold.co/600x400.png" data-ai-hint="booking office" alt="View All Bookings" width={600} height={400} className="rounded-lg aspect-[3/2] object-cover"/>
+                    <CardTitle className="text-base font-semibold mt-2">View All Bookings</CardTitle>
+                </CardContent>
+            </Card>
+             <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleCardClick('drivers')}>
+                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                     <Image src="https://placehold.co/600x400.png" data-ai-hint="users group" alt="Manage Users & Drivers" width={600} height={400} className="rounded-lg aspect-[3/2] object-cover"/>
+                    <CardTitle className="text-base font-semibold mt-2">Manage Users & Drivers</CardTitle>
+                </CardContent>
+            </Card>
+        </div>
+        
+        <div>
+            <h2 className="text-xl font-bold mb-4">Summary</h2>
+            <StatsCards onCardClick={handleCardClick} />
+        </div>
     </div>
   );
 }

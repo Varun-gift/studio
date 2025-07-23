@@ -62,12 +62,13 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
 
         const bookingsWithTimers = await Promise.all(
             initialBookings.map(async (booking) => {
+                if (!booking.id) return booking; // Skip if booking id is missing
                 const timersCollectionRef = collection(db, 'bookings', booking.id, 'timers');
                 const timersSnapshot = await getDocs(timersCollectionRef);
                 const timers = timersSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
-                    startTime: (doc.data().startTime as any).toDate(),
+                    startTime: (doc.data().startTime as any)?.toDate(),
                     endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : undefined,
                 } as TimerLog));
                 return { ...booking, timers };
@@ -114,6 +115,7 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
   );
   
     const formatDuration = (seconds: number) => {
+      if (!seconds) return 'N/A';
       return formatDistanceStrict(new Date(0), new Date(seconds * 1000));
     }
   
@@ -170,7 +172,7 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                             <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
                             <div className="text-xs text-muted-foreground">Qty: {booking.quantity}</div>
                           </TableCell>
-                          <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
+                          <TableCell>{booking.bookingDate ? format(booking.bookingDate, 'PPP') : 'N/A'}</TableCell>
                           <TableCell>
                             <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                           </TableCell>
@@ -187,7 +189,7 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                                 </div>
                                 <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
                                   <User className='size-3' />
-                                  <span>Electrician: {booking.driverInfo.electricianName || 'N/A'}</span>
+                                  <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
                                 </div>
                                 <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
                                   <Phone className='size-3' />
@@ -253,9 +255,9 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
                                             {booking.timers?.map(timer => (
                                                 <TableRow key={timer.id}>
                                                     <TableCell>{timer.generatorId}</TableCell>
-                                                    <TableCell>{format(timer.startTime, 'PPpp')}</TableCell>
+                                                    <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'N/A'}</TableCell>
                                                     <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
-                                                    <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
+                                                    <TableCell>{formatDuration(timer.duration || 0)}</TableCell>
                                                     <TableCell><Badge variant={timer.status === 'running' ? 'success' : 'outline'}>{timer.status}</Badge></TableCell>
                                                 </TableRow>
                                             ))}

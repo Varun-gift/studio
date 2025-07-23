@@ -7,27 +7,22 @@ import Link from 'next/link';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { CalendarView } from '@/components/admin/calendar-view';
 import { ProfileView } from '@/components/admin/profile-view';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, User as UserIcon, LogOut, Settings, Package, Users } from 'lucide-react';
-import { DriverManager } from '@/components/admin/driver-manager';
+import { Home, Calendar, Bell, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNav } from '@/components/admin/bottom-nav';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
-import { BookingsView } from '@/components/admin/bookings-view';
 
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = React.useState('home');
-  const [activeInnerTab, setActiveInnerTab] = React.useState('');
-  const [bookingFilter, setBookingFilter] = React.useState<string | null>(null);
-
+  
   const { name, photoURL } = useAuth();
   const router = useRouter();
 
@@ -38,9 +33,6 @@ export default function AdminPage() {
   
   const handleSidebarSelect = (tab: string) => {
     setActiveTab(tab);
-    // Reset inner tabs when switching main pages
-    setActiveInnerTab('');
-    setBookingFilter(null);
   };
 
   const navItems = [
@@ -52,23 +44,13 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <AdminDashboard 
-                    activeInnerTab={activeInnerTab} 
-                    setActiveInnerTab={setActiveInnerTab}
-                    setBookingFilter={setBookingFilter}
-                    bookingFilter={bookingFilter}
-                />;
+        return <AdminDashboard />;
       case 'calendar':
         return <CalendarView />;
       case 'profile':
         return <ProfileView />;
       default:
-        return <AdminDashboard 
-                    activeInnerTab={activeInnerTab} 
-                    setActiveInnerTab={setActiveInnerTab}
-                    setBookingFilter={setBookingFilter}
-                    bookingFilter={bookingFilter}
-                />;
+        return <AdminDashboard />;
     }
   };
 
@@ -100,7 +82,13 @@ export default function AdminPage() {
                       {navItems.map(item => (
                            <button
                             key={item.name}
-                            onClick={() => handleSidebarSelect(item.name)}
+                            onClick={() => {
+                                handleSidebarSelect(item.name)
+                                const trigger = document.querySelector('[data-radix-collection-item] > button');
+                                if (trigger instanceof HTMLElement) {
+                                    trigger.click();
+                                }
+                            }}
                             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                             >
                                 <item.icon className="h-5 w-5" />
@@ -110,12 +98,14 @@ export default function AdminPage() {
                   </nav>
               </SheetContent>
           </Sheet>
-          <div className="hidden items-center gap-2 sm:flex">
-             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />
-             <h1 className="text-lg font-semibold">Ashik Mobile Generators</h1>
+          <div className="flex items-center gap-2">
+             <h1 className="text-lg font-semibold sm:text-xl">Admin Home</h1>
           </div>
           <div className="relative ml-auto flex-1 md:grow-0">
-            {/* Can add search bar here later */}
+             <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Notifications</span>
+             </Button>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

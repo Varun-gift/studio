@@ -84,7 +84,7 @@ export function DriverManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>User & Driver Manager</CardTitle>
+        <CardTitle>User & Driver Management</CardTitle>
         <CardDescription>
           View all users and manage their roles.
         </CardDescription>
