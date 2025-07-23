@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { AmgLogo } from '@/components/amg-logo';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -65,6 +66,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm rounded-2xl shadow-lg">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
+             <AmgLogo className="w-12 h-12" />
              <h2 className="text-2xl font-bold tracking-wider">Ashik Mobile Generators</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>

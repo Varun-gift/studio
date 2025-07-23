@@ -43,6 +43,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm rounded-2xl shadow-lg">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
+             <AmgLogo className="w-12 h-12" />
              <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
