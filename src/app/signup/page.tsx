@@ -8,12 +8,11 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -62,54 +61,49 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-transparent p-4">
-      <Card className="w-full max-w-sm rounded-2xl shadow-lg">
-        <CardHeader className="text-center space-y-2">
-           <div className="flex justify-center items-center gap-2">
-             <h2 className="text-2xl font-bold tracking-wider">Ashik Mobile Generators</h2>
-           </div>
-           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
-           <CardTitle className="text-2xl pt-4">Join AMG Today</CardTitle>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Sign Up</CardTitle>
+          <CardDescription>
+            Enter your information to create an account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
-             <div className="space-y-2">
-              <Label htmlFor="name" className="sr-only">Full Name</Label>
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Full Name"
+                placeholder="John Doe"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="sr-only">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Email"
+                placeholder="m@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                 className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="sr-only">Password</Label>
+              <Label htmlFor="password">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
-                placeholder="Password"
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                 className="bg-white/20 border-white/30 h-12"
               />
             </div>
-            <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
             </Button>
           </form>
@@ -117,7 +111,7 @@ export default function SignupPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link href="/login" className="underline">
               Login
             </Link>
           </p>

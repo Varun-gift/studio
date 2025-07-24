@@ -20,7 +20,7 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, setActiveTab, navItems }: SidebarProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-white/10 backdrop-blur-lg sm:flex">
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
         <Link
           href="#"

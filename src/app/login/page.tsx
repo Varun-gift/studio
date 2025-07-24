@@ -39,8 +39,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-transparent p-4">
-      <Card className="w-full max-w-sm rounded-2xl shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
              <Image src="https://i.ibb.co/LdsxR2g/amg-logo-2.png" alt="AMG Logo" width={48} height={48} />
@@ -52,38 +52,35 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="sr-only">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Email"
+                placeholder="m@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="sr-only">Password</Label>
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
               <Input 
                 id="password" 
                 type="password" 
-                placeholder="Password"
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-white/20 border-white/30 h-12"
               />
-               <div className="flex items-center justify-end">
-                    <Link
-                        href="/forgot-password"
-                        className="text-sm font-medium text-muted-foreground hover:text-primary"
-                    >
-                        Forgot Password?
-                    </Link>
-                </div>
             </div>
-            <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
@@ -91,7 +88,7 @@ export default function LoginPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-primary hover:underline">
+            <Link href="/signup" className="underline">
               Sign up
             </Link>
           </p>
