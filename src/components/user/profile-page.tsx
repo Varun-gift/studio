@@ -5,7 +5,6 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
-import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { ChevronRight, LogOut, Shield, FileText, User } from 'lucide-react';
@@ -21,13 +20,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
-  };
-
-  const getJoinDate = () => {
-    if (user?.metadata.creationTime) {
-      return `Joined ${format(new Date(user.metadata.creationTime), 'MMMM yyyy')}`;
-    }
-    return 'Joined recently';
   };
 
   const menuItems = [
@@ -59,7 +51,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
           </Avatar>
           <div>
             <h2 className="text-2xl font-semibold">{name}</h2>
-            <p className="text-muted-foreground">{getJoinDate()}</p>
+            <p className="text-muted-foreground">{user?.email}</p>
           </div>
         </div>
       </div>
