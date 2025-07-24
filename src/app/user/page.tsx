@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
 import * as React from 'react';
 import { LogOut, Loader2, Home, History, Bell, User as UserIcon, Phone, Settings } from 'lucide-react';
-import { ProfileView } from '@/components/admin/profile-view';
+import { ProfileViewManager } from '@/components/user/profile-view-manager';
 import { RentalHistory } from '@/components/rental-history';
 import { BookingForm } from '@/components/booking-form';
 import { SupportView } from '@/components/user/support-view';
@@ -96,7 +96,7 @@ export default function UserDashboard() {
             </Card>
         );
       case 'profile':
-        return <ProfileView />;
+        return <ProfileViewManager />;
       default:
         return <BookingForm />;
     }
