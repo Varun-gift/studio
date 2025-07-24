@@ -62,7 +62,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-transparent p-4">
       <Card className="w-full max-w-sm rounded-2xl shadow-lg">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
@@ -82,7 +82,7 @@ export default function SignupPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-muted/50 border-0 h-12"
+                className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
@@ -94,7 +94,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                 className="bg-muted/50 border-0 h-12"
+                 className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
@@ -106,7 +106,7 @@ export default function SignupPage() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                 className="bg-muted/50 border-0 h-12"
+                 className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <Button type="submit" className="w-full h-12 rounded-full text-lg" disabled={loading}>

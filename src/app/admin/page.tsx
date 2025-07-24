@@ -55,14 +55,14 @@ export default function AdminPage() {
   };
 
   return (
-     <div className="flex min-h-screen w-full bg-muted/40">
+     <div className="flex min-h-screen w-full bg-transparent">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={handleSidebarSelect}
         navItems={navItems}
       />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
-         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-white/10 backdrop-blur-lg px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
               <SheetTrigger asChild>
                   <Button size="icon" variant="outline" className="sm:hidden">

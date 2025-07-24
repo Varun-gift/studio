@@ -39,11 +39,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-transparent p-4">
       <Card className="w-full max-w-sm rounded-2xl shadow-lg">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
+             <Image src="https://i.ibb.co/LdsxR2g/amg-logo-2.png" alt="AMG Logo" width={48} height={48} />
              <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
@@ -60,7 +60,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-muted/50 border-0 h-12"
+                className="bg-white/20 border-white/30 h-12"
               />
             </div>
             <div className="space-y-2">
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-muted/50 border-0 h-12"
+                className="bg-white/20 border-white/30 h-12"
               />
                <div className="flex items-center justify-end">
                     <Link
