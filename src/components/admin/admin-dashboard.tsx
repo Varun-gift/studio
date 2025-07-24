@@ -10,6 +10,7 @@ import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
+import { AnalyticsCharts } from './analytics-charts';
 
 
 type View = 'dashboard' | 'bookings' | 'drivers';
@@ -66,6 +67,11 @@ export function AdminDashboard() {
         <div>
             <h2 className="text-xl font-bold mb-4">Summary</h2>
             <StatsCards onCardClick={handleCardClick} />
+        </div>
+
+        <div>
+            <h2 className="text-xl font-bold mb-4">Analytics</h2>
+            <AnalyticsCharts />
         </div>
     </div>
   );
