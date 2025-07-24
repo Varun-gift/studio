@@ -11,37 +11,39 @@ interface BookingsViewProps {
 }
 
 export function BookingsView({ statusFilter }: BookingsViewProps) {
-  const [activeTab, setActiveTab] = React.useState('all');
+  const [activeTab, setActiveTab] = React.useState(statusFilter ? statusFilter.toLowerCase() : 'all');
 
   // When a filter is passed from the stats card, switch to the correct tab.
   React.useEffect(() => {
     if (statusFilter) {
       setActiveTab(statusFilter.toLowerCase());
-    } else {
-      setActiveTab('all');
     }
   }, [statusFilter]);
-
-  // Determine the final filter to pass to BookingManager
-  const getFilterForTab = (tab: string): Booking['status'] | null => {
-    if (tab === 'all') return null;
-    return tab.charAt(0).toUpperCase() + tab.slice(1) as Booking['status'];
-  };
   
-  const currentFilter = getFilterForTab(activeTab);
+  const TABS: {value: string; label: string; filter: Booking['status'] | null}[] = [
+      {value: 'all', label: 'All', filter: null},
+      {value: 'pending', label: 'Pending', filter: 'Pending'},
+      {value: 'approved', label: 'Approved', filter: 'Approved'},
+      {value: 'active', label: 'Active', filter: 'Active'},
+      {value: 'completed', label: 'Completed', filter: 'Completed'},
+  ]
 
   return (
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-        </TabsList>
-        {/* Render only one BookingManager instance with the current filter */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <h2 className="text-xl font-bold">Recent Bookings</h2>
+          <TabsList className="flex flex-wrap h-auto">
+            {TABS.map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
         <div className="mt-4">
-            <BookingManager statusFilter={currentFilter} />
+           {TABS.map(tab => (
+            <TabsContent key={tab.value} value={tab.value}>
+                <BookingManager statusFilter={tab.filter} />
+            </TabsContent>
+           ))}
         </div>
       </Tabs>
   );
