@@ -2,12 +2,12 @@
 'use client';
 
 import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseUser | null;
   loading: boolean;
   role: string | null;
   name: string | null;
@@ -33,7 +33,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
@@ -58,46 +58,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        const userDocRef = doc(db, 'users', user.uid);
-        
-        // Use onSnapshot for real-time updates to user data (like role changes)
+    // This listener handles auth state changes (login/logout)
+    const authUnsubscribe = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        // User is logged in, now we listen for their Firestore document for role and other data.
+        const userDocRef = doc(db, 'users', authUser.uid);
         const docUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setRole(userData.role);
-            setName(userData.name);
-            setPhotoURL(userData.photoURL || user.photoURL);
+            setRole(userData.role || 'user'); // Ensure a role is set
+            setName(userData.name || authUser.displayName);
+            setPhotoURL(userData.photoURL || authUser.photoURL);
             setCompany(userData.company);
             setAddress(userData.address);
             setVehicleNumber(userData.vehicleNumber);
             setElectricianName(userData.electricianName);
             setElectricianContact(userData.electricianContact);
-            
-            (user as any).phone = userData.phone;
+            (authUser as any).phone = userData.phone;
           } else {
-            // This case might happen if a user is created in Auth but not in Firestore yet.
-            // Or if the document is deleted.
-            setRole('user'); // Fallback to default role
-            setName(user.displayName);
-            setPhotoURL(user.photoURL);
+            // Fallback if the user document doesn't exist for some reason
+            setRole('user');
+            setName(authUser.displayName);
+            setPhotoURL(authUser.photoURL);
           }
+          // Crucially, set loading to false only after we have the user's role.
           setLoading(false);
         }, (error) => {
-            console.error("Error fetching user document:", error);
-            resetState();
+          console.error("Error fetching user document:", error);
+          resetState();
         });
 
-        // Return a cleanup function for the document snapshot listener
+        // Return the cleanup function for the document listener
         return () => docUnsubscribe();
       } else {
+        // User is not logged in
         resetState();
       }
     });
 
-    // Return a cleanup function for the auth state listener
+    // Return the cleanup function for the auth state listener
     return () => authUnsubscribe();
   }, [resetState]);
 
