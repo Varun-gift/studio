@@ -36,17 +36,20 @@ function TimerDisplay({ startTime }: { startTime: Date }) {
 }
 
 export default function DriverDashboard() {
-  const { user, loading, name } = useAuth();
+  const { user, loading, name, role } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+    if (!user) {
       router.replace('/login');
+    } else if (role && role !== 'driver') {
+      router.replace(`/${role}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, role, router]);
 
 
   useEffect(() => {
@@ -191,7 +194,7 @@ export default function DriverDashboard() {
   };
 
 
-  if (loading || !user) {
+  if (loading || !user || role !== 'driver') {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
