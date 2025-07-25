@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, writeBatch, collection } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle } fro
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getDriverBookings } from '../actions';
 
 function TimerDisplay({ startTime }: { startTime: Date }) {
     const [elapsedTime, setElapsedTime] = useState('');
@@ -52,26 +51,57 @@ export default function DriverDashboard() {
 
   useEffect(() => {
     if (user?.uid) {
-      const fetchBookings = async () => {
-        setBookingsLoading(true);
+      setBookingsLoading(true);
+      const bookingsQuery = query(
+        collection(db, 'bookings'),
+        where('driverInfo.driverId', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
         try {
-          const driverBookings = await getDriverBookings(user.uid);
-          // Sort bookings client-side to ensure latest is on top
+          const bookingsPromises = snapshot.docs.map(async (bookingDoc) => {
+            const bookingData = bookingDoc.data();
+            const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
+            const timersSnapshot = await getDocs(timersCollectionRef);
+            
+            const timers = timersSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              startTime: (doc.data().startTime as any).toDate(),
+              endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : null,
+            } as TimerLog));
+
+            return {
+              id: bookingDoc.id,
+              ...bookingData,
+              bookingDate: (bookingData.bookingDate as any).toDate(),
+              createdAt: (bookingData.createdAt as any).toDate(),
+              timers,
+            } as Booking;
+          });
+
+          const driverBookings = await Promise.all(bookingsPromises);
+          
           const sortedBookings = driverBookings.sort((a, b) => {
             const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.seconds * 1000;
             const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.seconds * 1000;
             return dateB - dateA;
           });
+
           setBookings(sortedBookings);
         } catch (error) {
-          console.error("Error fetching driver bookings:", error);
-          toast({ title: "Error", description: "Could not fetch bookings. Please try again later.", variant: "destructive"});
+          console.error("Error processing bookings snapshot:", error);
+          toast({ title: "Error", description: "Could not process booking updates.", variant: "destructive"});
         } finally {
           setBookingsLoading(false);
         }
-      };
-      
-      fetchBookings();
+      }, (error) => {
+        console.error("Error fetching driver bookings:", error);
+        toast({ title: "Error", description: "Could not fetch bookings. Please try again later.", variant: "destructive"});
+        setBookingsLoading(false);
+      });
+
+      return () => unsubscribe(); // Cleanup listener on component unmount
     }
   }, [user?.uid, toast]);
   
@@ -83,12 +113,11 @@ export default function DriverDashboard() {
             batch.update(bookingRef, { status: newStatus });
             
             const booking = bookings.find(b => b.id === bookingId);
-            // Only create timers if they don't already exist
             if(booking && booking.quantity > 0 && (!booking.timers || booking.timers.length === 0)) {
                 const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
                 for (let i = 1; i <= booking.quantity; i++) {
                     const generatorId = `${booking.generatorType.slice(0, 3).toUpperCase()}-${i}`;
-                    const timerDocRef = doc(timersCollectionRef); // Correct way to get a new doc ref in a subcollection
+                    const timerDocRef = doc(timersCollectionRef);
                      batch.set(timerDocRef, {
                         generatorId,
                         status: 'stopped',
@@ -114,7 +143,6 @@ export default function DriverDashboard() {
   const handleTimerToggle = async (bookingId: string, timerId: string) => {
     const timerRef = doc(db, 'bookings', bookingId, 'timers', timerId);
     
-    // Find the specific booking and timer to get its current state
     const booking = bookings.find(b => b.id === bookingId);
     const timer = booking?.timers?.find(t => t.id === timerId);
 
@@ -140,7 +168,7 @@ export default function DriverDashboard() {
         await updateDoc(timerRef, { 
             status: 'running',
             startTime: new Date(),
-            endTime: null, // Clear end time when restarting
+            endTime: null,
         });
         toast({ title: 'Timer Started', description: `Timer for ${timer.generatorId} has started.` });
       }
