@@ -5,6 +5,7 @@ import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookingManager } from './booking-manager';
 import type { Booking } from '@/lib/types';
+import { BookingDetails } from './booking-details';
 
 interface BookingsViewProps {
   statusFilter?: Booking['status'] | null;
@@ -12,21 +13,35 @@ interface BookingsViewProps {
 
 export function BookingsView({ statusFilter }: BookingsViewProps) {
   const [activeTab, setActiveTab] = React.useState(statusFilter ? statusFilter.toLowerCase() : 'all');
+  const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
 
-  // When a filter is passed from the stats card, switch to the correct tab.
   React.useEffect(() => {
     if (statusFilter) {
       setActiveTab(statusFilter.toLowerCase());
     }
+    // Reset selected booking when filter changes
+    setSelectedBooking(null);
   }, [statusFilter]);
   
+  const handleSelectBooking = (booking: Booking) => {
+      setSelectedBooking(booking);
+  }
+
+  const handleBack = () => {
+      setSelectedBooking(null);
+  }
+
   const TABS: {value: string; label: string; filter: Booking['status'] | null}[] = [
       {value: 'all', label: 'All', filter: null},
       {value: 'pending', label: 'Pending', filter: 'Pending'},
       {value: 'approved', label: 'Approved', filter: 'Approved'},
       {value: 'active', label: 'Active', filter: 'Active'},
       {value: 'completed', label: 'Completed', filter: 'Completed'},
-  ]
+  ];
+
+  if (selectedBooking) {
+      return <BookingDetails booking={selectedBooking} onBack={handleBack} />;
+  }
 
   return (
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -41,7 +56,10 @@ export function BookingsView({ statusFilter }: BookingsViewProps) {
         <div className="mt-4">
            {TABS.map(tab => (
             <TabsContent key={tab.value} value={tab.value}>
-                <BookingManager statusFilter={tab.filter} />
+                <BookingManager 
+                    statusFilter={tab.filter} 
+                    onSelectBooking={handleSelectBooking}
+                />
             </TabsContent>
            ))}
         </div>
