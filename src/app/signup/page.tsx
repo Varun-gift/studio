@@ -61,11 +61,11 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm bg-white/10 backdrop-blur-lg border-white/20 shadow-lg text-white">
         <CardHeader>
           <CardTitle>Sign Up</CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white/70">
             Enter your information to create an account
           </CardDescription>
         </CardHeader>
@@ -80,6 +80,7 @@ export default function SignupPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="bg-white/20 border-0 placeholder:text-white/70"
               />
             </div>
             <div className="space-y-2">
@@ -91,6 +92,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/20 border-0 placeholder:text-white/70"
               />
             </div>
             <div className="space-y-2">
@@ -101,6 +103,7 @@ export default function SignupPage() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/20 border-0 placeholder:text-white/70"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
@@ -109,7 +112,7 @@ export default function SignupPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/70">
             Already have an account?{' '}
             <Link href="/login" className="underline">
               Login

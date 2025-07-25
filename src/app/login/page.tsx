@@ -39,14 +39,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm bg-white/10 backdrop-blur-lg border-white/20 shadow-lg text-white">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
              <Image src="https://i.ibb.co/LdsxR2g/amg-logo-2.png" alt="AMG Logo" width={48} height={48} />
              <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
            </div>
-           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
+           <p className="text-xs tracking-[0.2em] text-white/70">POWER ALWAYS</p>
            <CardTitle className="text-2xl pt-4">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
@@ -60,6 +60,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/20 border-0 placeholder:text-white/70"
               />
             </div>
             <div className="space-y-2">
@@ -78,6 +79,7 @@ export default function LoginPage() {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/20 border-0 placeholder:text-white/70"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
@@ -86,7 +88,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/70">
             Don't have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up
