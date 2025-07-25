@@ -25,6 +25,9 @@ export function RentalHistory() {
 
   useEffect(() => {
     if (!user?.uid) {
+      // If there's no user, we might be in a loading state or logged out.
+      // We set loading to false to show the empty state, but don't return.
+      // The effect will re-run when the user object is available.
       setLoading(false);
       return;
     }
@@ -67,9 +70,12 @@ export function RentalHistory() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching bookings:", error);
+      // In case of an error, ensure loading is turned off to show a message.
       setLoading(false);
     });
 
+    // Cleanup function to detach the listener when the component unmounts
+    // or when the user.uid changes.
     return () => unsubscribe();
   }, [user?.uid]);
   
