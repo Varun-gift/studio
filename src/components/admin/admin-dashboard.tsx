@@ -47,8 +47,8 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-        <StatsCards onCardClick={handleCardClick} />
         <AnalyticsCharts />
+        <StatsCards onCardClick={handleCardClick} />
     </div>
   );
 }
