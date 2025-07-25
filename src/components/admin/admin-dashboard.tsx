@@ -12,18 +12,16 @@ import { AnalyticsCharts } from './analytics-charts';
 
 
 type View = 'dashboard' | 'bookings' | 'drivers';
-type BookingFilter = Booking['status'] | null;
+type BookingFilter = Booking['status'] | 'all' | null;
 
 
 export function AdminDashboard() {
   const [view, setView] = React.useState<View>('dashboard');
   const [bookingFilter, setBookingFilter] = React.useState<BookingFilter>(null);
 
-  const handleCardClick = (targetView: View, filter?: BookingFilter) => {
+  const handleCardClick = (targetView: View, filter?: Booking['status']) => {
     setView(targetView);
-    if(filter !== undefined) {
-        setBookingFilter(filter);
-    }
+    setBookingFilter(filter === null ? 'all' : filter);
   }
   
   const handleBack = () => {
@@ -38,7 +36,7 @@ export function AdminDashboard() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
              </Button>
-            {view === 'bookings' && <BookingsView statusFilter={bookingFilter} />}
+            {view === 'bookings' && <BookingsView initialFilter={bookingFilter} />}
             {view === 'drivers' && <DriverManager />}
         </div>
     );

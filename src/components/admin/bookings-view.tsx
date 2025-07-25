@@ -8,20 +8,19 @@ import type { Booking } from '@/lib/types';
 import { BookingDetails } from './booking-details';
 
 interface BookingsViewProps {
-  statusFilter?: Booking['status'] | null;
+  initialFilter?: Booking['status'] | 'all' | null;
 }
 
-export function BookingsView({ statusFilter }: BookingsViewProps) {
-  const [activeTab, setActiveTab] = React.useState(statusFilter ? statusFilter.toLowerCase() : 'all');
+export function BookingsView({ initialFilter }: BookingsViewProps) {
+  const [activeTab, setActiveTab] = React.useState(initialFilter ? String(initialFilter).toLowerCase() : 'all');
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
 
   React.useEffect(() => {
-    if (statusFilter) {
-      setActiveTab(statusFilter.toLowerCase());
+    if (initialFilter) {
+      setActiveTab(String(initialFilter).toLowerCase());
     }
-    // Reset selected booking when filter changes
     setSelectedBooking(null);
-  }, [statusFilter]);
+  }, [initialFilter]);
   
   const handleSelectBooking = (booking: Booking) => {
       setSelectedBooking(booking);

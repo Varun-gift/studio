@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format, formatDistanceStrict } from 'date-fns';
-import { MoreHorizontal, Truck, UserX, Check, XCircle, User, Phone, Timer, ChevronDown } from 'lucide-react';
+import { MoreHorizontal, Truck, User, Phone, Timer, Check, UserX, XCircle } from 'lucide-react';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 
 import { useBookings } from '@/hooks/use-bookings';
@@ -20,14 +20,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -40,23 +32,23 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AssignDriverDialog } from './assign-driver-dialog';
 import { ScrollArea } from '../ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 
 interface BookingManagerProps {
   statusFilter?: Booking['status'] | null;
+  onSelectBooking: (booking: Booking) => void;
 }
 
-export function BookingManager({ statusFilter }: BookingManagerProps) {
+export function BookingManager({ statusFilter, onSelectBooking }: BookingManagerProps) {
   const { bookings: initialBookings, loading } = useBookings({ status: statusFilter });
   const [bookings, setBookings] = React.useState<Booking[]>([]);
   const { toast } = useToast();
-  const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
+  const [selectedBookingForDriver, setSelectedBookingForDriver] = React.useState<Booking | null>(null);
   const [isAssignDriverOpen, setIsAssignDriverOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchTimersForBookings = async () => {
-        if (!initialBookings || initialBookings.length === 0) {
-            setBookings(initialBookings);
+        if (!initialBookings) {
+            setBookings([]);
             return;
         }
 
@@ -100,17 +92,26 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
   };
   
   const handleAssignDriver = (booking: Booking) => {
-    setSelectedBooking(booking);
+    setSelectedBookingForDriver(booking);
     setIsAssignDriverOpen(true);
   };
 
   const renderSkeleton = () => (
-    Array.from({ length: 5 }).map((_, index) => (
-      <TableRow key={index}>
-        <TableCell colSpan={8}>
-          <Skeleton className="h-8 w-full" />
-        </TableCell>
-      </TableRow>
+    Array.from({ length: 3 }).map((_, index) => (
+      <Card key={index} className="p-4 space-y-4">
+        <div className="flex justify-between">
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-5 w-1/4" />
+        </div>
+        <div className="space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="flex justify-between items-center">
+            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </Card>
     ))
   );
   
@@ -119,167 +120,89 @@ export function BookingManager({ statusFilter }: BookingManagerProps) {
       return formatDistanceStrict(new Date(0), new Date(seconds * 1000));
     }
   
-  const getTitle = () => {
-      if(statusFilter) {
-          return `${statusFilter} Bookings`;
-      }
-      return 'All Bookings';
-  }
-
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{getTitle()}</CardTitle>
-          <CardDescription>
-            View and manage all customer bookings.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Customer</TableHead>
-                  <TableHead>Generator</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Cost</TableHead>
-                  <TableHead>Assignment</TableHead>
-                  <TableHead className="min-w-[200px]">Location</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  renderSkeleton()
-                ) : bookings.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center">
-                      No bookings found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  bookings.map((booking: Booking) => (
-                    <Collapsible asChild key={booking.id}>
-                      <>
-                        <TableRow>
-                          <TableCell>
-                            <div className="font-medium truncate">{booking.userName}</div>
-                            <div className="text-sm text-muted-foreground truncate">{booking.userEmail}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
-                            <div className="text-xs text-muted-foreground">Qty: {booking.quantity}</div>
-                          </TableCell>
-                          <TableCell>{booking.bookingDate ? format(booking.bookingDate, 'PPP') : 'N/A'}</TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
-                          </TableCell>
-                          <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
-                          <TableCell>
-                            {booking.driverInfo ? (
-                              <div className='flex flex-col gap-1'>
-                                <div className='flex items-center gap-2'>
-                                  <Truck className='size-3 text-muted-foreground' />
-                                  <span className='font-medium'>{booking.driverInfo.name}</span>
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-5'>
-                                  Vehicle: {booking.driverInfo.vehicleNumber || 'N/A'}
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                                  <User className='size-3' />
-                                  <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                                  <Phone className='size-3' />
-                                  <span>Contact: {booking.driverInfo.electricianContact || 'N/A'}</span>
-                                </div>
-                              </div>
-                              ) : 'Not Assigned'}
-                          </TableCell>
-                          <TableCell className="whitespace-normal">{booking.location}</TableCell>
-                          <TableCell className="text-right">
-                             <div className="flex items-center justify-end">
-                                {booking.timers && booking.timers.length > 0 && (
-                                    <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                        <Timer className="h-4 w-4" />
-                                        <span className="sr-only">Toggle Timers</span>
-                                    </Button>
-                                    </CollapsibleTrigger>
-                                )}
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Approved')}>
-                                    <Check className='mr-2'/> Approve
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Rejected')}>
-                                    <UserX className='mr-2' /> Reject
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Voided')}>
-                                    <XCircle className='mr-2'/> Void
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleAssignDriver(booking)}>
-                                    <Truck className='mr-2'/> Assign Driver
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {loading ? (
+          renderSkeleton()
+        ) : bookings.length === 0 ? (
+          <div className="col-span-full text-center p-8 text-muted-foreground">
+            No bookings found for this category.
+          </div>
+        ) : (
+          bookings.map((booking: Booking) => (
+            <Card 
+                key={booking.id} 
+                className="flex flex-col cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => onSelectBooking(booking)}
+            >
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="text-lg">{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
+                            <CardDescription>
+                                {format(booking.bookingDate, 'PPP')}
+                            </CardDescription>
+                        </div>
+                        <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                    </div>
+                </CardHeader>
+                <CardContent className="flex-1 space-y-4">
+                    <div>
+                        <p className="text-sm font-medium">{booking.userName}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{booking.location}</p>
+                    </div>
+                     {booking.driverInfo && (
+                        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                            <div className="flex items-center gap-2">
+                                <Truck className="h-3 w-3"/>
+                                <span>{booking.driverInfo.name}</span>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                        <CollapsibleContent asChild>
-                            <tr className="bg-muted/50">
-                                <TableCell colSpan={8}>
-                                    <div className="p-4">
-                                    <h4 className="font-semibold text-md mb-2">Timer Logs</h4>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Generator ID</TableHead>
-                                                <TableHead>Start Time</TableHead>
-                                                <TableHead>End Time</TableHead>
-                                                <TableHead>Duration</TableHead>
-                                                <TableHead>Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {booking.timers?.map(timer => (
-                                                <TableRow key={timer.id}>
-                                                    <TableCell>{timer.generatorId}</TableCell>
-                                                    <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'N/A'}</TableCell>
-                                                    <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
-                                                    <TableCell>{formatDuration(timer.duration || 0)}</TableCell>
-                                                    <TableCell><Badge variant={timer.status === 'running' ? 'success' : 'outline'}>{timer.status}</Badge></TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                    </div>
-                                </TableCell>
-                            </tr>
-                        </CollapsibleContent>
-                      </>
-                    </Collapsible>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+                        </div>
+                     )}
+                </CardContent>
+                <CardContent className="flex justify-between items-center">
+                    <div className="font-bold">
+                        ₹{booking.estimatedCost.toLocaleString()}
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                aria-haspopup="true"
+                                size="icon"
+                                variant="ghost"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleAssignDriver(booking)}>
+                                <Truck className='mr-2'/> Assign Driver
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Approved')}>
+                                <Check className='mr-2'/> Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Rejected')}>
+                                <UserX className='mr-2' /> Reject
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Voided')}>
+                                <XCircle className='mr-2'/> Void
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
       
-      {selectedBooking && (
+      {selectedBookingForDriver && (
         <AssignDriverDialog
-          booking={selectedBooking}
+          booking={selectedBookingForDriver}
           isOpen={isAssignDriverOpen}
           onOpenChange={setIsAssignDriverOpen}
         />
