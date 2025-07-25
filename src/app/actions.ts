@@ -3,7 +3,7 @@
 
 import { suggestGeneratorSize as suggestGeneratorSizeFlow, GeneratorSizingInput, GeneratorSizingOutput } from '@/ai/flows/generator-sizing';
 import { auth, sendPasswordResetEmail, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 
 
@@ -36,10 +36,10 @@ export async function sendPasswordResetLink(email: string): Promise<void> {
 }
 
 export async function getDriverBookings(driverId: string): Promise<Booking[]> {
+  // Removed orderBy to prevent Firestore index error. Sorting will be done client-side.
   const bookingsQuery = query(
     collection(db, 'bookings'),
-    where('driverInfo.driverId', '==', driverId),
-    orderBy('createdAt', 'desc')
+    where('driverInfo.driverId', '==', driverId)
   );
 
   try {

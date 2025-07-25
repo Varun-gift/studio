@@ -56,9 +56,13 @@ export default function DriverDashboard() {
         setBookingsLoading(true);
         try {
           const driverBookings = await getDriverBookings(user.uid);
-          // The fetched data is not live, so we set it once.
-          // For live updates, we would need to use a different pattern with server actions or web sockets.
-          setBookings(driverBookings);
+          // Sort bookings client-side to ensure latest is on top
+          const sortedBookings = driverBookings.sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.seconds * 1000;
+            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.seconds * 1000;
+            return dateB - dateA;
+          });
+          setBookings(sortedBookings);
         } catch (error) {
           console.error("Error fetching driver bookings:", error);
           toast({ title: "Error", description: "Could not fetch bookings. Please try again later.", variant: "destructive"});
