@@ -2,12 +2,11 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceStrict } from 'date-fns';
+import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
-import type { Booking, TimerLog } from '@/lib/types';
+import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TimerLogsViewProps {
   booking: Booking;
@@ -17,8 +16,15 @@ interface TimerLogsViewProps {
 export function TimerLogsView({ booking, onBack }: TimerLogsViewProps) {
 
   const formatDuration = (seconds: number) => {
-    if (!seconds || seconds <= 0) return '0m';
-    return formatDistanceStrict(new Date(0), new Date(seconds * 1000), { unit: 'minutes' });
+    if (!seconds || seconds <= 0) return '0s';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return [
+        hours > 0 ? `${hours}h` : '',
+        minutes > 0 ? `${minutes}m` : '',
+        secs > 0 ? `${secs}s` : '',
+    ].filter(Boolean).join(' ');
   };
   
   const formatTime = (date?: Date) => {

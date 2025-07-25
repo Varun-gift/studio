@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, serverTimestamp, getDocs, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ function TimerDisplay({ startTime }: { startTime: Date }) {
 }
 
 export default function DriverDashboard() {
-  const { user, loading, name, role } = useAuth();
+  const { user, loading, name } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
@@ -104,7 +104,7 @@ export default function DriverDashboard() {
                      batch.set(timerDocRef, {
                         generatorId,
                         status: 'stopped',
-                        startTime: serverTimestamp(), // Placeholder, will be updated on actual start
+                        startTime: new Date(),
                         endTime: null,
                         duration: 0,
                     });
@@ -185,7 +185,7 @@ export default function DriverDashboard() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-muted/40">
+    <div className="flex flex-col min-h-screen w-full bg-background">
        <header className="sticky top-0 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 z-10">
           <div className="flex items-center gap-2 font-semibold">
              <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={32} height={32} />

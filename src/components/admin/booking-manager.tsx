@@ -2,9 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceStrict } from 'date-fns';
-import { MoreHorizontal, Truck, User, Phone, Timer, Check, UserX, XCircle } from 'lucide-react';
+import { formatDistanceStrict } from 'date-fns';
+import { MoreHorizontal, Truck, Check, UserX, XCircle } from 'lucide-react';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 import { useBookings } from '@/hooks/use-bookings';
 import { db } from '@/lib/firebase';
@@ -31,7 +32,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AssignDriverDialog } from './assign-driver-dialog';
-import { ScrollArea } from '../ui/scroll-area';
 
 interface BookingManagerProps {
   statusFilter?: Booking['status'] | null;
