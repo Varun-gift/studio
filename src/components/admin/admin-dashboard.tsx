@@ -49,10 +49,6 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
         <div className="space-y-2">
-            <h2 className="text-xl md:text-2xl font-bold">Analytics Overview</h2>
-            <AnalyticsCharts />
-        </div>
-        <div className="space-y-2">
             <h2 className="text-xl md:text-2xl font-bold">Live Summary</h2>
             <StatsCards onCardClick={handleCardClick} />
         </div>
