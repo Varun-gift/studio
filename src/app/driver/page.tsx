@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, getDocs, orderBy } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle } fro
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getDriverBookings } from '../actions';
 
 function TimerDisplay({ startTime }: { startTime: Date }) {
     const [elapsedTime, setElapsedTime] = useState('');
@@ -51,44 +52,22 @@ export default function DriverDashboard() {
 
   useEffect(() => {
     if (user?.uid) {
-      setBookingsLoading(true);
-      const bookingsQuery = query(
-          collection(db, 'bookings'), 
-          where('driverInfo.driverId', '==', user.uid),
-          orderBy('createdAt', 'desc')
-      );
+      const fetchBookings = async () => {
+        setBookingsLoading(true);
+        try {
+          const driverBookings = await getDriverBookings(user.uid);
+          // The fetched data is not live, so we set it once.
+          // For live updates, we would need to use a different pattern with server actions or web sockets.
+          setBookings(driverBookings);
+        } catch (error) {
+          console.error("Error fetching driver bookings:", error);
+          toast({ title: "Error", description: "Could not fetch bookings. Please try again later.", variant: "destructive"});
+        } finally {
+          setBookingsLoading(false);
+        }
+      };
       
-      const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
-        const assignedBookingsPromises = snapshot.docs.map(async (bookingDoc) => {
-          const bookingData = bookingDoc.data();
-          const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
-          const timersSnapshot = await getDocs(timersCollectionRef);
-          const timers = timersSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            startTime: (doc.data().startTime as any).toDate(),
-            endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : null,
-          } as TimerLog));
-          
-          return {
-            id: bookingDoc.id,
-            ...bookingData,
-            bookingDate: (bookingData.bookingDate as any).toDate(),
-            createdAt: (bookingData.createdAt as any).toDate(),
-            timers,
-          } as Booking;
-        });
-
-        const assignedBookings = await Promise.all(assignedBookingsPromises);
-        setBookings(assignedBookings);
-        setBookingsLoading(false);
-      }, (error) => {
-        console.error("Error fetching driver bookings:", error);
-        toast({ title: "Error", description: "Could not fetch bookings.", variant: "destructive"});
-        setBookingsLoading(false);
-      });
-
-      return () => unsubscribe();
+      fetchBookings();
     }
   }, [user?.uid, toast]);
   
@@ -102,7 +81,7 @@ export default function DriverDashboard() {
             const booking = bookings.find(b => b.id === bookingId);
             // Only create timers if they don't already exist
             if(booking && booking.quantity > 0 && (!booking.timers || booking.timers.length === 0)) {
-                const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
+                const timersCollectionRef = doc(db, 'bookings', bookingId).collection('timers');
                 for (let i = 1; i <= booking.quantity; i++) {
                     const generatorId = `${booking.generatorType.slice(0, 3).toUpperCase()}-${i}`;
                     const timerDocRef = doc(timersCollectionRef);
