@@ -3,7 +3,7 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -58,25 +58,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const authUnsubscribe = onAuthStateChanged(auth, (authUser) => {
+    let unsubscribeDoc: Unsubscribe | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      // If there was a previous user's document listener, unsubscribe from it.
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+      }
+
       if (authUser) {
         const userDocRef = doc(db, 'users', authUser.uid);
-        const docUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
+        unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
             setUser(authUser);
-            setRole(userData.role || 'user');
-            setName(userData.name || authUser.displayName);
-            setPhotoURL(userData.photoURL || authUser.photoURL);
-            setCompany(userData.company);
-            setAddress(userData.address);
-            setVehicleNumber(userData.vehicleNumber);
-            setElectricianName(userData.electricianName);
-            setElectricianContact(userData.electricianContact);
+            setRole(userData.role || null);
+            setName(userData.name || authUser.displayName || null);
+            setPhotoURL(userData.photoURL || authUser.photoURL || null);
+            setCompany(userData.company || null);
+            setAddress(userData.address || null);
+            setVehicleNumber(userData.vehicleNumber || null);
+            setElectricianName(userData.electricianName || null);
+            setElectricianContact(userData.electricianContact || null);
             (authUser as any).phone = userData.phone;
           } else {
-             // If user exists in Auth but not in Firestore, treat as logged out.
+            // User authenticated but no data in Firestore.
             resetState();
           }
           setLoading(false);
@@ -84,15 +90,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error("Error fetching user document:", error);
           resetState();
         });
-
-        return () => docUnsubscribe();
       } else {
+        // No authenticated user.
         resetState();
       }
     });
 
-    return () => authUnsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+      }
+    };
   }, [resetState]);
+
 
   return (
     <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact }}>
