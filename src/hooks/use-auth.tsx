@@ -58,16 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // This listener handles auth state changes (login/logout)
+    setLoading(true);
     const authUnsubscribe = onAuthStateChanged(auth, (authUser) => {
       if (authUser) {
-        setUser(authUser);
-        // User is logged in, now we listen for their Firestore document for role and other data.
         const userDocRef = doc(db, 'users', authUser.uid);
         const docUnsubscribe = onSnapshot(userDocRef, (userDoc) => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setRole(userData.role || 'user'); // Ensure a role is set
+            setUser(authUser);
+            setRole(userData.role || 'user');
             setName(userData.name || authUser.displayName);
             setPhotoURL(userData.photoURL || authUser.photoURL);
             setCompany(userData.company);
@@ -77,27 +76,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setElectricianContact(userData.electricianContact);
             (authUser as any).phone = userData.phone;
           } else {
-            // Fallback if the user document doesn't exist for some reason
-            setRole('user');
-            setName(authUser.displayName);
-            setPhotoURL(authUser.photoURL);
+             // If user exists in Auth but not in Firestore, treat as logged out.
+            resetState();
           }
-          // Crucially, set loading to false only after we have the user's role.
           setLoading(false);
         }, (error) => {
           console.error("Error fetching user document:", error);
           resetState();
         });
 
-        // Return the cleanup function for the document listener
         return () => docUnsubscribe();
       } else {
-        // User is not logged in
         resetState();
       }
     });
 
-    // Return the cleanup function for the auth state listener
     return () => authUnsubscribe();
   }, [resetState]);
 

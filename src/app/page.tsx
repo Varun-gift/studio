@@ -11,18 +11,15 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait until the AuthProvider has finished its initial loading.
     if (loading) {
       return;
     }
 
-    // If there's no user after loading, they are not logged in.
     if (!user) {
       router.replace('/login');
       return;
     }
     
-    // Now that we're sure we have a user and their role, we can redirect.
     if (role) {
       switch (role) {
         case 'admin':
@@ -35,13 +32,10 @@ export default function Home() {
           router.replace('/user');
           break;
         default:
-          // Fallback for an unknown role.
           router.replace('/login');
           break;
       }
     }
-    // The `else` case (user exists but no role) is handled by the loading state in `useAuth`,
-    // so we shouldn't get here. If we do, we wait for the next effect run.
 
   }, [user, loading, role, router]);
 

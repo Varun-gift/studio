@@ -16,28 +16,17 @@ export default function UserLayout({
 
   React.useEffect(() => {
     if (loading) {
-      return; // Wait for auth state to be determined
+      return;
     }
-
     if (!user) {
       router.replace('/login');
       return;
     }
-    
-    // If the user is logged in, but not a 'user', redirect them appropriately
     if (role && role !== 'user') {
-        if(role === 'admin') {
-            router.replace('/admin');
-        } else if (role === 'driver') {
-            router.replace('/driver');
-        } else {
-            router.replace('/login'); // Fallback
-        }
+        router.replace(`/${role}`);
     }
-
   }, [user, loading, role, router]);
-  
-  // Render a loading state while auth is being checked or redirection is happening.
+
   if (loading || !user || role !== 'user') {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -47,6 +36,5 @@ export default function UserLayout({
     );
   }
 
-  // If everything is fine, render the children components (the user dashboard page).
   return <>{children}</>;
 }
