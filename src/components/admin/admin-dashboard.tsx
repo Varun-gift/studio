@@ -6,7 +6,6 @@ import { StatsCards } from './stats-cards';
 import { DriverManager } from './driver-manager';
 import { BookingsView } from './bookings-view';
 import type { Booking } from '@/lib/types';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import { AnalyticsCharts } from './analytics-charts';
@@ -48,13 +47,8 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-        <div className="space-y-2">
-            <h2 className="text-xl md:text-2xl font-bold">Live Summary</h2>
-            <StatsCards onCardClick={handleCardClick} />
-        </div>
-        <div>
-            <BookingsView />
-        </div>
+        <StatsCards onCardClick={handleCardClick} />
+        <AnalyticsCharts />
     </div>
   );
 }

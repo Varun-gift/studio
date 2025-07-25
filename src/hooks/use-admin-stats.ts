@@ -7,8 +7,8 @@ import { db } from '@/lib/firebase';
 import type { Booking } from '@/lib/types';
 import { format } from 'date-fns';
 
-export interface BookingStatusDistribution {
-  name: Booking['status'];
+export interface ChartDistribution {
+  name: string;
   value: number;
   fill: string;
 }
@@ -25,7 +25,8 @@ interface AdminStats {
   approvedBookings: number;
   activeBookings: number;
   bookingsOverTime: BookingsOverTime[];
-  bookingStatusDistribution: BookingStatusDistribution[];
+  bookingStatusDistribution: ChartDistribution[];
+  generatorDistribution: ChartDistribution[];
 }
 
 export function useAdminStats() {
@@ -37,6 +38,7 @@ export function useAdminStats() {
     activeBookings: 0,
     bookingsOverTime: [],
     bookingStatusDistribution: [],
+    generatorDistribution: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +51,7 @@ export function useAdminStats() {
         ...prevStats,
         totalUsers: snapshot.size,
       }));
-      setLoading(false);
+      if(!loading) setLoading(false);
     }, (error) => {
         console.error("Error fetching users for stats: ", error);
         setLoading(false);
@@ -58,6 +60,8 @@ export function useAdminStats() {
     const unsubscribeBookings = onSnapshot(bookingsQuery, (snapshot) => {
       const statusCounts: { [key in Booking['status']]?: number } = {};
       const monthlyCounts: { [key: string]: number } = {};
+      const kvaCounts: { [key: string]: number } = {};
+      let totalKvaBookings = 0;
       
       const allBookings: Booking[] = [];
        snapshot.forEach((doc) => {
@@ -78,14 +82,28 @@ export function useAdminStats() {
         // Increment monthly count
         const month = format(booking.bookingDate, 'yyyy-MM');
         monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+
+        // Increment KVA category count
+        kvaCounts[booking.kvaCategory] = (kvaCounts[booking.kvaCategory] || 0) + 1;
+        totalKvaBookings++;
       });
 
-      // Format for pie chart
-      const statusDistribution: BookingStatusDistribution[] = Object.entries(statusCounts).map(([name, value], index) => ({
-        name: name as Booking['status'],
-        value: value || 0,
+      // Format for status chart
+      const statusDistribution: ChartDistribution[] = ['Approved', 'Pending', 'Active'].map((status, index) => ({
+        name: status,
+        value: statusCounts[status as Booking['status']] || 0,
         fill: `hsl(var(--chart-${index + 1}))`,
       }));
+
+      // Format for generator distribution chart
+      const generatorDistribution: ChartDistribution[] = Object.entries(kvaCounts)
+        .map(([name, value], index) => ({
+          name,
+          value: totalKvaBookings > 0 ? Math.round((value / totalKvaBookings) * 100) : 0,
+          fill: `hsl(var(--chart-${index + 1}))`,
+        }))
+        .sort((a,b) => parseInt(a.name) - parseInt(b.name));
+
 
       // Format for line chart
       const bookingsOverTime: BookingsOverTime[] = Object.entries(monthlyCounts)
@@ -100,6 +118,7 @@ export function useAdminStats() {
         activeBookings: statusCounts['Active'] || 0,
         bookingStatusDistribution: statusDistribution,
         bookingsOverTime: bookingsOverTime,
+        generatorDistribution,
       }));
        setLoading(false);
     }, (error) => {
@@ -111,7 +130,7 @@ export function useAdminStats() {
       unsubscribeUsers();
       unsubscribeBookings();
     };
-  }, []);
+  }, [loading]);
 
   return { stats, loading };
 }

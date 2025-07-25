@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LabelList, Cell } from 'recharts';
 
 import {
   Card,
@@ -15,8 +15,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from '@/components/ui/chart';
 import { useAdminStats } from '@/hooks/use-admin-stats';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,7 +24,7 @@ export function AnalyticsCharts() {
 
   if (loading) {
     return (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1">
             <Card>
                 <CardHeader>
                     <Skeleton className="h-6 w-1/2" />
@@ -48,67 +46,108 @@ export function AnalyticsCharts() {
         </div>
     );
   }
-
-  const lineChartConfig = {
-    total: {
-      label: 'Bookings',
-      color: 'hsl(var(--chart-1))',
-    },
-  };
   
-  const pieChartConfig = stats.bookingStatusDistribution.reduce((acc, entry) => {
+  const statusChartConfig = stats.bookingStatusDistribution.reduce((acc, entry) => {
+    acc[entry.name] = { label: entry.name, color: entry.fill };
+    return acc;
+  }, {} as any);
+
+  const generatorChartConfig = stats.generatorDistribution.reduce((acc, entry) => {
     acc[entry.name] = { label: entry.name, color: entry.fill };
     return acc;
   }, {} as any);
 
   return (
-    <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1">
       <Card>
         <CardHeader>
-          <CardTitle>Bookings Over Time</CardTitle>
-          <CardDescription>
-            A monthly overview of total bookings.
-          </CardDescription>
+          <CardTitle>Booking Status Overview</CardTitle>
+           <CardDescription>
+            <span className="text-4xl font-bold">{stats.totalBookings}</span>
+            <span className="text-muted-foreground"> Total</span>
+           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={lineChartConfig} className="h-[250px] w-full">
-            <BarChart accessibilityLayer data={stats.bookingsOverTime}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="month"
+          <ChartContainer config={statusChartConfig} className="h-[200px] w-full">
+            <BarChart
+              data={stats.bookingStatusDistribution}
+              layout="vertical"
+              margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+            >
+              <YAxis
+                dataKey="name"
+                type="category"
                 tickLine={false}
-                tickMargin={10}
                 axisLine={false}
-                tickFormatter={(value) => value.slice(0, 3)}
+                tickMargin={10}
+                tick={{ fill: 'hsl(var(--foreground))' }}
               />
+              <XAxis dataKey="value" type="number" hide />
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
               />
-              <Bar dataKey="total" fill="var(--color-total)" radius={8} />
+              <Bar dataKey="value" layout="vertical" radius={5}>
+                 {stats.bookingStatusDistribution.map((entry) => (
+                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                ))}
+                <LabelList
+                  dataKey="value"
+                  position="right"
+                  offset={8}
+                  className="fill-foreground"
+                  fontSize={12}
+                />
+              </Bar>
             </BarChart>
           </ChartContainer>
         </CardContent>
       </Card>
-      <Card>
+
+       <Card>
         <CardHeader>
-          <CardTitle>Booking Status Distribution</CardTitle>
+          <CardTitle>Generator Distribution</CardTitle>
           <CardDescription>
-            A breakdown of all bookings by their current status.
+             <span className="text-4xl font-bold">{stats.generatorDistribution.reduce((acc, curr) => acc + curr.value, 0)}%</span>
+            <span className="text-muted-foreground"> Total</span>
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center">
-            <ChartContainer config={pieChartConfig} className="h-[250px] w-full">
-                <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-                    <Pie data={stats.bookingStatusDistribution} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
-                        {stats.bookingStatusDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                    </Pie>
-                    <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                </PieChart>
-            </ChartContainer>
+        <CardContent>
+          <ChartContainer config={generatorChartConfig} className="h-[250px] w-full">
+            <BarChart
+              data={stats.generatorDistribution}
+              layout="vertical"
+              margin={{ left: 10, right: 40, top: 10, bottom: 10 }}
+            >
+              <YAxis
+                dataKey="name"
+                type="category"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                tick={{ fill: 'hsl(var(--foreground))' }}
+                tickFormatter={(value) => `${value} KVA`}
+              />
+              <XAxis dataKey="value" type="number" hide />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Bar dataKey="value" layout="vertical" radius={5}>
+                {stats.generatorDistribution.map((entry) => (
+                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                ))}
+                <LabelList
+                  dataKey="value"
+                  position="right"
+                  offset={8}
+                  className="fill-foreground"
+                  fontSize={12}
+                  formatter={(value: number) => `${value}%`}
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
         </CardContent>
       </Card>
     </div>

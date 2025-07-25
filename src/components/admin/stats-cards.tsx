@@ -16,24 +16,23 @@ export function StatsCards({ onCardClick }: StatsCardsProps) {
   const { stats, loading } = useAdminStats();
 
   const statItems = [
-    { title: 'Total Users', value: stats.totalUsers, icon: Users, label: "User", tab: 'drivers' as const, filter: null },
-    { title: 'Total Bookings', value: stats.totalBookings, icon: Package, label: "Box", tab: 'bookings' as const, filter: null },
-    { title: 'Pending Bookings', value: stats.pendingBookings, icon: Clock, label: "Clock", tab: 'bookings'as const, filter: 'Pending' as const},
-    { title: 'Approved Bookings', value: stats.approvedBookings, icon: CheckCircle, label: "Check", tab: 'bookings' as const, filter: 'Approved' as const },
-    { title: 'Active Bookings', value: stats.activeBookings, icon: Truck, label: "Power", tab: 'bookings' as const, filter: 'Active' as const },
+    { title: 'Total Users', value: stats.totalUsers, tab: 'drivers' as const, filter: null },
+    { title: 'Total Bookings', value: stats.totalBookings, tab: 'bookings' as const, filter: null },
+    { title: 'Pending Bookings', value: stats.pendingBookings, tab: 'bookings'as const, filter: 'Pending' as const},
+    { title: 'Approved Bookings', value: stats.approvedBookings, tab: 'bookings' as const, filter: 'Approved' as const },
+    { title: 'Active Bookings', value: stats.activeBookings, tab: 'bookings' as const, filter: 'Active' as const },
   ];
 
   if (loading) {
       return (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
             {Array.from({length: 5}).map((_, index) => (
-                <Card key={index}>
+                <Card key={index} className={index === 4 ? 'col-span-2 md:col-span-4 lg:col-span-1' : ''}>
                     <CardHeader>
                         <Skeleton className="h-5 w-24" />
                     </CardHeader>
                     <CardContent className='space-y-2'>
                         <Skeleton className="h-8 w-12" />
-                        <Skeleton className="h-4 w-16" />
                     </CardContent>
                 </Card>
             ))}
@@ -42,22 +41,18 @@ export function StatsCards({ onCardClick }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {statItems.map((item) => (
+    <div className="grid gap-4 grid-cols-2">
+      {statItems.map((item, index) => (
         <Card 
             key={item.title} 
-            className="cursor-pointer hover:bg-muted/50 transition-colors" 
+            className={`cursor-pointer hover:bg-muted/50 transition-colors ${index === 4 ? 'col-span-2' : ''}`}
             onClick={() => onCardClick(item.tab, item.filter)}
         >
           <CardHeader>
-            <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{item.title}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
-            <div className="text-2xl md:text-3xl font-bold">{item.value}</div>
-            <div className="flex items-center text-xs text-muted-foreground gap-1">
-                <item.icon className="h-3 w-3" />
-                <span>{item.label}</span>
-            </div>
+          <CardContent>
+            <div className="text-3xl font-bold">{item.value}</div>
           </CardContent>
         </Card>
       ))}
