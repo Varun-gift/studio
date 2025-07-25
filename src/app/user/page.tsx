@@ -1,13 +1,12 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
-import * as React from 'react';
-import { LogOut, Loader2, Home, History, Bell, User as UserIcon, Phone, Settings } from 'lucide-react';
+import { LogOut, Home, History, Bell, User as UserIcon, Phone, Settings } from 'lucide-react';
 import { ProfileViewManager } from '@/components/user/profile-view-manager';
 import { RentalHistory } from '@/components/rental-history';
 import { BookingForm } from '@/components/booking-form';
@@ -27,7 +26,7 @@ import { BottomNav } from '@/components/user/bottom-nav';
 import { Sidebar } from '@/components/sidebar';
 
 export default function UserDashboard() {
-  const { user, loading, role, name, photoURL } = useAuth();
+  const { name, photoURL } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState('home');
   
@@ -35,30 +34,6 @@ export default function UserDashboard() {
     await auth.signOut();
     router.push('/login');
   };
-
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-      } else if (role !== 'user') {
-        if (role === 'admin') {
-          router.replace('/admin');
-        } else {
-          router.replace('/driver');
-        }
-      }
-    }
-  }, [user, loading, role, router]);
-
-  if (loading || !user || role !== 'user') {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="ml-2">Loading & Verifying Access...</p>
-        </div>
-    );
-  }
 
    const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
