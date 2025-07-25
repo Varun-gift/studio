@@ -11,26 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 
 interface BookingDetailsProps {
   booking: Booking;
   onBack: () => void;
+  onViewTimers: () => void;
 }
 
-export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
-
-  const formatDuration = (seconds: number) => {
-    if (!seconds) return 'N/A';
-    return formatDistanceStrict(new Date(0), new Date(seconds * 1000));
-  }
+export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetailsProps) {
 
   const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -110,35 +98,17 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
             <CardHeader>
                 <CardTitle>Timer Logs</CardTitle>
                 <CardDescription>Real-time usage tracking for each generator.</CardDescription>
             </CardHeader>
             <CardContent>
                 {booking.timers && booking.timers.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Generator ID</TableHead>
-                                <TableHead>Start Time</TableHead>
-                                <TableHead>End Time</TableHead>
-                                <TableHead>Duration</TableHead>
-                                <TableHead>Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {booking.timers.map(timer => (
-                                <TableRow key={timer.id}>
-                                    <TableCell>{timer.generatorId}</TableCell>
-                                    <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'N/A'}</TableCell>
-                                    <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
-                                    <TableCell>{formatDuration(timer.duration || 0)}</TableCell>
-                                    <TableCell><Badge variant={timer.status === 'running' ? 'success' : 'outline'}>{timer.status}</Badge></TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <Button onClick={onViewTimers}>
+                        <TimerIcon className="mr-2 h-4 w-4" />
+                        View Timer Logs
+                    </Button>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No timer logs available for this booking.</p>
                 )}

@@ -6,28 +6,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookingManager } from './booking-manager';
 import type { Booking } from '@/lib/types';
 import { BookingDetails } from './booking-details';
+import { TimerLogsView } from './timer-logs-view';
 
 interface BookingsViewProps {
   initialFilter?: Booking['status'] | 'all' | null;
 }
 
+type View = 'list' | 'details' | 'timerLogs';
+
 export function BookingsView({ initialFilter }: BookingsViewProps) {
   const [activeTab, setActiveTab] = React.useState(initialFilter ? String(initialFilter).toLowerCase() : 'all');
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
+  const [currentView, setCurrentView] = React.useState<View>('list');
+
 
   React.useEffect(() => {
     if (initialFilter) {
       setActiveTab(String(initialFilter).toLowerCase());
     }
     setSelectedBooking(null);
+    setCurrentView('list');
   }, [initialFilter]);
   
   const handleSelectBooking = (booking: Booking) => {
       setSelectedBooking(booking);
+      setCurrentView('details');
+  }
+
+  const handleShowTimers = () => {
+    setCurrentView('timerLogs');
   }
 
   const handleBack = () => {
-      setSelectedBooking(null);
+      if (currentView === 'timerLogs') {
+          setCurrentView('details');
+      } else {
+          setSelectedBooking(null);
+          setCurrentView('list');
+      }
   }
 
   const TABS: {value: string; label: string; filter: Booking['status'] | null}[] = [
@@ -37,10 +53,16 @@ export function BookingsView({ initialFilter }: BookingsViewProps) {
       {value: 'active', label: 'Active', filter: 'Active'},
       {value: 'completed', label: 'Completed', filter: 'Completed'},
   ];
-
+  
   if (selectedBooking) {
-      return <BookingDetails booking={selectedBooking} onBack={handleBack} />;
+    if (currentView === 'details') {
+        return <BookingDetails booking={selectedBooking} onBack={handleBack} onViewTimers={handleShowTimers} />;
+    }
+    if (currentView === 'timerLogs') {
+        return <TimerLogsView booking={selectedBooking} onBack={handleBack} />;
+    }
   }
+
 
   return (
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
