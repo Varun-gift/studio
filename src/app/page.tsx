@@ -11,27 +11,38 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
+    // Wait until loading is complete
+    if (loading) {
+      return;
+    }
+
+    // If there's no user, redirect to login
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    // If there is a user but the role isn't loaded yet, wait.
+    // This prevents redirecting before the role is confirmed.
+    if (!role) {
+      return;
+    }
+
+    // Once user and role are confirmed, redirect based on role
+    switch (role) {
+      case 'admin':
+        router.replace('/admin');
+        break;
+      case 'driver':
+        router.replace('/driver');
+        break;
+      case 'user':
+        router.replace('/user');
+        break;
+      default:
+        // Fallback to login if role is unknown or not set after loading
         router.replace('/login');
-      } else {
-        // Redirect based on role
-        switch (role) {
-          case 'admin':
-            router.replace('/admin');
-            break;
-          case 'driver':
-            router.replace('/driver');
-            break;
-          case 'user':
-            router.replace('/user');
-            break;
-          default:
-            // Fallback to login if role is unknown or not set
-            router.replace('/login');
-            break;
-        }
-      }
+        break;
     }
   }, [user, loading, role, router]);
 
