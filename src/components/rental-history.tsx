@@ -24,15 +24,14 @@ export function RentalHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.uid) {
-      // If there's no user, we might be in a loading state or logged out.
-      // We set loading to false to show the empty state, but don't return.
-      // The effect will re-run when the user object is available.
-      setLoading(false);
+    // If there's no user object yet, we are in a loading state or logged out.
+    // We set loading to true and wait for the user object to become available.
+    if (!user) {
+      setLoading(true);
       return;
     }
 
-    setLoading(true);
+    // At this point, user object is available, so we can proceed with fetching data.
     const bookingsQuery = query(
       collection(db, 'bookings'),
       where('userId', '==', user.uid),
@@ -70,14 +69,13 @@ export function RentalHistory() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching bookings:", error);
-      // In case of an error, ensure loading is turned off to show a message.
       setLoading(false);
     });
 
     // Cleanup function to detach the listener when the component unmounts
-    // or when the user.uid changes.
+    // or when the user changes.
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user]);
   
   const formatDuration = (seconds: number) => {
     if (!seconds || seconds <= 0) return '0s';
