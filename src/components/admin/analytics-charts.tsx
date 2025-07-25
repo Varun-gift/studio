@@ -26,7 +26,7 @@ export function AnalyticsCharts() {
 
   if (loading) {
     return (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
             <Card>
                 <CardHeader>
                     <Skeleton className="h-6 w-1/2" />
@@ -62,7 +62,7 @@ export function AnalyticsCharts() {
   }, {} as any);
 
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+    <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Bookings Over Time</CardTitle>

@@ -53,7 +53,7 @@ export function StatsCards({ onCardClick }: StatsCardsProps) {
             <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="text-3xl font-bold">{item.value}</div>
+            <div className="text-2xl md:text-3xl font-bold">{item.value}</div>
             <div className="flex items-center text-xs text-muted-foreground gap-1">
                 <item.icon className="h-3 w-3" />
                 <span>{item.label}</span>
