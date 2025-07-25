@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -85,10 +85,10 @@ export default function DriverDashboard() {
             const booking = bookings.find(b => b.id === bookingId);
             // Only create timers if they don't already exist
             if(booking && booking.quantity > 0 && (!booking.timers || booking.timers.length === 0)) {
-                const timersCollectionRef = doc(db, 'bookings', bookingId).collection('timers');
+                const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
                 for (let i = 1; i <= booking.quantity; i++) {
                     const generatorId = `${booking.generatorType.slice(0, 3).toUpperCase()}-${i}`;
-                    const timerDocRef = doc(timersCollectionRef);
+                    const timerDocRef = doc(timersCollectionRef); // Correct way to get a new doc ref in a subcollection
                      batch.set(timerDocRef, {
                         generatorId,
                         status: 'stopped',
