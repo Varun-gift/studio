@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch, getDocs, orderBy } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,11 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (user?.uid) {
       setBookingsLoading(true);
-      const bookingsQuery = query(collection(db, 'bookings'), where('driverInfo.driverId', '==', user.uid));
+      const bookingsQuery = query(
+          collection(db, 'bookings'), 
+          where('driverInfo.driverId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+      );
       
       const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
         const assignedBookingsPromises = snapshot.docs.map(async (bookingDoc) => {
@@ -70,6 +74,7 @@ export default function DriverDashboard() {
             id: bookingDoc.id,
             ...bookingData,
             bookingDate: (bookingData.bookingDate as any).toDate(),
+            createdAt: (bookingData.createdAt as any).toDate(),
             timers,
           } as Booking;
         });
