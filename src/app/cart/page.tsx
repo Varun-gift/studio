@@ -61,8 +61,14 @@ export default function CartPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
+      email: '',
+      companyName: '',
+      phone: '',
+      location: '',
       bookingDate: addDays(new Date(), 7),
       needsElectrician: false,
+      additionalNotes: '',
     },
   });
 
