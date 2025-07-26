@@ -46,15 +46,26 @@ export function useAdminStats() {
     const usersQuery = query(collection(db, 'users'));
     const bookingsQuery = query(collection(db, 'bookings'));
 
+    let usersLoaded = false;
+    let bookingsLoaded = false;
+
+    const checkLoadingState = () => {
+        if (usersLoaded && bookingsLoaded) {
+            setLoading(false);
+        }
+    }
+
     const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
       setStats((prevStats) => ({
         ...prevStats,
         totalUsers: snapshot.size,
       }));
-      if(!loading) setLoading(false);
+      usersLoaded = true;
+      checkLoadingState();
     }, (error) => {
         console.error("Error fetching users for stats: ", error);
-        setLoading(false);
+        usersLoaded = true;
+        checkLoadingState();
     });
 
     const unsubscribeBookings = onSnapshot(bookingsQuery, (snapshot) => {
@@ -120,17 +131,19 @@ export function useAdminStats() {
         bookingsOverTime: bookingsOverTime,
         generatorDistribution,
       }));
-       setLoading(false);
+       bookingsLoaded = true;
+       checkLoadingState();
     }, (error) => {
         console.error("Error fetching bookings for stats: ", error);
-        setLoading(false);
+        bookingsLoaded = true;
+        checkLoadingState();
     });
 
     return () => {
       unsubscribeUsers();
       unsubscribeBookings();
     };
-  }, [loading]);
+  }, []);
 
   return { stats, loading };
 }
