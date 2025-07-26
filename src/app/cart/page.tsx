@@ -252,7 +252,7 @@ export default function CartPage() {
                                 <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>
                          </div>
                          <Controller
