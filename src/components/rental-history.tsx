@@ -68,14 +68,19 @@ export function RentalHistory() {
   }, [user]);
 
   const getGeneratorSummary = (booking: Booking) => {
-      const totalGenerators = booking.generators.reduce((sum, gen) => sum + gen.quantity, 0);
-      const kvaList = booking.generators.map(g => g.kvaCategory).join('/');
-      const totalHours = booking.generators.reduce((sum, gen) => {
-          return sum + gen.usageHours.reduce((hSum, h) => hSum + h, 0);
-      }, 0);
+    const totalGenerators = booking.generators.reduce((sum, gen) => sum + gen.quantity, 0);
+    const kvaList = booking.generators.map(g => g.kvaCategory).join('/');
+    
+    const totalHours = booking.generators.reduce((sum, gen) => {
+        if (Array.isArray(gen.usageHours)) {
+            return sum + gen.usageHours.reduce((hSum, h) => hSum + (h || 0), 0);
+        }
+        // Fallback for older data where usageHours might be a single number
+        return sum + (Number(gen.usageHours) || 0);
+    }, 0);
 
-      const generatorText = totalGenerators > 1 ? 'Generators' : 'Generator';
-      return `${totalGenerators} ${generatorText}, ${kvaList} KVA, ${totalHours} Hours`;
+    const generatorText = totalGenerators > 1 ? 'Generators' : 'Generator';
+    return `${totalGenerators} ${generatorText}, ${kvaList} KVA, ${totalHours} Hours`;
   }
 
   const renderSkeleton = () => (
