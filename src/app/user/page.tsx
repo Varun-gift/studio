@@ -70,7 +70,7 @@ export default function UserDashboardPage() {
         setActiveTab={setActiveTab}
         navItems={mainNavItems}
       />
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
+      <div className="flex flex-col sm:gap-4 sm:pl-14 flex-1">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <div className="flex items-center gap-2 sm:hidden">
             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} />
@@ -103,7 +103,7 @@ export default function UserDashboardPage() {
           </div>
         </header>
         
-        <main className="flex-1 p-4 sm:px-6 sm:py-0 space-y-4 pb-20 md:pb-4">
+        <main className="flex-1 space-y-4 pb-20 md:pb-4">
             {renderContent()}
         </main>
       </div>

@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
+import { HeroBanner } from './hero-banner';
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
@@ -31,18 +32,21 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
 
     return (
         <div className="space-y-8 py-4">
-            <div className="space-y-2">
+            <HeroBanner />
+            <div className="space-y-2 px-4 md:px-0">
                 <h1 className="text-3xl font-bold">Welcome, {name ? name.split(' ')[0] : 'User'}!</h1>
                 <p className="text-muted-foreground">Ready to power your next project? Let's get started.</p>
             </div>
 
-            <Button size="lg" className="h-12 text-lg w-full sm:w-auto" onClick={() => setActiveTab('booking')}>
-                <Power className="mr-2 h-5 w-5" />
-                Book New Generator
-            </Button>
+            <div className="px-4 md:px-0">
+                <Button size="lg" className="h-12 text-lg w-full sm:w-auto" onClick={() => setActiveTab('booking')}>
+                    <Power className="mr-2 h-5 w-5" />
+                    Book New Generator
+                </Button>
+            </div>
             
             <div className="space-y-4">
-                <h2 className="text-2xl font-semibold">Recent Activity</h2>
+                <h2 className="text-2xl font-semibold px-4 md:px-0">Recent Activity</h2>
                 <Card>
                     <CardHeader>
                         <CardTitle>Your Most Recent Booking</CardTitle>
