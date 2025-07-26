@@ -1,42 +1,41 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 206 83% 97%; /* #F3FAFE - Light Baby Blue */
-    --foreground: 240 10% 3.9%; /* Black */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 0 0% 0%; /* #000000 */
 
-    --card: 204 80% 85%; /* #D0ECF9 - Light Baby Blue */
-    --card-foreground: 240 10% 3.9%;
+    --card: 204 80% 96%; /* #ECF8FD - Lighter Baby Blue */
+    --card-foreground: 222.2 47.4% 11.2%;
 
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 202 78% 58%; /* #89CFF0 - Baby Blue */
+    --primary: 16 100% 50%; /* #FF4F00 - Orange */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 16 100% 50%; /* #FF4F00 - Orange */
-    --secondary-foreground: 0 0% 100%; /* White */
-    
+    --secondary: 202 78% 58%; /* #89CFF0 - Baby Blue */
+    --secondary-foreground: 0 0% 0%;
+
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 208 10% 45%; /* #6091A8 - Dark Baby Blue for secondary text */
 
-    --accent: 204 80% 85%; /* #D0ECF9 - Lighter Baby Blue */
-    --accent-foreground: 240 10% 3.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 21 100% 35%; /* #B33700 - Dark Orange */
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 201 65% 70%; /* #ACDDF5 - Lighter Baby Blue */
-    --input: 201 65% 70%; 
+    --border: 201 65% 85%; /* #ACDDF5 - Light Baby Blue */
+    --input: 201 65% 85%;
     --ring: 16 100% 50%; /* #FF4F00 - Orange */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --chart-1: 202 78% 58%; /* Baby Blue */
-    --chart-2: 16 100% 50%; /* Orange */
+    --chart-1: 16 100% 50%; /* Orange */
+    --chart-2: 202 78% 58%; /* Baby Blue */
     --chart-3: 201 65% 70%; /* Light Blue */
     --chart-4: 25 100% 65%; /* Light Orange */
     --chart-5: 204 80% 85%; /* Lighter Blue */

@@ -2,90 +2,111 @@
 'use client';
 
 import * as React from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { useBookings } from '@/hooks/use-bookings';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Package, Power } from 'lucide-react';
-import { format } from 'date-fns';
-import { Badge } from '../ui/badge';
-import { getStatusVariant } from '@/lib/utils';
-import { Skeleton } from '../ui/skeleton';
-import { HeroBanner } from './hero-banner';
+import { Power, MessageSquare, Tool } from 'lucide-react';
+import { HeroSection } from './dashboard/hero-section';
+import { WelcomeSection } from './dashboard/welcome-section';
+import { RecentActivity } from './dashboard/recent-activity';
+import { Recommendations } from './dashboard/recommendations';
+import { UsageSummary } from './dashboard/usage-summary';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
 }
 
 export function UserDashboard({ setActiveTab }: UserDashboardProps) {
-    const { name } = useAuth();
-    const { bookings, loading } = useBookings({});
-    
-    const recentBooking = bookings.length > 0 ? bookings[0] : null;
+    const [isScrolled, setIsScrolled] = React.useState(false);
 
-    const formatUsageHours = (usageHours: number | number[]) => {
-        if (Array.isArray(usageHours)) {
-            return usageHours.join(', ');
-        }
-        return usageHours;
-    }
+    React.useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 400);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
-        <div className="space-y-8 py-4">
-            <HeroBanner />
-            <div className="space-y-2 px-4 md:px-0">
-                <h1 className="text-3xl font-bold">Welcome, {name ? name.split(' ')[0] : 'User'}!</h1>
-                <p className="text-muted-foreground">Ready to power your next project? Let's get started.</p>
+        <div className="space-y-8 md:space-y-12">
+            <HeroSection onCTAClick={() => setActiveTab('booking')} />
+            
+            <div className="container mx-auto px-4 space-y-12">
+                <WelcomeSection />
+
+                <div className="text-center">
+                     <Button 
+                        size="lg" 
+                        className="h-14 text-lg w-full sm:w-auto rounded-full shadow-lg shadow-primary/30 transform hover:scale-105 transition-transform" 
+                        onClick={() => setActiveTab('booking')}
+                    >
+                        <Power className="mr-3 h-6 w-6" />
+                        Book New Generator
+                    </Button>
+                </div>
+                
+                <RecentActivity onCTAClick={() => setActiveTab('history')} />
+                
+                <Recommendations />
+
+                <UsageSummary />
+
+                 <div className="text-center py-8">
+                     <Button 
+                        size="lg" 
+                        variant="outline"
+                        className="h-12 text-md w-full sm:w-auto rounded-full shadow-lg" 
+                        onClick={() => setActiveTab('support')}
+                    >
+                        <Tool className="mr-3 h-5 w-5" />
+                        Generator Sizing Calculator
+                    </Button>
+                </div>
             </div>
 
-            <div className="px-4 md:px-0">
-                <Button size="lg" className="h-12 text-lg w-full sm:w-auto" onClick={() => setActiveTab('booking')}>
-                    <Power className="mr-2 h-5 w-5" />
-                    Book New Generator
-                </Button>
-            </div>
-            
-            <div className="space-y-4">
-                <h2 className="text-2xl font-semibold px-4 md:px-0">Recent Activity</h2>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Your Most Recent Booking</CardTitle>
-                        <CardDescription>
-                            {loading ? "Loading booking details..." : !recentBooking ? "You haven't made any bookings yet." : "Here are the details of your latest rental."}
-                        </CardDescription>
-                    </CardHeader>
-                    {loading ? (
-                        <CardContent>
-                            <Skeleton className="h-8 w-3/4" />
-                            <Skeleton className="h-4 w-1/2 mt-2" />
-                        </CardContent>
-                    ) : recentBooking && (
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-wrap gap-x-8 gap-y-4 justify-between items-center">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Booking Date</p>
-                                    <p className="font-semibold">{format(recentBooking.bookingDate, 'PPP')}</p>
-                                </div>
-                                <Badge variant={getStatusVariant(recentBooking.status)} className="text-sm">{recentBooking.status}</Badge>
-                            </div>
-                            <div className="space-y-2 pt-4 border-t">
-                                <h4 className="font-medium flex items-center gap-2"><Package className="h-5 w-5" /> Generators</h4>
-                                <ul className="list-disc list-inside text-muted-foreground pl-2">
-                                    {recentBooking.generators.map((gen, idx) => (
-                                        <li key={idx} className="text-sm">{gen.quantity} x {gen.kvaCategory} KVA ({formatUsageHours(gen.usageHours)} hrs)</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </CardContent>
-                    )}
-                    <CardContent>
-                        <Button variant="outline" onClick={() => setActiveTab('history')}>
-                            View All Rentals
-                            <ArrowRight className="ml-2 h-4 w-4" />
+            {/* Floating Buttons */}
+             <AnimatePresence>
+                {isScrolled && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50"
+                    >
+                         <Button 
+                            className="rounded-full h-14 w-14 shadow-xl"
+                            onClick={() => setActiveTab('booking')}
+                        >
+                            <Power className="h-6 w-6" />
+                         </Button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+             <div className="fixed bottom-6 right-4 md:bottom-6 md:right-24 z-50">
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                       <Button 
+                            variant="secondary"
+                            className="rounded-full h-14 w-14 shadow-xl bg-secondary hover:bg-secondary/90"
+                            onClick={() => setActiveTab('support')}
+                        >
+                            <MessageSquare className="h-6 w-6 text-secondary-foreground" />
                         </Button>
-                    </CardContent>
-                </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Need Help?</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
             </div>
+
         </div>
     );
 }

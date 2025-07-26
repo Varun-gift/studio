@@ -24,6 +24,7 @@ import { SupportView } from '@/components/user/support-view';
 import { BookingForm } from '@/components/booking-form';
 import Image from 'next/image';
 import { UserDashboard } from '@/components/user/user-dashboard';
+import { AnimatePresence, motion } from 'framer-motion';
 
 export default function UserDashboardPage() {
   const { name, photoURL } = useAuth();
@@ -64,14 +65,14 @@ export default function UserDashboardPage() {
 
 
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
+    <div className="flex min-h-screen w-full bg-background">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         navItems={mainNavItems}
       />
       <div className="flex flex-col sm:gap-4 sm:pl-14 flex-1">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <div className="flex items-center gap-2 sm:hidden">
             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} />
             <span className="text-xs font-bold">AMG</span>
@@ -80,10 +81,10 @@ export default function UserDashboardPage() {
             <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full bg-brand-orange-primary hover:bg-brand-orange-primary/90">
+                    <Button variant="secondary" size="icon" className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground">
                         <Avatar className="h-9 w-9">
                             <AvatarImage src={photoURL || ''} alt={name || 'User'} />
-                            <AvatarFallback className="bg-transparent text-white">{name?.[0]?.toUpperCase()}</AvatarFallback>
+                            <AvatarFallback className="bg-primary text-primary-foreground">{name?.[0]?.toUpperCase()}</AvatarFallback>
                         </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
@@ -104,7 +105,17 @@ export default function UserDashboardPage() {
         </header>
         
         <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-0">
-            {renderContent()}
+             <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {renderContent()}
+                </motion.div>
+            </AnimatePresence>
         </main>
       </div>
         
