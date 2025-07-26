@@ -1,9 +1,9 @@
 
+
 'use client';
 
 import * as React from 'react';
-import { formatDistanceStrict } from 'date-fns';
-import { MoreHorizontal, Truck, Check, UserX, XCircle } from 'lucide-react';
+import { MoreHorizontal, Truck, Check, UserX, XCircle, Package } from 'lucide-react';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 
@@ -115,11 +115,6 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
     ))
   );
   
-    const formatDuration = (seconds: number) => {
-      if (!seconds) return 'N/A';
-      return formatDistanceStrict(new Date(0), new Date(seconds * 1000));
-    }
-  
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -139,7 +134,7 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle className="text-lg">{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
+                            <CardTitle className="text-lg">{booking.userName}</CardTitle>
                             <CardDescription>
                                 {format(booking.bookingDate, 'PPP')}
                             </CardDescription>
@@ -148,9 +143,11 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                     </div>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-4">
-                    <div>
-                        <p className="text-sm font-medium">{booking.userName}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{booking.location}</p>
+                    <div className='space-y-1'>
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" /> Generators</p>
+                      <div className="text-sm text-foreground pl-2">
+                        {booking.generators.map(g => `${g.quantity} x ${g.kvaCategory} KVA`).join(', ')}
+                      </div>
                     </div>
                      {booking.driverInfo && (
                         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">

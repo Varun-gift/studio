@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceStrict } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Package, Power, Clock, MoreVertical, Truck, Timer as TimerIcon } from 'lucide-react';
-import type { Booking, TimerLog } from '@/lib/types';
+import { format } from 'date-fns';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package } from 'lucide-react';
+import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,13 +54,29 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                     </span>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-6 sm:grid-cols-2">
-                <DetailItem icon={Calendar} label="Booking Date" value={format(booking.bookingDate, 'PPP')} />
-                <DetailItem icon={MapPin} label="Location" value={booking.location} />
-                <DetailItem icon={Package} label="Generator Type" value={`${booking.generatorType} (${booking.kvaCategory} KVA)`} />
-                <DetailItem icon={Hash} label="Quantity" value={booking.quantity} />
-                <DetailItem icon={Clock} label="Usage Hours" value={`${booking.usageHours} hrs`} />
-                <DetailItem icon={Power} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
+            <CardContent className="space-y-6">
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <DetailItem icon={Calendar} label="Booking Date" value={format(booking.bookingDate, 'PPP')} />
+                    <DetailItem icon={MapPin} label="Location" value={booking.location} />
+                    <DetailItem icon={Power} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
+                </div>
+                <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground">Generators Requested</h4>
+                    <div className="space-y-2">
+                    {booking.generators.map((gen, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted/50">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                <span>{gen.kvaCategory} KVA</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-muted-foreground">Qty: {gen.quantity}</span>
+                                <span className="text-muted-foreground">Usage: {gen.usageHours} hrs</span>
+                            </div>
+                        </div>
+                    ))}
+                    </div>
+                </div>
             </CardContent>
         </Card>
 

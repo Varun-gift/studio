@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { format, formatDistanceToNowStrict } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle } from 'lucide-react';
+import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -116,19 +117,22 @@ export default function DriverDashboard() {
             batch.update(bookingRef, { status: newStatus });
             
             const booking = bookings.find(b => b.id === bookingId);
-            if(booking && booking.quantity > 0 && (!booking.timers || booking.timers.length === 0)) {
+            if(booking && (!booking.timers || booking.timers.length === 0)) {
                 const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
-                for (let i = 1; i <= booking.quantity; i++) {
-                    const generatorId = `${booking.generatorType.slice(0, 3).toUpperCase()}-${i}`;
-                    const timerDocRef = doc(timersCollectionRef);
-                     batch.set(timerDocRef, {
-                        generatorId,
-                        status: 'stopped',
-                        startTime: new Date(),
-                        endTime: null,
-                        duration: 0,
-                    });
-                }
+                let timerCount = 1;
+                booking.generators.forEach(gen => {
+                    for (let i = 0; i < gen.quantity; i++) {
+                        const generatorId = `${gen.kvaCategory}KVA-${timerCount++}`;
+                        const timerDocRef = doc(timersCollectionRef);
+                        batch.set(timerDocRef, {
+                            generatorId,
+                            status: 'stopped',
+                            startTime: new Date(),
+                            endTime: null,
+                            duration: 0,
+                        });
+                    }
+                });
             }
              await batch.commit();
 
@@ -236,13 +240,21 @@ export default function DriverDashboard() {
                       {bookings.map(booking => (
                           <Card key={booking.id} className="min-w-[300px] flex flex-col">
                               <CardHeader>
-                                  <CardTitle className="truncate">{booking.generatorType} ({booking.kvaCategory} KVA)</CardTitle>
+                                  <CardTitle className="truncate">{booking.userName}</CardTitle>
                                   <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
                               </CardHeader>
                               <CardContent className="space-y-4 flex-1">
                                   <div className="flex items-center justify-between">
                                       <span className="text-muted-foreground">Status</span>
                                       <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Generators</h4>
+                                    <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                        {booking.generators.map((gen, idx) => (
+                                            <li key={idx}>{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</li>
+                                        ))}
+                                    </ul>
                                   </div>
                                   <div className="space-y-2">
                                       <h4 className="font-semibold">Customer Details</h4>

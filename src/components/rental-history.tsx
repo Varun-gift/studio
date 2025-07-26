@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
 import { getStatusVariant } from '@/lib/utils';
-import { Truck, User, Phone, Timer } from 'lucide-react';
+import { Truck, User, Phone, Timer, Package } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Button } from './ui/button';
@@ -24,14 +25,11 @@ export function RentalHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If there's no user object yet, we are in a loading state or logged out.
-    // We set loading to true and wait for the user object to become available.
     if (!user) {
       setLoading(true);
       return;
     }
 
-    // At this point, user object is available, so we can proceed with fetching data.
     const bookingsQuery = query(
       collection(db, 'bookings'),
       where('userId', '==', user.uid),
@@ -72,8 +70,6 @@ export function RentalHistory() {
       setLoading(false);
     });
 
-    // Cleanup function to detach the listener when the component unmounts
-    // or when the user changes.
     return () => unsubscribe();
   }, [user]);
   
@@ -112,7 +108,7 @@ export function RentalHistory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Generator</TableHead>
+                <TableHead>Generators</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Cost</TableHead>
@@ -137,8 +133,11 @@ export function RentalHistory() {
                     <>
                     <TableRow>
                         <TableCell className="font-medium">
-                            <div>{booking.generatorType} ({booking.kvaCategory} KVA)</div>
-                            <div className="text-xs text-muted-foreground">Qty: {booking.quantity}</div>
+                            <div className="flex flex-col gap-1">
+                                {booking.generators.map((gen, idx) => (
+                                    <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
+                                ))}
+                            </div>
                         </TableCell>
                         <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
                         <TableCell>

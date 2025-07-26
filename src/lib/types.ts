@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   name: string;
@@ -42,17 +43,18 @@ export interface TimerLog {
     status: 'running' | 'stopped';
 }
 
+export interface BookedGenerator {
+  kvaCategory: string;
+  quantity: number;
+  usageHours: number;
+}
 
 export interface Booking {
   id: string;
   userId: string;
   userEmail: string;
   userName: string;
-  generatorType: string;
-  generatorTypes?: string[]; 
-  kvaCategory: string;
-  quantity: number;
-  usageHours: number;
+  generators: BookedGenerator[];
   location: string;
   bookingDate: Date;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
