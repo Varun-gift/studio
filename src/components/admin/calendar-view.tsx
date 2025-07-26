@@ -54,8 +54,10 @@ export function CalendarView() {
             <ul className="space-y-4">
               {bookingsForSelectedDay.map((booking: Booking) => (
                 <li key={booking.id} className="p-4 border rounded-lg">
-                  <p className="font-semibold">{booking.generatorType} ({booking.kvaCategory} KVA)</p>
-                  <p className="text-sm text-muted-foreground">{booking.userName}</p>
+                  <p className="font-semibold">{booking.userName}</p>
+                  <div className="text-sm text-muted-foreground">
+                    {booking.generators.map(g => `${g.quantity} x ${g.name}`).join(', ')}
+                  </div>
                   <p className="text-sm text-muted-foreground">{booking.location}</p>
                   <Badge variant="secondary">Approved</Badge>
                 </li>

@@ -72,7 +72,7 @@ export function useAdminStats() {
       const statusCounts: { [key in Booking['status']]?: number } = {};
       const monthlyCounts: { [key: string]: number } = {};
       const kvaCounts: { [key: string]: number } = {};
-      let totalKvaBookings = 0;
+      let totalGeneratorsBooked = 0;
       
       const allBookings: Booking[] = [];
        snapshot.forEach((doc) => {
@@ -95,8 +95,10 @@ export function useAdminStats() {
         monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
 
         // Increment KVA category count
-        kvaCounts[booking.kvaCategory] = (kvaCounts[booking.kvaCategory] || 0) + 1;
-        totalKvaBookings++;
+        booking.generators.forEach(gen => {
+            kvaCounts[gen.kva] = (kvaCounts[gen.kva] || 0) + gen.quantity;
+            totalGeneratorsBooked += gen.quantity;
+        })
       });
 
       // Format for status chart
@@ -110,7 +112,7 @@ export function useAdminStats() {
       const generatorDistribution: ChartDistribution[] = Object.entries(kvaCounts)
         .map(([name, value], index) => ({
           name,
-          value: totalKvaBookings > 0 ? Math.round((value / totalKvaBookings) * 100) : 0,
+          value: totalGeneratorsBooked > 0 ? Math.round((value / totalGeneratorsBooked) * 100) : 0,
           fill: `hsl(var(--chart-${index + 1}))`,
         }))
         .sort((a,b) => parseInt(a.name) - parseInt(b.name));

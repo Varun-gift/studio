@@ -7,7 +7,7 @@ export interface User {
   role: 'admin' | 'driver' | 'user';
   createdAt: { seconds: number, nanoseconds: number } | Date;
   photoURL?: string;
-  phone?: string; // driver contact
+  phone?: string; 
   company?: string;
   address?: string;
   vehicleNumber?: string;
@@ -17,34 +17,25 @@ export interface User {
 
 export interface Generator {
   id: string;
-  model: string;
-  capacity: string;
-  fuelType: 'Diesel' | 'Gasoline' | 'Propane';
+  name: string;
+  kva: string;
   imageUrl: string;
-  hourlyRate: number;
-  status: 'Available' | 'Rented' | 'Maintenance';
+  description: string;
+  power: string;
+  output: string;
+  fuelType: 'Diesel' | 'Gasoline' | 'Propane';
+  pricePerHour: number;
 }
 
-export interface Rental {
-  id:string;
-  generatorModel: string;
-  startDate: string;
-  endDate: string;
-  status: 'Upcoming' | 'Active' | 'Completed';
-  totalCost: number;
-}
-
-export interface TimerLog {
-    id: string;
-    generatorId: string;
-    startTime: Date;
-    endTime?: Date;
-    duration?: number; // in seconds
-    status: 'running' | 'stopped';
+export interface CartItem extends Generator {
+    quantity: number;
+    usageHours: number;
 }
 
 export interface BookedGenerator {
-  kvaCategory: string;
+  id: string;
+  name: string;
+  kva: string;
   quantity: number;
   usageHours: number;
 }
@@ -54,9 +45,13 @@ export interface Booking {
   userId: string;
   userEmail: string;
   userName: string;
+  companyName?: string;
+  phone?: string;
   generators: BookedGenerator[];
   location: string;
   bookingDate: Date;
+  additionalNotes?: string;
+  needsElectrician: boolean;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   subtotal: number;
   gstAmount: number;
@@ -71,4 +66,13 @@ export interface Booking {
       electricianContact?: string;
   };
   timers?: TimerLog[];
+}
+
+export interface TimerLog {
+    id: string;
+    generatorId: string;
+    startTime: Date;
+    endTime?: Date;
+    duration?: number; // in seconds
+    status: 'running' | 'stopped';
 }

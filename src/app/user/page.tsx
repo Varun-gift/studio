@@ -6,10 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
-import { LogOut, Home, History, Bell, User as UserIcon, Phone, Settings } from 'lucide-react';
+import { LogOut, Home, History, Bell, User as UserIcon, Phone, Settings, Power, ShoppingCart } from 'lucide-react';
 import { ProfileViewManager } from '@/components/user/profile-view-manager';
 import { RentalHistory } from '@/components/rental-history';
-import { BookingForm } from '@/components/booking-form';
 import { SupportView } from '@/components/user/support-view';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
@@ -24,6 +23,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BottomNav } from '@/components/user/bottom-nav';
 import { Sidebar } from '@/components/sidebar';
+import Link from 'next/link';
+import { ProductList } from '@/components/user/product-list';
 
 export default function UserDashboard() {
   const { name, photoURL } = useAuth();
@@ -37,43 +38,31 @@ export default function UserDashboard() {
 
    const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
+    { name: 'products', icon: Power, label: 'Products' },
     { name: 'history', icon: History, label: 'History' },
+    { name: 'cart', icon: ShoppingCart, label: 'Cart' },
     { name: 'support', icon: Phone, label: 'Support' },
-    { name: 'notifications', icon: Bell, label: 'Alerts' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return (
-            <>
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold">Book a Generator</h1>
-                    <p className="text-muted-foreground">Select your generator and book your rental.</p>
-                </div>
-                <BookingForm />
-            </>
-        );
+        return <ProductList />;
+      case 'products':
+        router.push('/products');
+        return null;
+       case 'cart':
+        router.push('/cart');
+        return null;
       case 'history':
         return <RentalHistory />;
       case 'support':
         return <SupportView />;
-      case 'notifications':
-        return (
-            <Card>
-                <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <p className="text-muted-foreground">You have no new notifications.</p>
-                </CardContent>
-            </Card>
-        );
       case 'profile':
         return <ProfileViewManager />;
       default:
-        return <BookingForm />;
+        return <ProductList />;
     }
   };
 
@@ -91,7 +80,13 @@ export default function UserDashboard() {
             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} />
             <span className="text-xs font-bold">AMG</span>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+           <div className="ml-auto flex items-center gap-4">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/cart">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span className="sr-only">Cart</span>
+                </Link>
+             </Button>
             <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
