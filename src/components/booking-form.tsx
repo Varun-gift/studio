@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { addDays, format } from 'date-fns';
@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Checkbox } from './ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 // Price per hour per KVA
@@ -31,14 +31,14 @@ const GST_RATE = 0.18;
 
 const kvaCategories = ['62', '125', '180', '250', '320', '380', '500'];
 
-const bookedGeneratorSchema = z.object({
-  kvaCategory: z.string().min(1, 'Please select a KVA category.'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
-  usageHours: z.coerce.number().min(1, 'Usage hours must be at least 1.'),
-});
-
 const formSchema = z.object({
-  generators: z.array(bookedGeneratorSchema).min(1, 'Please add at least one generator to the booking.'),
+  selectedKva: z.array(z.string()).refine(value => value.length > 0, {
+    message: "You have to select at least one generator type.",
+  }),
+  generators: z.record(z.object({
+    quantity: z.coerce.number().min(1, "Min 1"),
+    usageHours: z.coerce.number().min(1, "Min 1hr"),
+  })),
   bookingDate: z.date({
     required_error: 'A booking date is required.',
   }),
@@ -58,33 +58,28 @@ export function BookingForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generators: [
-        { kvaCategory: '62', quantity: 1, usageHours: 8 }
-      ],
+      selectedKva: [],
+      generators: {},
       bookingDate: addDays(new Date(), 7),
       location: '',
     },
   });
 
-  const { control, watch } = form;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "generators"
-  });
-
+  const { watch, setValue } = form;
   const watchedGenerators = watch('generators');
+  const selectedKva = watch('selectedKva');
 
   useEffect(() => {
     const calculateTotal = () => {
       let currentSubtotal = 0;
-      for (const gen of watchedGenerators) {
-        const kva = parseInt(gen.kvaCategory);
-        const quantity = parseInt(gen.quantity as any);
-        const hours = parseFloat(gen.usageHours as any);
-
-        if (!isNaN(kva) && !isNaN(quantity) && !isNaN(hours)) {
-          // Simplified pricing: KVA * price_per_kva_hour * quantity * hours
-          currentSubtotal += kva * KVA_PRICE_PER_HOUR * quantity * hours;
+      for (const kva of selectedKva) {
+        const gen = watchedGenerators[kva];
+        if (gen) {
+          const quantity = gen.quantity;
+          const hours = gen.usageHours;
+          if (!isNaN(parseInt(kva)) && !isNaN(quantity) && !isNaN(hours)) {
+            currentSubtotal += parseInt(kva) * KVA_PRICE_PER_HOUR * quantity * hours;
+          }
         }
       }
       
@@ -96,8 +91,7 @@ export function BookingForm() {
       setTotalCost(currentTotal);
     };
     calculateTotal();
-  }, [watchedGenerators]);
-
+  }, [watchedGenerators, selectedKva]);
 
   const handlePdfDownload = () => {
     const values = form.getValues();
@@ -108,7 +102,14 @@ export function BookingForm() {
     
     doc.setFontSize(12);
     let yPos = 40;
-    values.generators.forEach((gen, index) => {
+
+    const finalGenerators = values.selectedKva.map(kva => ({
+      kvaCategory: kva,
+      quantity: values.generators[kva]?.quantity || 0,
+      usageHours: values.generators[kva]?.usageHours || 0,
+    })).filter(g => g.quantity > 0 && g.usageHours > 0);
+
+    finalGenerators.forEach((gen, index) => {
       doc.text(`Generator ${index + 1}: ${gen.kvaCategory} KVA`, 20, yPos);
       doc.text(`- Quantity: ${gen.quantity}`, 25, yPos + 7);
       doc.text(`- Usage: ${gen.usageHours} hours`, 25, yPos + 14);
@@ -138,9 +139,25 @@ export function BookingForm() {
       return;
     }
     setLoading(true);
+
+    // Transform the form data to the desired structure
+    const finalGenerators = values.selectedKva.map(kva => ({
+      kvaCategory: kva,
+      quantity: values.generators[kva]?.quantity || 0,
+      usageHours: values.generators[kva]?.usageHours || 0,
+    })).filter(g => g.quantity > 0 && g.usageHours > 0);
+
+    if (finalGenerators.length === 0) {
+      toast({ title: 'Error', description: 'Please select at least one generator with quantity and usage hours.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     try {
+      const { selectedKva, ...restOfValues } = values;
       await addDoc(collection(db, 'bookings'), {
-        ...values,
+        ...restOfValues,
+        generators: finalGenerators,
         userId: user.uid,
         userEmail: user.email,
         userName: name || 'N/A',
@@ -177,74 +194,98 @@ export function BookingForm() {
               <CardTitle>Generator Selection</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {fields.map((field, index) => (
-                <div key={field.id} className="p-4 border rounded-lg relative space-y-4 bg-muted/20">
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(index)}>
-                        <XCircle className="h-5 w-5 text-destructive" />
-                    </Button>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <FormField
-                      control={control}
-                      name={`generators.${index}.kvaCategory`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Generator Type (KVA)</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select KVA" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {kvaCategories.map(kva => (
-                                <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={control}
-                      name={`generators.${index}.quantity`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Quantity</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="e.g., 1" {...field} min="1"/>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={control}
-                      name={`generators.${index}.usageHours`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Usage Hours</FormLabel>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <FormField
+                control={form.control}
+                name="selectedKva"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {kvaCategories.map((item) => (
+                        <FormField
+                          key={item}
+                          control={form.control}
+                          name="selectedKva"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={item}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
                                 <FormControl>
-                                    <Input type="number" placeholder="e.g., 24" {...field} min="1" className="pl-10"/>
+                                  <Checkbox
+                                    checked={field.value?.includes(item)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, item])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== item
+                                            )
+                                          )
+                                    }}
+                                  />
                                 </FormControl>
-                            </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => append({ kvaCategory: '62', quantity: 1, usageHours: 8 })}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Another Generator
-              </Button>
-              <FormMessage>{form.formState.errors.generators?.message}</FormMessage>
+                                <FormLabel className="font-normal">
+                                  {item} KVA
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {selectedKva.length > 0 && <Separator />}
+
+              <div className="space-y-4">
+                {selectedKva.map((kva) => (
+                   <div key={kva} className="p-4 border rounded-lg relative space-y-4 bg-muted/20">
+                     <h4 className="font-semibold">{kva} KVA Generators</h4>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`generators.${kva}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantity</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="e.g., 1" {...field} min="1" onChange={(e) => {
+                                    field.onChange(e);
+                                    setValue(`generators.${kva}.quantity`, parseInt(e.target.value));
+                                }}/>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name={`generators.${kva}.usageHours`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Usage Hours</FormLabel>
+                                <div className="relative">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <FormControl>
+                                        <Input type="number" placeholder="e.g., 24" {...field} min="1" className="pl-10" onChange={(e) => {
+                                            field.onChange(e);
+                                            setValue(`generators.${kva}.usageHours`, parseInt(e.target.value));
+                                        }}/>
+                                    </FormControl>
+                                </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                     </div>
+                   </div>
+                ))}
+              </div>
+
             </CardContent>
           </Card>
         </div>
