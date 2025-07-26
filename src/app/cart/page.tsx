@@ -151,6 +151,8 @@ export default function CartPage() {
     try {
       await addDoc(collection(db, 'bookings'), {
         ...values,
+        userName: values.name,
+        userEmail: values.email,
         generators: generatorsToBook,
         userId: user.uid,
         status: 'Pending',
