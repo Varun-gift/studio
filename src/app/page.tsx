@@ -11,15 +11,18 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    // Wait until the loading is finished.
     if (loading) {
       return;
     }
 
+    // If there's no user, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
     }
     
+    // Once we have a user and their role, redirect them.
     if (role) {
       switch (role) {
         case 'admin':
@@ -32,10 +35,12 @@ export default function Home() {
           router.replace('/user');
           break;
         default:
+          // If role is something unexpected, send to login.
           router.replace('/login');
           break;
       }
     }
+    // If the role is still loading, the effect will re-run when it's available.
 
   }, [user, loading, role, router]);
 

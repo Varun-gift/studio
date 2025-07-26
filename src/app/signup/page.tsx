@@ -37,10 +37,11 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Create a document in the 'users' collection with the user's UID.
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: user.email,
-        role: 'user', 
+        role: 'user', // Assign a default role of 'user'
         createdAt: new Date(),
       });
 
@@ -50,9 +51,15 @@ export default function SignupPage() {
       });
       router.push('/login');
     } catch (error: any) {
+      let errorMessage = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email address is already in use by another account.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'The password is too weak. Please use a stronger password.';
+      }
       toast({
         title: "Signup Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

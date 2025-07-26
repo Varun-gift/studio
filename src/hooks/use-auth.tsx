@@ -61,12 +61,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let unsubscribeDoc: Unsubscribe | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
-      // If there was a previous user's document listener, unsubscribe from it.
       if (unsubscribeDoc) {
         unsubscribeDoc();
       }
 
       if (authUser) {
+        setLoading(true); // Start loading when authUser is found
         const userDocRef = doc(db, 'users', authUser.uid);
         unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
@@ -83,12 +83,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             (authUser as any).phone = userData.phone;
           } else {
             // User authenticated but no data in Firestore.
-            resetState();
+            // This is an inconsistent state, log them out.
+            auth.signOut();
           }
-          setLoading(false);
+          setLoading(false); // Finish loading after Firestore data is fetched
         }, (error) => {
           console.error("Error fetching user document:", error);
-          resetState();
+          auth.signOut(); // Log out on error
         });
       } else {
         // No authenticated user.
@@ -103,7 +104,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
   }, [resetState]);
-
 
   return (
     <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact }}>
