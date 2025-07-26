@@ -84,6 +84,13 @@ export function RentalHistory() {
     ].filter(Boolean).join(' ');
   }
 
+  const formatUsageHours = (usageHours: number | number[]) => {
+    if (Array.isArray(usageHours)) {
+        return usageHours.join(', ');
+    }
+    return usageHours;
+  }
+
   const renderSkeleton = () => (
     <TableRow>
       <TableCell colSpan={6}>
@@ -134,7 +141,7 @@ export function RentalHistory() {
                           <TableCell className="font-medium">
                               <div className="flex flex-col gap-1">
                                   {booking.generators.map((gen, idx) => (
-                                      <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours.join(', ')} hrs)</div>
+                                      <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({formatUsageHours(gen.usageHours)} hrs)</div>
                                   ))}
                               </div>
                           </TableCell>
