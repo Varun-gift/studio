@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { AmgLogo } from '@/components/amg-logo';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -68,12 +69,17 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
+    <div className="flex min-h-screen items-center justify-center bg-white p-4">
+      <Card className="w-full max-w-sm border-0 shadow-none">
+        <CardHeader className="text-center space-y-2">
+           <div className="flex justify-center items-center gap-2">
+             <AmgLogo className="h-12 w-12 text-brand-orange-primary" />
+             <h2 className="text-2xl font-bold tracking-wider text-brand-orange-primary">AMG</h2>
+           </div>
+           <p className="text-xs tracking-[0.2em] text-brand-blue-darker">POWER ALWAYS</p>
+          <CardTitle className="pt-4">Create an Account</CardTitle>
           <CardDescription>
-            Enter your information to create an account
+            Enter your information to get started.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,7 +116,7 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button variant="secondary" type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Account'}
             </Button>
           </form>
@@ -118,7 +124,7 @@ export default function SignupPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="underline text-primary">
+            <Link href="/login" className="underline text-brand-orange-primary">
               Login
             </Link>
           </p>

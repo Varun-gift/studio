@@ -5,39 +5,41 @@
 
 @layer base {
   :root {
-    --background: 22 100% 95%; /* Orange - Lightest #FFEDE6 */
+    --background: 206 83% 97%; /* #F3FAFE - Light Baby Blue */
     --foreground: 240 10% 3.9%; /* Black */
-    --card: 22 100% 80%; /* Orange - Lighter #FFB999 */
+
+    --card: 204 80% 85%; /* #D0ECF9 - Light Baby Blue */
     --card-foreground: 240 10% 3.9%;
-    --popover: 22 100% 95%;
+
+    --popover: 0 0% 100%; /* White */
     --popover-foreground: 240 10% 3.9%;
-    --primary: 204 80% 75%; /* Baby Blue - Light #89CFF0 */
-    --primary-foreground: 240 10% 3.9%;
-    --secondary: 20 100% 50%; /* Orange - Primary #FF4F00 */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 22 100% 90%; /* Orange - Lighter shade for muted */
-    --muted-foreground: 240 4% 46.1%;
-    --accent: 204 80% 85%; /* Baby Blue - Lighter #D0ECF9 */
+
+    --primary: 202 78% 58%; /* #89CFF0 - Baby Blue */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    --secondary: 16 100% 50%; /* #FF4F00 - Orange */
+    --secondary-foreground: 0 0% 100%; /* White */
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 204 80% 85%; /* #D0ECF9 - Lighter Baby Blue */
     --accent-foreground: 240 10% 3.9%;
-    --destructive: 0 84.2% 60.2%;
+
+    --destructive: 21 100% 35%; /* #B33700 - Dark Orange */
     --destructive-foreground: 0 0% 100%;
-    --border: 22 100% 80%;
-    --input: 22 100% 80%;
-    --ring: 204 80% 75%;
-    --chart-1: 204 80% 75%; /* Baby Blue */
-    --chart-2: 20 100% 65%; /* Orange Light */
-    --chart-3: 204 70% 65%;
-    --chart-4: 20 80% 55%;
-    --chart-5: 204 90% 80%;
+
+    --border: 201 65% 70%; /* #ACDDF5 - Lighter Baby Blue */
+    --input: 201 65% 70%; 
+    --ring: 16 100% 50%; /* #FF4F00 - Orange */
+
     --radius: 0.5rem;
-    --sidebar-background: 22 100% 95%;
-    --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-primary: 204 80% 75%;
-    --sidebar-primary-foreground: 240 10% 3.9%;
-    --sidebar-accent: 204 80% 85%;
-    --sidebar-accent-foreground: 240 10% 3.9%;
-    --sidebar-border: 22 100% 80%;
-    --sidebar-ring: 204 80% 75%;
+
+    --chart-1: 202 78% 58%; /* Baby Blue */
+    --chart-2: 16 100% 50%; /* Orange */
+    --chart-3: 201 65% 70%; /* Light Blue */
+    --chart-4: 25 100% 65%; /* Light Orange */
+    --chart-5: 204 80% 85%; /* Lighter Blue */
   }
 
   .dark {
@@ -47,32 +49,24 @@
     --card-foreground: 0 0% 98%;
     --popover: 20 5% 15%;
     --popover-foreground: 0 0% 98%;
-    --primary: 204 80% 75%; /* Baby Blue - Light #89CFF0 */
-    --primary-foreground: 240 10% 3.9%;
-    --secondary: 20 100% 50%; /* Orange - Primary #FF4F00 */
+    --primary: 202 78% 58%; /* Baby Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 16 100% 50%; /* Orange */
     --secondary-foreground: 0 0% 100%;
     --muted: 20 5% 25%;
     --muted-foreground: 0 0% 63%;
     --accent: 204 80% 85%; /* Baby Blue - Lighter #D0ECF9 */
     --accent-foreground: 240 10% 3.9%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 21 100% 35%;
     --destructive-foreground: 0 0% 98%;
     --border: 20 5% 25%;
     --input: 20 5% 25%;
-    --ring: 204 80% 75%;
-    --chart-1: 204 80% 75%;
-    --chart-2: 20 100% 65%;
-    --chart-3: 204 70% 65%;
-    --chart-4: 20 80% 55%;
-    --chart-5: 204 90% 80%;
-    --sidebar-background: 20 5% 15%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 204 80% 75%;
-    --sidebar-primary-foreground: 240 10% 3.9%;
-    --sidebar-accent: 204 80% 85%;
-    --sidebar-accent-foreground: 240 10% 3.9%;
-    --sidebar-border: 20 5% 25%;
-    --sidebar-ring: 204 80% 75%;
+    --ring: 16 100% 50%;
+    --chart-1: 202 78% 58%;
+    --chart-2: 16 100% 50%;
+    --chart-3: 201 65% 70%;
+    --chart-4: 25 100% 65%;
+    --chart-5: 204 80% 85%;
   }
 }
 

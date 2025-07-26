@@ -39,14 +39,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-white p-4">
+      <Card className="w-full max-w-sm border-0 shadow-none">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <AmgLogo className="h-12 w-12" />
-             <h2 className="text-2xl font-bold tracking-wider text-foreground">AMG</h2>
+             <AmgLogo className="h-12 w-12 text-brand-orange-primary" />
+             <h2 className="text-2xl font-bold tracking-wider text-brand-orange-primary">AMG</h2>
            </div>
-           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
+           <p className="text-xs tracking-[0.2em] text-brand-blue-darker">POWER ALWAYS</p>
            <CardTitle className="text-2xl pt-4">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Link
                   href="/forgot-password"
-                  className="ml-auto inline-block text-sm underline"
+                  className="ml-auto inline-block text-sm text-brand-orange-primary hover:underline"
                 >
                   Forgot your password?
                 </Link>
@@ -80,7 +80,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" variant="secondary" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
@@ -88,7 +88,7 @@ export default function LoginPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Link href="/signup" className="underline text-primary">
+            <Link href="/signup" className="underline text-brand-orange-primary">
               Sign up
             </Link>
           </p>

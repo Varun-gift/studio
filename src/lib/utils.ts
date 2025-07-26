@@ -13,9 +13,9 @@ export const getStatusVariant = (status: Booking['status']) => {
       case 'Active':
         return 'success';
       case 'Approved':
-        return 'secondary';
+        return 'default';
       case 'Completed':
-        return 'secondary';
+        return 'default';
       case 'Pending':
         return 'outline';
       case 'Rejected':
