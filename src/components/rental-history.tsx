@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from './ui/skeleton';
 import { format, isPast } from 'date-fns';
 import { BookingDetailsView } from './user/booking-details-view';
+import { getStatusVariant } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 
 export function RentalHistory() {
@@ -75,7 +77,6 @@ export function RentalHistory() {
         if (Array.isArray(gen.usageHours)) {
             return sum + gen.usageHours.reduce((hSum, h) => hSum + (h || 0), 0);
         }
-        // Fallback for older data where usageHours might be a single number
         return sum + (Number(gen.usageHours) || 0);
     }, 0);
 
@@ -120,14 +121,18 @@ export function RentalHistory() {
                 {upcomingBookings.length > 0 && (
                      <div>
                         <h2 className="text-xl font-semibold mb-4">Upcoming</h2>
-                        <div className="border-t">
-                        {upcomingBookings.map(booking => (
-                            <button key={booking.id} onClick={() => setSelectedBooking(booking)} className="w-full text-left p-4 border-b hover:bg-muted/50 transition-colors flex justify-between items-center">
+                        <div className="border rounded-lg">
+                        {upcomingBookings.map((booking, index) => (
+                            <button 
+                                key={booking.id} 
+                                onClick={() => setSelectedBooking(booking)} 
+                                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${index < upcomingBookings.length - 1 ? 'border-b' : ''}`}
+                            >
                                 <div>
-                                    <p className="font-semibold">Date: {format(booking.bookingDate, 'yyyy-MM-dd')}</p>
+                                    <p className="font-semibold">{format(booking.bookingDate, 'PPP')}</p>
                                     <p className="text-sm text-muted-foreground">{getGeneratorSummary(booking)}</p>
                                 </div>
-                                <p className="font-semibold text-lg">₹{booking.estimatedCost.toLocaleString()}</p>
+                                <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                             </button>
                         ))}
                         </div>
@@ -136,15 +141,19 @@ export function RentalHistory() {
 
                {pastBookings.length > 0 && (
                     <div>
-                        <h2 className="text-xl font-semibold mb-4">Past</h2>
-                        <div className="border-t">
-                        {pastBookings.map(booking => (
-                            <button key={booking.id} onClick={() => setSelectedBooking(booking)} className="w-full text-left p-4 border-b hover:bg-muted/50 transition-colors flex justify-between items-center">
+                        <h2 className="text-xl font-semibold mb-4 mt-8">Past</h2>
+                        <div className="border rounded-lg">
+                        {pastBookings.map((booking, index) => (
+                             <button 
+                                key={booking.id} 
+                                onClick={() => setSelectedBooking(booking)} 
+                                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${index < pastBookings.length - 1 ? 'border-b' : ''}`}
+                            >
                                 <div>
-                                    <p className="font-semibold">Date: {format(booking.bookingDate, 'yyyy-MM-dd')}</p>
+                                    <p className="font-semibold">{format(booking.bookingDate, 'PPP')}</p>
                                     <p className="text-sm text-muted-foreground">{getGeneratorSummary(booking)}</p>
                                 </div>
-                                <p className="font-semibold text-lg">₹{booking.estimatedCost.toLocaleString()}</p>
+                                <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                             </button>
                         ))}
                         </div>
