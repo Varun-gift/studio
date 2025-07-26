@@ -53,11 +53,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removeFromCart = (itemId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
-    toast({
-      title: 'Item Removed',
-      description: 'The item has been removed from your cart.',
-      variant: 'destructive'
+    setCartItems(prevItems => {
+      const newItems = prevItems.filter(item => item.id !== itemId);
+      toast({
+        title: 'Item Removed',
+        description: 'The item has been removed from your cart.',
+        variant: 'destructive'
+      });
+      return newItems;
     });
   };
 
