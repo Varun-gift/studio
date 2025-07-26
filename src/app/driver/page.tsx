@@ -119,17 +119,19 @@ export default function DriverDashboard() {
             const booking = bookings.find(b => b.id === bookingId);
             if(booking && (!booking.timers || booking.timers.length === 0)) {
                 const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
-                let timerCount = 1;
-                booking.generators.forEach(gen => {
-                    const generatorId = `${gen.kvaCategory}KVA-${timerCount++}`;
-                    const timerDocRef = doc(timersCollectionRef);
-                    batch.set(timerDocRef, {
+                
+                booking.generators.forEach(genGroup => {
+                  for (let i = 0; i < genGroup.quantity; i++) {
+                     const generatorId = `${genGroup.kvaCategory}KVA-U${i+1}`;
+                     const timerDocRef = doc(timersCollectionRef);
+                     batch.set(timerDocRef, {
                         generatorId,
                         status: 'stopped',
                         startTime: new Date(),
                         endTime: null,
                         duration: 0,
                     });
+                  }
                 });
             }
              await batch.commit();
@@ -250,7 +252,7 @@ export default function DriverDashboard() {
                                     <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Generators</h4>
                                     <ul className="list-disc list-inside text-sm text-muted-foreground">
                                         {booking.generators.map((gen, idx) => (
-                                            <li key={idx}>1 x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</li>
+                                            <li key={idx}>{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours.join(', ')} hrs)</li>
                                         ))}
                                     </ul>
                                   </div>

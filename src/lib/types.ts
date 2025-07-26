@@ -27,9 +27,10 @@ export interface Generator {
   pricePerHour: number;
 }
 
-export interface BookedGenerator {
+export interface GeneratorGroup {
   kvaCategory: string;
-  usageHours: number;
+  quantity: number;
+  usageHours: number[];
 }
 
 export interface Booking {
@@ -39,7 +40,7 @@ export interface Booking {
   userName: string;
   companyName?: string;
   phone?: string;
-  generators: BookedGenerator[];
+  generators: GeneratorGroup[];
   location: string;
   bookingDate: Date;
   additionalNotes?: string;

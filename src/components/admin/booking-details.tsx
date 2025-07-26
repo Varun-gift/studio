@@ -63,15 +63,16 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                 <div className="space-y-4">
                     <h4 className="font-semibold text-foreground">Generators Requested</h4>
                     <div className="space-y-2">
-                    {booking.generators.map((gen, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted/50">
-                            <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4" />
-                                <span>{gen.kvaCategory} KVA</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className="text-muted-foreground">Qty: 1</span>
-                                <span className="text-muted-foreground">Usage: {gen.usageHours} hrs</span>
+                    {booking.generators.map((genGroup, index) => (
+                        <div key={index} className="flex justify-between items-start text-sm p-3 rounded-md bg-muted/50">
+                            <div className="flex items-start gap-3">
+                                <Package className="h-5 w-5 mt-1" />
+                                <div>
+                                    <p className="font-semibold">{genGroup.quantity} x {genGroup.kvaCategory} KVA</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Hours: {genGroup.usageHours.join(', ')}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     ))}

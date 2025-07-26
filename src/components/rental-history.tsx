@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
 import { getStatusVariant } from '@/lib/utils';
-import { Truck, User, Phone, Timer, Package } from 'lucide-react';
+import { Truck, User, Phone, Timer } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Button } from './ui/button';
@@ -134,7 +134,7 @@ export function RentalHistory() {
                           <TableCell className="font-medium">
                               <div className="flex flex-col gap-1">
                                   {booking.generators.map((gen, idx) => (
-                                      <div key={idx} className="text-xs">1 x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
+                                      <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours.join(', ')} hrs)</div>
                                   ))}
                               </div>
                           </TableCell>

@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addDays, format } from 'date-fns';
@@ -39,16 +39,18 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { CalendarDays, Download, Loader2, Power, Clock, Plus, Trash } from 'lucide-react';
+import { CalendarDays, Download, Loader2, Plus, Trash, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const KVA_CATEGORIES = ['62', '125', '180', '250', '320', '380', '500'];
 const PRICE_PER_HOUR_PER_KVA = 4;
 const GST_RATE = 0.18;
 
-const generatorSchema = z.object({
+const generatorGroupSchema = z.object({
     kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
-    usageHours: z.coerce.number().min(1, 'Usage must be at least 1 hour.'),
+    quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
+    usageHours: z.array(z.coerce.number().min(1, 'Usage must be at least 1 hour.')),
 });
 
 const bookingFormSchema = z.object({
@@ -58,12 +60,123 @@ const bookingFormSchema = z.object({
   email: z.string().email(),
   location: z.string().min(10, 'Please enter a complete address.'),
   bookingDate: z.date(),
-  generators: z.array(generatorSchema).min(1, 'Please add at least one generator.'),
+  generators: z.array(generatorGroupSchema).min(1, 'Please add at least one generator group.'),
   needsElectrician: z.boolean().default(false),
   additionalNotes: z.string().optional(),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
+
+const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: number, remove: (index: number) => void }) => {
+    const { fields, append, remove: removeHour } = useFieldArray({
+        control,
+        name: `generators.${index}.usageHours`
+    });
+
+    const quantity = useWatch({
+        control,
+        name: `generators.${index}.quantity`,
+        defaultValue: 1
+    });
+
+    const kvaCategory = useWatch({
+        control,
+        name: `generators.${index}.kvaCategory`,
+    });
+
+    React.useEffect(() => {
+        const currentCount = fields.length;
+        const targetCount = quantity || 0;
+        if (currentCount < targetCount) {
+            for (let i = currentCount; i < targetCount; i++) {
+                append(8); // Default 8 hours
+            }
+        } else if (currentCount > targetCount) {
+            for (let i = currentCount - 1; i >= targetCount; i--) {
+                removeHour(i);
+            }
+        }
+    }, [quantity, fields.length, append, removeHour]);
+
+    return (
+        <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
+            <AccordionTrigger>
+                <div className="flex justify-between w-full pr-4">
+                    <span className="font-semibold">{kvaCategory ? `${quantity} x ${kvaCategory} KVA` : 'New Generator Group'}</span>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            remove(index);
+                        }}
+                        className="h-8 w-8 hover:bg-destructive/10"
+                    >
+                        <Trash className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <FormField
+                        control={control}
+                        name={`generators.${index}.kvaCategory`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>KVA Category</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select KVA" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {KVA_CATEGORIES.map(kva => <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={control}
+                        name={`generators.${index}.quantity`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Quantity</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="e.g., 3" {...field} min="1" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                 <h4 className="text-sm font-medium mb-2">Usage Hours per Unit</h4>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {fields.map((field, hourIndex) => (
+                        <FormField
+                            key={field.id}
+                            control={control}
+                            name={`generators.${index}.usageHours.${hourIndex}`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs text-muted-foreground">Unit {hourIndex + 1}</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="Hours" {...field} min="1"/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    ))}
+                 </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
+};
+
 
 export function BookingForm() {
   const { user, name, email, company, phone } = useAuth();
@@ -82,7 +195,7 @@ export function BookingForm() {
       email: '',
       location: '',
       bookingDate: addDays(new Date(), 7),
-      generators: [{ kvaCategory: '', usageHours: 8 }],
+      generators: [{ kvaCategory: '', quantity: 1, usageHours: [8] }],
       needsElectrician: false,
       additionalNotes: '',
     },
@@ -97,10 +210,11 @@ export function BookingForm() {
   const watchedGenerators = watch('generators');
 
   React.useEffect(() => {
-    const total = watchedGenerators.reduce((acc, gen) => {
-        if (gen.kvaCategory && gen.usageHours > 0) {
-            const kvaValue = parseInt(gen.kvaCategory, 10);
-            return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * gen.usageHours);
+    const total = watchedGenerators.reduce((acc, genGroup) => {
+        if (genGroup.kvaCategory && genGroup.usageHours.length > 0) {
+            const kvaValue = parseInt(genGroup.kvaCategory, 10);
+            const totalHours = genGroup.usageHours.reduce((sum, hours) => sum + (hours || 0), 0);
+            return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * totalHours);
         }
         return acc;
     }, 0);
@@ -141,13 +255,18 @@ export function BookingForm() {
     doc.setFontSize(14);
     doc.text('Generator Details:', 20, yPos);
     
-    values.generators.forEach((gen, index) => {
-        yPos += 10;
+    values.generators.forEach((genGroup, index) => {
+        yPos += 7;
+        doc.setFontSize(12);
+        doc.text(`Group ${index + 1}: ${genGroup.quantity} x ${genGroup.kvaCategory} KVA`, 25, yPos);
+        yPos += 5;
         doc.setFontSize(10);
-        doc.text(`Item ${index + 1}: 1 x ${gen.kvaCategory} KVA for ${gen.usageHours} hours`, 25, yPos);
+        const hoursString = genGroup.usageHours.map((h, i) => `Unit ${i+1}: ${h}hrs`).join(', ');
+        doc.text(hoursString, 30, yPos, { maxWidth: 150 });
+        yPos = doc.lastAutoTable.finalY || yPos;
     });
     
-    yPos += 20;
+    yPos += 15;
     doc.setFontSize(14);
     doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 20, yPos);
     yPos += 10;
@@ -215,66 +334,29 @@ export function BookingForm() {
                 <CardHeader>
                   <CardTitle>Generator Selection</CardTitle>
                   <CardDescription>
-                    Add one or more generators to your booking. Each line represents one generator.
+                    Add generator groups, set quantities, and specify usage hours for each unit.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 p-4 border rounded-lg relative items-end">
-                      <FormField
-                        control={form.control}
-                        name={`generators.${index}.kvaCategory`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className={cn(index !== 0 && "sr-only")}>KVA</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select KVA" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {KVA_CATEGORIES.map(kva => <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`generators.${index}.usageHours`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className={cn(index !== 0 && "sr-only")}>Usage Hours</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="Hours" {...field} min="1" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                       <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(index)}
-                            disabled={fields.length === 1}
-                        >
-                            <Trash className="h-4 w-4" />
-                            <span className="sr-only">Remove Generator</span>
-                        </Button>
-                    </div>
-                  ))}
+                    <Accordion type="multiple" className="w-full space-y-4">
+                        {fields.map((field, index) => (
+                           <GeneratorGroupItem 
+                             key={field.id}
+                             control={form.control} 
+                             index={index} 
+                             remove={remove} 
+                           />
+                        ))}
+                    </Accordion>
                    <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-2"
-                    onClick={() => append({ kvaCategory: '', usageHours: 8 })}
+                    className="mt-4"
+                    onClick={() => append({ kvaCategory: '', quantity: 1, usageHours: [8] })}
                    >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Another Generator
+                    Add Another Generator Group
                    </Button>
                 </CardContent>
               </Card>
