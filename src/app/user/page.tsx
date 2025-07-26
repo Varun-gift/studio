@@ -92,7 +92,7 @@ export default function UserDashboard() {
             <span className="text-xs font-bold">AMG</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden sm:inline-block">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
+            <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">

@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { sendPasswordResetLink } from '@/app/actions';
+import { AmgLogo } from '@/components/amg-logo';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -69,24 +70,25 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm rounded-2xl shadow-lg bg-white/10 backdrop-blur-lg border-white/20 text-white">
+      <Card className="w-full max-w-sm">
          <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <h2 className="text-2xl font-bold tracking-wider">AMG</h2>
+             <AmgLogo className="h-12 w-12" />
+             <h2 className="text-2xl font-bold tracking-wider text-foreground">AMG</h2>
            </div>
-           <p className="text-xs tracking-[0.2em] text-white/70">POWER ALWAYS</p>
+           <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>
            <CardTitle className="text-2xl pt-4">Forgot Password</CardTitle>
-           <CardDescription className="text-white/70">
+           <CardDescription>
             Enter your email to receive a reset link.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {submitted ? (
-            <div className="text-center text-sm text-white/70">
+            <div className="text-center text-sm text-muted-foreground">
               <p>
                 If an account with that email exists, you will receive a password reset link shortly.
               </p>
-              <Button asChild variant="link" className="mt-4 text-white">
+              <Button asChild variant="link" className="mt-4">
                   <Link href="/login">
                       Back to Login
                   </Link>
@@ -106,7 +108,6 @@ export default function ForgotPasswordPage() {
                           type="email"
                           placeholder="Email"
                           {...field}
-                          className="bg-white/20 border-0 h-12 placeholder:text-white/70"
                         />
                       </FormControl>
                       <FormMessage />

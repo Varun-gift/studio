@@ -63,7 +63,7 @@ export function AnalyticsCharts() {
         <CardHeader>
           <CardTitle>Booking Status Overview</CardTitle>
            <CardDescription>
-            <span className="text-4xl font-bold">{stats.totalBookings}</span>
+            <span className="text-4xl font-bold text-foreground">{stats.totalBookings}</span>
             <span className="text-muted-foreground"> Total</span>
            </CardDescription>
         </CardHeader>
@@ -108,7 +108,7 @@ export function AnalyticsCharts() {
         <CardHeader>
           <CardTitle>Generator Distribution</CardTitle>
           <CardDescription>
-             <span className="text-4xl font-bold">{stats.generatorDistribution.reduce((acc, curr) => acc + curr.value, 0)}%</span>
+             <span className="text-4xl font-bold text-foreground">{stats.generatorDistribution.reduce((acc, curr) => acc + curr.value, 0)}%</span>
             <span className="text-muted-foreground"> Total</span>
           </CardDescription>
         </CardHeader>
