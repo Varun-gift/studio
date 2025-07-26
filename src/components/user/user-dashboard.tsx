@@ -22,6 +22,13 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
     
     const recentBooking = bookings.length > 0 ? bookings[0] : null;
 
+    const formatUsageHours = (usageHours: number | number[]) => {
+        if (Array.isArray(usageHours)) {
+            return usageHours.join(', ');
+        }
+        return usageHours;
+    }
+
     return (
         <div className="space-y-8 py-4">
             <div className="space-y-2">
@@ -61,7 +68,7 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
                                 <h4 className="font-medium flex items-center gap-2"><Package className="h-5 w-5" /> Generators</h4>
                                 <ul className="list-disc list-inside text-muted-foreground pl-2">
                                     {recentBooking.generators.map((gen, idx) => (
-                                        <li key={idx} className="text-sm">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours.join(', ')} hrs)</li>
+                                        <li key={idx} className="text-sm">{gen.quantity} x {gen.kvaCategory} KVA ({formatUsageHours(gen.usageHours)} hrs)</li>
                                     ))}
                                 </ul>
                             </div>
