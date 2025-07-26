@@ -26,8 +26,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { suggestGeneratorSize } from '@/app/actions';
-import type { GeneratorSizingOutput } from '@/ai/flows/generator-sizing';
+import { suggestGeneratorSize, type GeneratorSizingOutput } from '@/ai/flows/generator-sizing';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
