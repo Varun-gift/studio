@@ -75,10 +75,10 @@ export default function UserDashboard() {
             <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
+                    <Button variant="secondary" size="icon" className="rounded-full bg-brand-orange-primary hover:bg-brand-orange-primary/90">
                         <Avatar className="h-9 w-9">
                             <AvatarImage src={photoURL || ''} alt={name || 'User'} />
-                            <AvatarFallback>{name?.[0]?.toUpperCase()}</AvatarFallback>
+                            <AvatarFallback className="bg-transparent text-white">{name?.[0]?.toUpperCase()}</AvatarFallback>
                         </Avatar>
                     </Button>
                 </DropdownMenuTrigger>

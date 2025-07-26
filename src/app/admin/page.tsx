@@ -109,10 +109,10 @@ export default function AdminPage() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
+              <Button variant="secondary" size="icon" className="rounded-full bg-brand-orange-primary hover:bg-brand-orange-primary/90">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={photoURL || ''} alt={name || 'Admin'} />
-                  <AvatarFallback>{name?.[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="bg-transparent text-white">{name?.[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
