@@ -6,12 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
-import { LogOut, Home, History, Bell, User as UserIcon, Phone, Settings, Power, ShoppingCart } from 'lucide-react';
-import { ProfileViewManager } from '@/components/user/profile-view-manager';
-import { RentalHistory } from '@/components/rental-history';
-import { SupportView } from '@/components/user/support-view';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Image from 'next/image';
+import { LogOut, Home, History, Settings, Phone, Zap } from 'lucide-react';
+import { Dashboard } from '@/components/dashboard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -23,13 +19,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BottomNav } from '@/components/user/bottom-nav';
 import { Sidebar } from '@/components/sidebar';
-import Link from 'next/link';
-import { ProductList } from '@/components/user/product-list';
+import { ProfileViewManager } from '@/components/user/profile-view-manager';
+import { GeneratorSizingTool } from '@/components/generator-sizing-tool';
+import { RentalHistory } from '@/components/rental-history';
+import { SupportView } from '@/components/user/support-view';
+import { BookingForm } from '@/components/booking-form';
+import Image from 'next/image';
 
 export default function UserDashboard() {
   const { name, photoURL } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState('home');
+  const [activeTab, setActiveTab] = React.useState('dashboard');
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -37,32 +37,27 @@ export default function UserDashboard() {
   };
 
    const navItems = [
-    { name: 'home', icon: Home, label: 'Home' },
-    { name: 'products', icon: Power, label: 'Products' },
+    { name: 'dashboard', icon: Home, label: 'Book' },
     { name: 'history', icon: History, label: 'History' },
-    { name: 'cart', icon: ShoppingCart, label: 'Cart' },
+    { name: 'sizing', icon: Zap, label: 'Sizing Tool' },
     { name: 'support', icon: Phone, label: 'Support' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'home':
-        return <ProductList />;
-      case 'products':
-        router.push('/products');
-        return null;
-       case 'cart':
-        router.push('/cart');
-        return null;
+      case 'dashboard':
+        return <BookingForm />;
       case 'history':
         return <RentalHistory />;
+      case 'sizing':
+        return <GeneratorSizingTool />;
       case 'support':
         return <SupportView />;
       case 'profile':
         return <ProfileViewManager />;
       default:
-        return <ProductList />;
+        return <BookingForm />;
     }
   };
 
@@ -81,12 +76,6 @@ export default function UserDashboard() {
             <span className="text-xs font-bold">AMG</span>
           </div>
            <div className="ml-auto flex items-center gap-4">
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/cart">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span className="sr-only">Cart</span>
-                </Link>
-             </Button>
             <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

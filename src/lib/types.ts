@@ -27,15 +27,8 @@ export interface Generator {
   pricePerHour: number;
 }
 
-export interface CartItem extends Generator {
-    quantity: number;
-    usageHours: number;
-}
-
 export interface BookedGenerator {
-  id: string;
-  name: string;
-  kva: string;
+  kvaCategory: string;
   quantity: number;
   usageHours: number;
 }
