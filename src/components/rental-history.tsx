@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -130,79 +129,79 @@ export function RentalHistory() {
               ) : (
                 bookings.map((booking) => (
                   <Collapsible asChild key={booking.id}>
-                    <>
-                    <TableRow>
-                        <TableCell className="font-medium">
-                            <div className="flex flex-col gap-1">
-                                {booking.generators.map((gen, idx) => (
-                                    <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
-                                ))}
-                            </div>
-                        </TableCell>
-                        <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
-                        <TableCell>
-                        <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
-                        </TableCell>
-                        <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
-                        <TableCell>
-                            {booking.driverInfo ? (
-                            <div className='flex flex-col gap-1'>
-                                <div className='flex items-center gap-2'>
-                                <Truck className='size-3 text-muted-foreground' />
-                                <span className='font-medium'>{booking.driverInfo.name}</span>
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                                <Phone className='size-3' />
-                                <span>{booking.driverInfo.contact}</span>
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
-                                <User className='size-3' />
-                                <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
-                                </div>
-                            </div>
-                            ) : 'Not Assigned'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {booking.timers && booking.timers.length > 0 && (
-                            <CollapsibleTrigger asChild>
-                               <Button variant="ghost" size="sm">
-                                  <ChevronDown className="h-4 w-4" />
-                                  <span className="sr-only">Toggle Details</span>
-                               </Button>
-                            </CollapsibleTrigger>
-                          )}
-                        </TableCell>
-                    </TableRow>
-                     <CollapsibleContent asChild>
-                        <tr className="bg-muted/50">
-                            <TableCell colSpan={6}>
-                                <div className="p-4">
-                                <h4 className="font-semibold text-md mb-2 flex items-center gap-2"><Timer className='h-5 w-5' />Timer Logs</h4>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Generator ID</TableHead>
-                                            <TableHead>Start Time</TableHead>
-                                            <TableHead>End Time</TableHead>
-                                            <TableHead>Duration</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {booking.timers?.map(timer => (
-                                            <TableRow key={timer.id}>
-                                                <TableCell>{timer.generatorId}</TableCell>
-                                                <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
-                                                <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
-                                                <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                </div>
-                            </TableCell>
-                        </tr>
-                     </CollapsibleContent>
-                    </>
+                    <tbody className='w-full'>
+                      <TableRow>
+                          <TableCell className="font-medium">
+                              <div className="flex flex-col gap-1">
+                                  {booking.generators.map((gen, idx) => (
+                                      <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
+                                  ))}
+                              </div>
+                          </TableCell>
+                          <TableCell>{format(booking.bookingDate, 'PPP')}</TableCell>
+                          <TableCell>
+                          <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                          </TableCell>
+                          <TableCell>₹{booking.estimatedCost.toLocaleString()}</TableCell>
+                          <TableCell>
+                              {booking.driverInfo ? (
+                              <div className='flex flex-col gap-1'>
+                                  <div className='flex items-center gap-2'>
+                                  <Truck className='size-3 text-muted-foreground' />
+                                  <span className='font-medium'>{booking.driverInfo.name}</span>
+                                  </div>
+                                  <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                                  <Phone className='size-3' />
+                                  <span>{booking.driverInfo.contact}</span>
+                                  </div>
+                                  <div className='flex items-center gap-2 text-xs text-muted-foreground pl-1'>
+                                  <User className='size-3' />
+                                  <span>Elec: {booking.driverInfo.electricianName || 'N/A'}</span>
+                                  </div>
+                              </div>
+                              ) : 'Not Assigned'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {booking.timers && booking.timers.length > 0 && (
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                    <ChevronDown className="h-4 w-4" />
+                                    <span className="sr-only">Toggle Details</span>
+                                </Button>
+                              </CollapsibleTrigger>
+                            )}
+                          </TableCell>
+                      </TableRow>
+                      <CollapsibleContent asChild>
+                          <tr className="bg-muted/50">
+                              <TableCell colSpan={6}>
+                                  <div className="p-4">
+                                  <h4 className="font-semibold text-md mb-2 flex items-center gap-2"><Timer className='h-5 w-5' />Timer Logs</h4>
+                                  <Table>
+                                      <TableHeader>
+                                          <TableRow>
+                                              <TableHead>Generator ID</TableHead>
+                                              <TableHead>Start Time</TableHead>
+                                              <TableHead>End Time</TableHead>
+                                              <TableHead>Duration</TableHead>
+                                          </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                          {booking.timers?.map(timer => (
+                                              <TableRow key={timer.id}>
+                                                  <TableCell>{timer.generatorId}</TableCell>
+                                                  <TableCell>{timer.startTime ? format(timer.startTime, 'PPpp') : 'Not started'}</TableCell>
+                                                  <TableCell>{timer.endTime ? format(timer.endTime, 'PPpp') : 'N/A'}</TableCell>
+                                                  <TableCell>{timer.duration ? formatDuration(timer.duration) : 'N/A'}</TableCell>
+                                              </TableRow>
+                                          ))}
+                                      </TableBody>
+                                  </Table>
+                                  </div>
+                              </TableCell>
+                          </tr>
+                      </CollapsibleContent>
+                    </tbody>
                   </Collapsible>
                 ))
               )}
