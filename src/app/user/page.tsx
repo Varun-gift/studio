@@ -103,7 +103,7 @@ export default function UserDashboardPage() {
           </div>
         </header>
         
-        <main className="flex-1 space-y-4 pb-20 md:pb-4">
+        <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-0">
             {renderContent()}
         </main>
       </div>
