@@ -24,7 +24,6 @@ import { SupportView } from '@/components/user/support-view';
 import { BookingForm } from '@/components/booking-form';
 import Image from 'next/image';
 import { UserDashboard } from '@/components/user/user-dashboard';
-import { AnimatePresence, motion } from 'framer-motion';
 
 export default function UserDashboardPage() {
   const { name, photoURL } = useAuth();
@@ -105,17 +104,7 @@ export default function UserDashboardPage() {
         </header>
         
         <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-0">
-             <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {renderContent()}
-                </motion.div>
-            </AnimatePresence>
+          {renderContent()}
         </main>
       </div>
         
