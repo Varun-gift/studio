@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { BookingForm } from './booking-form';
 import { RentalHistory } from './rental-history';
 import { SupportView } from './user/support-view';
+import { UserDashboard } from './user/user-dashboard';
 
 interface DashboardProps {
   activeTab: string;
@@ -15,22 +16,16 @@ export function Dashboard({ activeTab, setActiveTab, name }: DashboardProps) {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return (
-          <>
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold">Book a Generator</h1>
-              <p className="text-muted-foreground">Select your generator and book your rental.</p>
-            </div>
-            <BookingForm />
-          </>
-        );
+      case 'home':
+        return <UserDashboard setActiveTab={setActiveTab} />;
+      case 'booking':
+        return <BookingForm />;
       case 'history':
         return <RentalHistory />;
       case 'support':
           return <SupportView />;
       default:
-        return <BookingForm />;
+        return <UserDashboard setActiveTab={setActiveTab} />;
     }
   };
 

@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
-import { LogOut, Home, History, Settings, Phone } from 'lucide-react';
-import { Dashboard } from '@/components/dashboard';
+import { LogOut, Home, History, Settings, Phone, Power } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -24,11 +23,12 @@ import { RentalHistory } from '@/components/rental-history';
 import { SupportView } from '@/components/user/support-view';
 import { BookingForm } from '@/components/booking-form';
 import Image from 'next/image';
+import { UserDashboard } from '@/components/user/user-dashboard';
 
-export default function UserDashboard() {
+export default function UserDashboardPage() {
   const { name, photoURL } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState('dashboard');
+  const [activeTab, setActiveTab] = React.useState('home');
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -36,15 +36,20 @@ export default function UserDashboard() {
   };
 
    const navItems = [
-    { name: 'dashboard', icon: Home, label: 'Book' },
+    { name: 'home', icon: Home, label: 'Home' },
+    { name: 'booking', icon: Power, label: 'Book' },
     { name: 'history', icon: History, label: 'History' },
     { name: 'support', icon: Phone, label: 'Support' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
+  
+  const mainNavItems = navItems.filter(item => item.name !== 'booking');
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
+      case 'home':
+        return <UserDashboard setActiveTab={setActiveTab} />;
+      case 'booking':
         return <BookingForm />;
       case 'history':
         return <RentalHistory />;
@@ -53,7 +58,7 @@ export default function UserDashboard() {
       case 'profile':
         return <ProfileViewManager />;
       default:
-        return <BookingForm />;
+        return <UserDashboard setActiveTab={setActiveTab} />;
     }
   };
 
@@ -63,7 +68,7 @@ export default function UserDashboard() {
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        navItems={navItems}
+        navItems={mainNavItems}
       />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">

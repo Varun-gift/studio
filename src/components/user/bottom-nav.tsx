@@ -2,9 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { Home, History, Bell, User, Phone, ShoppingCart, Zap } from 'lucide-react';
+import { Home, History, User, Phone, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 
 interface BottomNavProps {
   activeTab: string;
@@ -14,16 +13,17 @@ interface BottomNavProps {
 export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
     
     const navItems = [
-    { name: 'dashboard', icon: Home, label: 'Book', href: '/user' },
-    { name: 'history', icon: History, label: 'History', href: '/user' },
-    { name: 'support', icon: Phone, label: 'Support', href: '/user' },
-    { name: 'profile', icon: User, label: 'Profile', href: '/user' },
+    { name: 'home', icon: Home, label: 'Home' },
+    { name: 'booking', icon: Power, label: 'Book' },
+    { name: 'history', icon: History, label: 'History' },
+    { name: 'support', icon: Phone, label: 'Support' },
+    { name: 'profile', icon: User, label: 'Profile' },
   ];
 
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-white md:hidden z-20">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => {
             const isActive = activeTab === item.name;
             return (
