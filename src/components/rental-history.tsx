@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from './ui/skeleton';
-import { format, isPast } from 'date-fns';
+import { format } from 'date-fns';
 import { BookingDetailsView } from './user/booking-details-view';
 import { getStatusVariant } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ export function RentalHistory() {
     const bookingsQuery = query(
       collection(db, 'bookings'),
       where('userId', '==', user.uid),
-      orderBy('bookingDate', 'desc')
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
@@ -98,9 +98,6 @@ export function RentalHistory() {
      </div>
   );
 
-  const upcomingBookings = bookings.filter(b => !isPast(b.bookingDate));
-  const pastBookings = bookings.filter(b => isPast(b.bookingDate));
-
   if(selectedBooking) {
       return <BookingDetailsView booking={selectedBooking} onBack={() => setSelectedBooking(null)} />;
   }
@@ -109,7 +106,7 @@ export function RentalHistory() {
     <Card>
       <CardHeader>
         <CardTitle>Your Rentals</CardTitle>
-        <CardDescription>A list of your past and upcoming generator rentals.</CardDescription>
+        <CardDescription>A list of your generator rentals.</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -117,48 +114,20 @@ export function RentalHistory() {
         ) : bookings.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">You have no booking history.</p>
         ) : (
-            <div className="space-y-8">
-                {upcomingBookings.length > 0 && (
-                     <div>
-                        <h2 className="text-xl font-semibold mb-4">Upcoming</h2>
-                        <div className="border rounded-lg">
-                        {upcomingBookings.map((booking, index) => (
-                            <button 
-                                key={booking.id} 
-                                onClick={() => setSelectedBooking(booking)} 
-                                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${index < upcomingBookings.length - 1 ? 'border-b' : ''}`}
-                            >
-                                <div>
-                                    <p className="font-semibold">{format(booking.bookingDate, 'PPP')}</p>
-                                    <p className="text-sm text-muted-foreground">{getGeneratorSummary(booking)}</p>
-                                </div>
-                                <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
-                            </button>
-                        ))}
-                        </div>
-                    </div>
-                )}
-
-               {pastBookings.length > 0 && (
+            <div className="border rounded-lg">
+              {bookings.map((booking, index) => (
+                <button 
+                    key={booking.id} 
+                    onClick={() => setSelectedBooking(booking)} 
+                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${index < bookings.length - 1 ? 'border-b' : ''}`}
+                >
                     <div>
-                        <h2 className="text-xl font-semibold mb-4 mt-8">Past</h2>
-                        <div className="border rounded-lg">
-                        {pastBookings.map((booking, index) => (
-                             <button 
-                                key={booking.id} 
-                                onClick={() => setSelectedBooking(booking)} 
-                                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${index < pastBookings.length - 1 ? 'border-b' : ''}`}
-                            >
-                                <div>
-                                    <p className="font-semibold">{format(booking.bookingDate, 'PPP')}</p>
-                                    <p className="text-sm text-muted-foreground">{getGeneratorSummary(booking)}</p>
-                                </div>
-                                <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
-                            </button>
-                        ))}
-                        </div>
+                        <p className="font-semibold">{format(booking.bookingDate, 'PPP')}</p>
+                        <p className="text-sm text-muted-foreground">{getGeneratorSummary(booking)}</p>
                     </div>
-                )}
+                    <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                </button>
+              ))}
             </div>
         )}
       </CardContent>
