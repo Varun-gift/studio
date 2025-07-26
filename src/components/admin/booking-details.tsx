@@ -70,7 +70,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                                 <span>{gen.kvaCategory} KVA</span>
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="text-muted-foreground">Qty: {gen.quantity}</span>
+                                <span className="text-muted-foreground">Qty: 1</span>
                                 <span className="text-muted-foreground">Usage: {gen.usageHours} hrs</span>
                             </div>
                         </div>

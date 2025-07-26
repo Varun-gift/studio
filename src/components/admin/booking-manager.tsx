@@ -146,7 +146,7 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                     <div className='space-y-1'>
                       <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" /> Generators</p>
                       <div className="text-sm text-foreground pl-2">
-                        {booking.generators.map(g => `${g.quantity} x ${g.kvaCategory} KVA`).join(', ')}
+                        {booking.generators.map((g, i) => <div key={i}>{`1 x ${g.kvaCategory} KVA`}</div>)}
                       </div>
                     </div>
                      {booking.driverInfo && (

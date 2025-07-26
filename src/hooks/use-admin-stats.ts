@@ -96,8 +96,8 @@ export function useAdminStats() {
 
         // Increment KVA category count
         booking.generators.forEach(gen => {
-            kvaCounts[gen.kva] = (kvaCounts[gen.kva] || 0) + gen.quantity;
-            totalGeneratorsBooked += gen.quantity;
+            kvaCounts[gen.kvaCategory] = (kvaCounts[gen.kvaCategory] || 0) + 1; // Each gen is quantity 1
+            totalGeneratorsBooked += 1;
         })
       });
 

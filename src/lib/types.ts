@@ -29,12 +29,11 @@ export interface Generator {
 
 export interface BookedGenerator {
   kvaCategory: string;
-  quantity: number;
   usageHours: number;
 }
 
 export interface Booking {
-  id: string;
+  id:string;
   userId: string;
   userEmail: string;
   userName: string;

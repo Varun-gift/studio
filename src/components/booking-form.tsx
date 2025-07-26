@@ -48,7 +48,6 @@ const GST_RATE = 0.18;
 
 const generatorSchema = z.object({
     kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
-    quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
     usageHours: z.coerce.number().min(1, 'Usage must be at least 1 hour.'),
 });
 
@@ -83,7 +82,7 @@ export function BookingForm() {
       email: '',
       location: '',
       bookingDate: addDays(new Date(), 7),
-      generators: [{ kvaCategory: '', quantity: 1, usageHours: 8 }],
+      generators: [{ kvaCategory: '', usageHours: 8 }],
       needsElectrician: false,
       additionalNotes: '',
     },
@@ -99,9 +98,9 @@ export function BookingForm() {
 
   React.useEffect(() => {
     const total = watchedGenerators.reduce((acc, gen) => {
-        if (gen.kvaCategory && gen.quantity > 0 && gen.usageHours > 0) {
+        if (gen.kvaCategory && gen.usageHours > 0) {
             const kvaValue = parseInt(gen.kvaCategory, 10);
-            return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * gen.quantity * gen.usageHours);
+            return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * gen.usageHours);
         }
         return acc;
     }, 0);
@@ -145,7 +144,7 @@ export function BookingForm() {
     values.generators.forEach((gen, index) => {
         yPos += 10;
         doc.setFontSize(10);
-        doc.text(`Item ${index + 1}: ${gen.quantity} x ${gen.kvaCategory} KVA for ${gen.usageHours} hours`, 25, yPos);
+        doc.text(`Item ${index + 1}: 1 x ${gen.kvaCategory} KVA for ${gen.usageHours} hours`, 25, yPos);
     });
     
     yPos += 20;
@@ -216,12 +215,12 @@ export function BookingForm() {
                 <CardHeader>
                   <CardTitle>Generator Selection</CardTitle>
                   <CardDescription>
-                    Add one or more generator types to your booking.
+                    Add one or more generators to your booking. Each line represents one generator.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 p-4 border rounded-lg relative">
+                    <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 p-4 border rounded-lg relative items-end">
                       <FormField
                         control={form.control}
                         name={`generators.${index}.kvaCategory`}
@@ -244,25 +243,12 @@ export function BookingForm() {
                       />
                       <FormField
                         control={form.control}
-                        name={`generators.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                             <FormLabel className={cn(index !== 0 && "sr-only")}>Qty</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="Qty" {...field} min="1" className="w-20" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
                         name={`generators.${index}.usageHours`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className={cn(index !== 0 && "sr-only")}>Hours</FormLabel>
+                            <FormLabel className={cn(index !== 0 && "sr-only")}>Usage Hours</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="Hours" {...field} min="1" className="w-20" />
+                                <Input type="number" placeholder="Hours" {...field} min="1" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -273,10 +259,10 @@ export function BookingForm() {
                             variant="ghost"
                             size="icon"
                             onClick={() => remove(index)}
-                            className="self-end"
                             disabled={fields.length === 1}
                         >
                             <Trash className="h-4 w-4" />
+                            <span className="sr-only">Remove Generator</span>
                         </Button>
                     </div>
                   ))}
@@ -285,10 +271,10 @@ export function BookingForm() {
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={() => append({ kvaCategory: '', quantity: 1, usageHours: 8 })}
+                    onClick={() => append({ kvaCategory: '', usageHours: 8 })}
                    >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Generator
+                    Add Another Generator
                    </Button>
                 </CardContent>
               </Card>

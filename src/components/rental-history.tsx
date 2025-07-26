@@ -134,7 +134,7 @@ export function RentalHistory() {
                           <TableCell className="font-medium">
                               <div className="flex flex-col gap-1">
                                   {booking.generators.map((gen, idx) => (
-                                      <div key={idx} className="text-xs">{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
+                                      <div key={idx} className="text-xs">1 x {gen.kvaCategory} KVA ({gen.usageHours} hrs)</div>
                                   ))}
                               </div>
                           </TableCell>
