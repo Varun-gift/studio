@@ -100,23 +100,20 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
 
     return (
         <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
-            <AccordionTrigger>
-                <div className="flex justify-between w-full pr-4">
-                    <span className="font-semibold">{kvaCategory ? `${quantity} x ${kvaCategory} KVA` : 'New Generator Group'}</span>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            remove(index);
-                        }}
-                        className="h-8 w-8 hover:bg-destructive/10"
-                    >
-                        <Trash className="h-4 w-4 text-destructive" />
-                    </Button>
-                </div>
-            </AccordionTrigger>
+            <div className="flex items-center w-full">
+                <AccordionTrigger className="flex-1">
+                    <div className="font-semibold">{kvaCategory ? `${quantity} x ${kvaCategory} KVA` : 'New Generator Group'}</div>
+                </AccordionTrigger>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => remove(index)}
+                    className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2"
+                >
+                    <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+            </div>
             <AccordionContent className="pt-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <FormField
