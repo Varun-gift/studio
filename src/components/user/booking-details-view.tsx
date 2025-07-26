@@ -75,6 +75,13 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         timers
     } = booking;
 
+    const formatUsageHours = (usageHours: number | number[]) => {
+        if (Array.isArray(usageHours)) {
+            return usageHours.join(', ');
+        }
+        return usageHours;
+    }
+
   return (
     <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -122,7 +129,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 {generators.map((gen, index) => (
                     <DetailItem key={index} icon={Package} label={`${gen.quantity} x ${gen.kvaCategory} KVA`}>
                         <p className="text-xs text-muted-foreground">
-                            Usage per unit: {gen.usageHours.join(', ')} hours
+                            Usage per unit: {formatUsageHours(gen.usageHours)} hours
                         </p>
                     </DetailItem>
                 ))}
