@@ -1,7 +1,6 @@
 
 'use client';
 import type { Dispatch, SetStateAction } from 'react';
-import { GeneratorSizingTool } from '@/components/generator-sizing-tool';
 import { BookingForm } from './booking-form';
 import { RentalHistory } from './rental-history';
 import { SupportView } from './user/support-view';
@@ -28,8 +27,6 @@ export function Dashboard({ activeTab, setActiveTab, name }: DashboardProps) {
         );
       case 'history':
         return <RentalHistory />;
-      case 'sizing':
-        return <GeneratorSizingTool />;
       case 'support':
           return <SupportView />;
       default:

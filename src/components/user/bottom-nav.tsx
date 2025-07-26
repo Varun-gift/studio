@@ -16,7 +16,6 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
     const navItems = [
     { name: 'dashboard', icon: Home, label: 'Book', href: '/user' },
     { name: 'history', icon: History, label: 'History', href: '/user' },
-    { name: 'sizing', icon: Zap, label: 'Sizing', href: '/user' },
     { name: 'support', icon: Phone, label: 'Support', href: '/user' },
     { name: 'profile', icon: User, label: 'Profile', href: '/user' },
   ];
@@ -24,7 +23,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-white md:hidden z-20">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-4 h-16">
         {navItems.map((item) => {
             const isActive = activeTab === item.name;
             return (

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
-import { LogOut, Home, History, Settings, Phone, Zap } from 'lucide-react';
+import { LogOut, Home, History, Settings, Phone } from 'lucide-react';
 import { Dashboard } from '@/components/dashboard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,7 +20,6 @@ import {
 import { BottomNav } from '@/components/user/bottom-nav';
 import { Sidebar } from '@/components/sidebar';
 import { ProfileViewManager } from '@/components/user/profile-view-manager';
-import { GeneratorSizingTool } from '@/components/generator-sizing-tool';
 import { RentalHistory } from '@/components/rental-history';
 import { SupportView } from '@/components/user/support-view';
 import { BookingForm } from '@/components/booking-form';
@@ -39,7 +38,6 @@ export default function UserDashboard() {
    const navItems = [
     { name: 'dashboard', icon: Home, label: 'Book' },
     { name: 'history', icon: History, label: 'History' },
-    { name: 'sizing', icon: Zap, label: 'Sizing Tool' },
     { name: 'support', icon: Phone, label: 'Support' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
@@ -50,8 +48,6 @@ export default function UserDashboard() {
         return <BookingForm />;
       case 'history':
         return <RentalHistory />;
-      case 'sizing':
-        return <GeneratorSizingTool />;
       case 'support':
         return <SupportView />;
       case 'profile':

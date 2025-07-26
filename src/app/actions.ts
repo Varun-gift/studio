@@ -1,21 +1,9 @@
 
 'use server';
 
-import { suggestGeneratorSize as suggestGeneratorSizeFlow, GeneratorSizingInput, GeneratorSizingOutput } from '@/ai/flows/generator-sizing';
 import { auth, sendPasswordResetEmail, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
-
-
-export async function suggestGeneratorSize(input: GeneratorSizingInput): Promise<GeneratorSizingOutput> {
-  try {
-    const result = await suggestGeneratorSizeFlow(input);
-    return result;
-  } catch (error) {
-    console.error('Error in suggestGeneratorSize action:', error);
-    throw new Error('Failed to get generator suggestion. Please try again.');
-  }
-}
 
 
 export async function sendPasswordResetLink(email: string): Promise<void> {
