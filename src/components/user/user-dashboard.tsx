@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Power, MessageSquare, Tool } from 'lucide-react';
+import { Power, MessageSquare, Wrench } from 'lucide-react';
 import { HeroSection } from './dashboard/hero-section';
 import { WelcomeSection } from './dashboard/welcome-section';
 import { RecentActivity } from './dashboard/recent-activity';
@@ -16,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { GeneratorSizingTool } from '../generator-sizing-tool';
+import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
@@ -57,15 +59,21 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
                 <UsageSummary />
 
                  <div className="text-center py-8">
-                     <Button 
-                        size="lg" 
-                        variant="outline"
-                        className="h-12 text-md w-full sm:w-auto rounded-full shadow-lg" 
-                        onClick={() => setActiveTab('support')}
-                    >
-                        <Tool className="mr-3 h-5 w-5" />
-                        Generator Sizing Calculator
-                    </Button>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                             <Button 
+                                size="lg" 
+                                variant="outline"
+                                className="h-12 text-md w-full sm:w-auto rounded-full shadow-lg"
+                            >
+                                <Wrench className="mr-3 h-5 w-5" />
+                                Generator Sizing Calculator
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[625px]">
+                            <GeneratorSizingTool />
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 

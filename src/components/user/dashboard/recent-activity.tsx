@@ -48,7 +48,7 @@ export function RecentActivity({ onCTAClick }: RecentActivityProps) {
                 {label}
             </Badge>
         );
-    }
+    };
 
     return (
         <div className="space-y-4">
@@ -74,7 +74,7 @@ export function RecentActivity({ onCTAClick }: RecentActivityProps) {
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-2/3" />
                     </CardContent>
-                ) : recentBooking && (
+                ) : recentBooking ? (
                     <CardContent className="space-y-6">
                         <div className="space-y-3">
                             {recentBooking.generators.map((gen, idx) => (
@@ -94,9 +94,9 @@ export function RecentActivity({ onCTAClick }: RecentActivityProps) {
                                     </Button>
                                 </div>
                             ))}
-                        </ul>
+                        </div>
                     </CardContent>
-                )}
+                ) : null}
                  <CardContent>
                     <div className="text-center">
                         <Button variant="link" onClick={onCTAClick} className="text-muted-foreground hover:text-primary">
