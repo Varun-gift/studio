@@ -197,6 +197,13 @@ export default function DriverDashboard() {
     ].filter(Boolean).join(' ');
   };
 
+  const formatUsageHours = (usageHours: number | number[]) => {
+    if (Array.isArray(usageHours)) {
+      return usageHours.join(', ');
+    }
+    return String(usageHours);
+  }
+
 
   if (loading || !user || (role && role !== 'driver')) {
     return (
@@ -252,7 +259,7 @@ export default function DriverDashboard() {
                                     <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Generators</h4>
                                     <ul className="list-disc list-inside text-sm text-muted-foreground">
                                         {booking.generators.map((gen, idx) => (
-                                            <li key={idx}>{gen.quantity} x {gen.kvaCategory} KVA ({gen.usageHours.join(', ')} hrs)</li>
+                                            <li key={idx}>{gen.quantity} x {gen.kvaCategory} KVA ({formatUsageHours(gen.usageHours)} hrs)</li>
                                         ))}
                                     </ul>
                                   </div>
