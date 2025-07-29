@@ -18,9 +18,9 @@ interface HeroBannerProps {
 }
 
 const banners = [
-    { src: "https://placehold.co/1200x400", alt: "A powerful generator ready for industrial use.", hint: "industrial generator" },
-    { src: "https://placehold.co/1200x400", alt: "A generator powering a large outdoor event at night.", hint: "outdoor event" },
-    { src: "https://placehold.co/1200x400", alt: "A compact backup generator for a modern home.", hint: "home backup" },
+    { src: "https://placehold.co/1200x500", alt: "A powerful generator ready for industrial use.", hint: "industrial generator" },
+    { src: "https://placehold.co/1200x500", alt: "A generator powering a large outdoor event at night.", hint: "outdoor event" },
+    { src: "https://placehold.co/1200x500", alt: "A compact backup generator for a modern home.", hint: "home backup" },
 ]
 
 export function HeroBanner({ onCTAClick }: HeroBannerProps) {
@@ -51,12 +51,12 @@ export function HeroBanner({ onCTAClick }: HeroBannerProps) {
                                 priority={index === 0}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 text-white">
+                            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 sm:p-6 text-white">
                                 <motion.h1 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="text-4xl md:text-6xl font-extrabold"
+                                    className="text-3xl sm:text-4xl md:text-6xl font-extrabold"
                                 >
                                     Reliable Power, On Demand
                                 </motion.h1>
@@ -64,7 +64,7 @@ export function HeroBanner({ onCTAClick }: HeroBannerProps) {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.4 }}
-                                    className="mt-4 text-lg md:text-xl max-w-2xl"
+                                    className="mt-4 text-base md:text-xl max-w-2xl"
                                 >
                                     From construction sites to special events, we have the right generator for you.
                                 </motion.p>
