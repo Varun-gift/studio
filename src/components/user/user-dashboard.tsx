@@ -5,6 +5,7 @@ import * as React from 'react';
 import { HeroBanner } from './hero-banner';
 import { DashboardCards } from './dashboard-cards';
 import { QuickQuoteWidget } from './quick-quote-widget';
+import { RecommendedForYou } from './recommended-for-you';
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
@@ -18,6 +19,7 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
             
             <div className="container mx-auto px-4 md:px-6 space-y-8">
                <DashboardCards setActiveTab={setActiveTab} />
+               <RecommendedForYou setActiveTab={setActiveTab} />
             </div>
 
             <QuickQuoteWidget setActiveTab={setActiveTab} />
