@@ -38,7 +38,7 @@ export function DashboardCards({ setActiveTab }: DashboardCardsProps) {
     
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
+            <Card className="cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Power className="h-5 w-5 text-primary" />
@@ -61,7 +61,7 @@ export function DashboardCards({ setActiveTab }: DashboardCardsProps) {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-primary" />
@@ -84,7 +84,7 @@ export function DashboardCards({ setActiveTab }: DashboardCardsProps) {
                 </CardContent>
             </Card>
             
-            <Card>
+            <Card className="cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Power className="h-5 w-5 text-primary" />
