@@ -2,9 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { HeroBanner } from './hero-banner';
+import { HeroBanner } from '../user/hero-banner';
 import { DashboardCards } from './dashboard-cards';
-import { QuickQuoteWidget } from './quick-quote-widget';
 import { RecommendedForYou } from './recommended-for-you';
 
 interface UserDashboardProps {
@@ -22,7 +21,6 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
                <DashboardCards setActiveTab={setActiveTab} />
             </div>
 
-            <QuickQuoteWidget setActiveTab={setActiveTab} />
         </div>
     );
 }
