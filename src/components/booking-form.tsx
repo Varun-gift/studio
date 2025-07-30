@@ -251,35 +251,35 @@ export function BookingForm() {
     doc.text(`Phone: ${values.phone}`, 20, 54);
     doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 61);
     
-    let yPos = 75;
-    doc.setFontSize(14);
-    doc.text('Generator Details:', 20, yPos);
-    
-    const tableBody = values.generators.flatMap((genGroup) => 
-        genGroup.usageHours.map((h, i) => [
-            `${genGroup.quantity} x ${genGroup.kvaCategory} KVA (Unit ${i + 1})`,
-            `${h} hrs`,
-        ])
-    );
+    const tableBody = values.generators.flatMap((genGroup) => {
+      if (genGroup.quantity > 0 && genGroup.usageHours.length === genGroup.quantity) {
+          return genGroup.usageHours.map((h, i) => [
+              `${genGroup.kvaCategory} KVA`,
+              `Unit ${i + 1}`,
+              `${h} hrs`,
+          ]);
+      }
+      return [[`${genGroup.quantity} x ${genGroup.kvaCategory} KVA`, ``, `${genGroup.usageHours.join(', ')} hrs`]];
+    });
     
     (doc as any).autoTable({
-        startY: yPos + 2,
-        head: [['Generator', 'Usage']],
+        startY: 70,
+        head: [['Generator', 'Unit', 'Usage']],
         body: tableBody,
         theme: 'striped',
         headStyles: { fillColor: [255, 79, 0] },
     });
 
-    yPos = (doc as any).lastAutoTable.finalY + 15;
+    let yPos = (doc as any).lastAutoTable.finalY + 15;
     
     doc.setFontSize(14);
-    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 14, yPos);
-    yPos += 10;
-    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 14, yPos);
+    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 140, yPos, { align: 'right' });
+    yPos += 7;
+    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 140, yPos, { align: 'right' });
     yPos += 10;
     
     doc.setFontSize(16);
-    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 14, yPos);
+    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 140, yPos, { align: 'right' });
 
     doc.save('booking-estimate.pdf');
   };
