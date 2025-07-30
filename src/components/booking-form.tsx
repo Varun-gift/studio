@@ -90,7 +90,7 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
         const targetCount = quantity || 0;
         if (currentCount < targetCount) {
             for (let i = currentCount; i < targetCount; i++) {
-                append(8); // Default 8 hours
+                append(1); // Default 1 hour
             }
         } else if (currentCount > targetCount) {
             for (let i = currentCount - 1; i >= targetCount; i--) {
@@ -193,7 +193,7 @@ export function BookingForm() {
       email: '',
       location: '',
       bookingDate: addDays(new Date(), 7),
-      generators: [{ kvaCategory: '', quantity: 1, usageHours: [8] }],
+      generators: [{ kvaCategory: '62', quantity: 1, usageHours: [1] }],
       needsElectrician: false,
       additionalNotes: '',
     },
@@ -358,7 +358,7 @@ export function BookingForm() {
                     variant="outline"
                     size="sm"
                     className="mt-4"
-                    onClick={() => append({ kvaCategory: '', quantity: 1, usageHours: [8] })}
+                    onClick={() => append({ kvaCategory: '', quantity: 1, usageHours: [1] })}
                    >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Another Generator Group
