@@ -45,8 +45,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const KVA_CATEGORIES = ['62', '125', '180', '250', '320', '380', '500'];
-const PRICE_PER_HOUR_PER_KVA = 4;
 const GST_RATE = 0.18;
+
+const PRICING_PER_HOUR: { [key: string]: number } = {
+  '62': 5000,
+  '125': 6000,
+  '180': 7000,
+  '250': 8000,
+  '320': 9000,
+  '380': 10000,
+  '500': 11000,
+};
 
 const generatorGroupSchema = z.object({
     kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
@@ -130,7 +139,11 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {KVA_CATEGORIES.map(kva => <SelectItem key={kva} value={kva}>{kva} KVA</SelectItem>)}
+                                        {KVA_CATEGORIES.map(kva => (
+                                          <SelectItem key={kva} value={kva}>
+                                            {kva} KVA - ₹{PRICING_PER_HOUR[kva]}/hr
+                                          </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -210,11 +223,11 @@ export function BookingForm() {
   React.useEffect(() => {
     const total = watchedGenerators.reduce((acc, genGroup) => {
         if (genGroup.kvaCategory && genGroup.usageHours && genGroup.usageHours.length > 0) {
-            const kvaValue = parseInt(genGroup.kvaCategory, 10);
-            if(isNaN(kvaValue)) return acc;
+            const pricePerHour = PRICING_PER_HOUR[genGroup.kvaCategory];
+            if(!pricePerHour) return acc;
 
             const totalHours = genGroup.usageHours.reduce((sum, hours) => sum + (Number(hours) || 0), 0);
-            return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * totalHours);
+            return acc + (pricePerHour * totalHours);
         }
         return acc;
     }, 0);
@@ -257,14 +270,16 @@ export function BookingForm() {
               `${genGroup.kvaCategory} KVA`,
               `Unit ${i + 1}`,
               `${h} hrs`,
+              `₹${PRICING_PER_HOUR[genGroup.kvaCategory]}/hr`,
+              `₹${(PRICING_PER_HOUR[genGroup.kvaCategory] * h).toFixed(2)}`
           ]);
       }
-      return [[`${genGroup.quantity} x ${genGroup.kvaCategory} KVA`, ``, `${genGroup.usageHours.join(', ')} hrs`]];
+      return [];
     });
     
     (doc as any).autoTable({
         startY: 70,
-        head: [['Generator', 'Unit', 'Usage']],
+        head: [['Generator', 'Unit', 'Usage', 'Rate', 'Cost']],
         body: tableBody,
         theme: 'striped',
         headStyles: { fillColor: [255, 79, 0] },
@@ -358,7 +373,7 @@ export function BookingForm() {
                     variant="outline"
                     size="sm"
                     className="mt-4"
-                    onClick={() => append({ kvaCategory: '', quantity: 1, usageHours: [1] })}
+                    onClick={() => append({ kvaCategory: '62', quantity: 1, usageHours: [1] })}
                    >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Another Generator Group
