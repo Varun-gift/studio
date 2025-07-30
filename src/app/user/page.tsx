@@ -19,11 +19,56 @@ export default function UserDashboardPage() {
   const { name } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState('home');
+  const [historyStack, setHistoryStack] = React.useState<string[]>(['home']);
   
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
   };
+
+  const handleSetActiveTab = (tab: string) => {
+    if (tab !== activeTab) {
+      const newHistory = [...historyStack, tab];
+      setHistoryStack(newHistory);
+      setActiveTab(tab);
+    }
+  };
+
+  const handleBackPress = React.useCallback(() => {
+    if (historyStack.length > 1) {
+      const newHistory = historyStack.slice(0, -1);
+      const previousTab = newHistory[newHistory.length - 1];
+      setHistoryStack(newHistory);
+      setActiveTab(previousTab);
+      // We handled it, so we don't want the default browser back behavior
+      return true;
+    }
+    // If we're at the beginning of the stack, let the browser handle it (e.g., exit app)
+    return false;
+  }, [historyStack]);
+
+
+  React.useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Intercept browser back button press
+      if (handleBackPress()) {
+         // This is a bit of a hack to keep the URL state consistent 
+         // without causing a full re-render, preventing the browser's default back action.
+         history.pushState(null, '', window.location.href);
+      }
+    };
+
+    // Add event listener for the browser's back button
+    window.addEventListener('popstate', handlePopState);
+    
+    // Set initial state
+    history.pushState(null, '', window.location.href);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [handleBackPress]);
+
 
    const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
@@ -36,7 +81,7 @@ export default function UserDashboardPage() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <UserDashboard setActiveTab={setActiveTab} />;
+        return <UserDashboard setActiveTab={handleSetActiveTab} />;
       case 'booking':
         return <BookingForm />;
       case 'history':
@@ -46,7 +91,7 @@ export default function UserDashboardPage() {
       case 'profile':
         return <ProfileViewManager />;
       default:
-        return <UserDashboard setActiveTab={setActiveTab} />;
+        return <UserDashboard setActiveTab={handleSetActiveTab} />;
     }
   };
 
@@ -59,20 +104,20 @@ export default function UserDashboardPage() {
             <h1 className="text-lg font-semibold">Generator Rentals</h1>
           </div>
            <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setActiveTab('profile')}>
+            <Button variant="ghost" size="icon" onClick={() => handleSetActiveTab('profile')}>
                 <Settings className="h-5 w-5"/>
                 <span className="sr-only">Settings</span>
             </Button>
           </div>
         </header>
         
-        <main className="flex-1 space-y-4 pb-20 md:pb-4">
+        <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4">
           {renderContent()}
         </main>
       
         
       <div className="md:hidden">
-          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          <BottomNav activeTab={activeTab} setActiveTab={handleSetActiveTab} />
       </div>
     </div>
   );
