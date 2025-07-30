@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -208,9 +209,11 @@ export function BookingForm() {
 
   React.useEffect(() => {
     const total = watchedGenerators.reduce((acc, genGroup) => {
-        if (genGroup.kvaCategory && genGroup.usageHours.length > 0) {
+        if (genGroup.kvaCategory && genGroup.usageHours && genGroup.usageHours.length > 0) {
             const kvaValue = parseInt(genGroup.kvaCategory, 10);
-            const totalHours = genGroup.usageHours.reduce((sum, hours) => sum + (hours || 0), 0);
+            if(isNaN(kvaValue)) return acc;
+
+            const totalHours = genGroup.usageHours.reduce((sum, hours) => sum + (Number(hours) || 0), 0);
             return acc + (kvaValue * PRICE_PER_HOUR_PER_KVA * totalHours);
         }
         return acc;
@@ -252,26 +255,31 @@ export function BookingForm() {
     doc.setFontSize(14);
     doc.text('Generator Details:', 20, yPos);
     
-    values.generators.forEach((genGroup, index) => {
-        yPos += 7;
-        doc.setFontSize(12);
-        doc.text(`Group ${index + 1}: ${genGroup.quantity} x ${genGroup.kvaCategory} KVA`, 25, yPos);
-        yPos += 5;
-        doc.setFontSize(10);
-        const hoursString = genGroup.usageHours.map((h, i) => `Unit ${i+1}: ${h}hrs`).join(', ');
-        doc.text(hoursString, 30, yPos, { maxWidth: 150 });
-        yPos = doc.lastAutoTable.finalY || yPos;
-    });
+    const tableBody = values.generators.flatMap((genGroup) => 
+        genGroup.usageHours.map((h, i) => [
+            `${genGroup.quantity} x ${genGroup.kvaCategory} KVA (Unit ${i + 1})`,
+            `${h} hrs`,
+        ])
+    );
     
-    yPos += 15;
+    (doc as any).autoTable({
+        startY: yPos + 2,
+        head: [['Generator', 'Usage']],
+        body: tableBody,
+        theme: 'striped',
+        headStyles: { fillColor: [255, 79, 0] },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+    
     doc.setFontSize(14);
-    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 20, yPos);
+    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 14, yPos);
     yPos += 10;
-    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 20, yPos);
+    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 14, yPos);
     yPos += 10;
     
     doc.setFontSize(16);
-    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 20, yPos);
+    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 14, yPos);
 
     doc.save('booking-estimate.pdf');
   };
