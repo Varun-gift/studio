@@ -18,8 +18,8 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
             <HeroBanner onCTAClick={() => setActiveTab('booking')} />
             
             <div className="container mx-auto px-4 md:px-6 space-y-8">
-               <DashboardCards setActiveTab={setActiveTab} />
                <RecommendedForYou setActiveTab={setActiveTab} />
+               <DashboardCards setActiveTab={setActiveTab} />
             </div>
 
             <QuickQuoteWidget setActiveTab={setActiveTab} />
