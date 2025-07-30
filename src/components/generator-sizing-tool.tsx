@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,7 +28,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { suggestGeneratorSize, type GeneratorSizingOutput } from '@/ai/flows/generator-sizing';
 import { useToast } from '@/hooks/use-toast';
-import { Progress } from '@/components/ui/progress';
 
 const formSchema = z.object({
   powerRequirements: z.string().min(1, 'Please enter power requirements.'),
@@ -41,7 +40,6 @@ export function GeneratorSizingTool() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeneratorSizingOutput | null>(null);
   const { toast } = useToast();
-  const [progress, setProgress] = useState(0);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,36 +49,11 @@ export function GeneratorSizingTool() {
     },
   });
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (loading) {
-      setProgress(0);
-      let step = 0;
-      timer = setInterval(() => {
-        step += 1;
-        setProgress(prev => {
-            // Simulate a more realistic loading bar
-            const newProgress = prev + (100 - prev) * 0.1;
-            if (newProgress > 95) {
-                clearInterval(timer);
-                return 95;
-            }
-            return newProgress;
-        });
-      }, 500);
-    }
-    return () => {
-      clearInterval(timer);
-    };
-  }, [loading]);
-
-
   async function onSubmit(values: FormValues) {
     setLoading(true);
     setResult(null);
     try {
       const response = await suggestGeneratorSize(values);
-      setProgress(100);
       setResult(response);
     } catch (error) {
       toast({
@@ -88,7 +61,6 @@ export function GeneratorSizingTool() {
         description: "Failed to get suggestion. Please try again.",
         variant: "destructive",
       })
-      setProgress(0);
     } finally {
       setLoading(false);
     }
@@ -139,23 +111,13 @@ export function GeneratorSizingTool() {
                   </FormItem>
                 )}
               />
-               {loading && (
-                 <div className="space-y-2 pt-2">
-                    <Progress value={progress} className="w-full" />
-                    <p className="text-sm text-muted-foreground text-center">Analyzing requirements...</p>
-                 </div>
-               )}
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-accent hover:bg-accent/90">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Quote...
-                  </>
-                ) : (
-                  'Get Suggestion'
+                {loading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
+                Get Suggestion
               </Button>
             </CardFooter>
           </form>
