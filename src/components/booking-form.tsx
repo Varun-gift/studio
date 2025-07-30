@@ -273,13 +273,13 @@ export function BookingForm() {
     let yPos = (doc as any).lastAutoTable.finalY + 15;
     
     doc.setFontSize(14);
-    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 140, yPos, { align: 'right' });
+    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 200, yPos, { align: 'right' });
     yPos += 7;
-    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 140, yPos, { align: 'right' });
+    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 200, yPos, { align: 'right' });
     yPos += 10;
     
     doc.setFontSize(16);
-    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 140, yPos, { align: 'right' });
+    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 200, yPos, { align: 'right' });
 
     doc.save('booking-estimate.pdf');
   };
@@ -343,7 +343,7 @@ export function BookingForm() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Accordion type="multiple" className="w-full space-y-4">
+                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={['item-0']}>
                         {fields.map((field, index) => (
                            <GeneratorGroupItem 
                              key={field.id}
