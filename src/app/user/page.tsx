@@ -77,7 +77,6 @@ export default function UserDashboardPage() {
             <span className="text-xs font-bold">AMG</span>
           </div>
            <div className="ml-auto flex items-center gap-4">
-            <span className="hidden sm:inline-block text-foreground">Welcome, {name ? name.split(' ')[0] : 'User'}</span>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -102,8 +101,15 @@ export default function UserDashboardPage() {
             </DropdownMenu>
           </div>
         </header>
+
+        <div className="px-4 md:px-6 py-4 bg-muted/30 border-b">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                Welcome back, {name ? name.split(' ')[0] : 'User'}!
+            </h1>
+            <p className="text-muted-foreground mt-1">Here's what's happening with your power solutions.</p>
+        </div>
         
-        <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-0">
+        <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-6">
           {renderContent()}
         </main>
       </div>
