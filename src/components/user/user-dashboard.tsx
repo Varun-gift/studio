@@ -2,21 +2,28 @@
 'use client';
 
 import * as React from 'react';
-import { HeroBanner } from '../user/hero-banner';
+import { HeroSection } from './dashboard/hero-section';
 import { DashboardCards } from './dashboard-cards';
 import { RecommendedForYou } from './recommended-for-you';
+import { useAuth } from '@/hooks/use-auth';
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
 }
 
 export function UserDashboard({ setActiveTab }: UserDashboardProps) {
-
+    const { name } = useAuth();
     return (
-        <div className="space-y-8">
-            <HeroBanner onCTAClick={() => setActiveTab('booking')} />
-            
-            <div className="container mx-auto px-4 md:px-6 space-y-8">
+        <div className="space-y-6">
+            <HeroSection />
+
+            <div className="px-4 md:px-6 space-y-8">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                        Welcome back, {name ? name.split(' ')[0] : 'User'}!
+                    </h1>
+                </div>
+
                <RecommendedForYou setActiveTab={setActiveTab} />
                <DashboardCards setActiveTab={setActiveTab} />
             </div>

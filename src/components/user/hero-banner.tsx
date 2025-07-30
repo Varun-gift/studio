@@ -18,9 +18,9 @@ interface HeroBannerProps {
 }
 
 const banners = [
-    { src: "https://placehold.co/1200x500", alt: "A powerful generator ready for industrial use.", hint: "industrial generator" },
-    { src: "https://placehold.co/1200x500", alt: "A generator powering a large outdoor event at night.", hint: "outdoor event" },
-    { src: "https://placehold.co/1200x500", alt: "A compact backup generator for a modern home.", hint: "home backup" },
+    { src: "https://i.ibb.co/6yVw4z9/image.png", alt: "A powerful generator ready for industrial use.", hint: "industrial generator" },
+    { src: "https://i.ibb.co/rfnf20M/image.png", alt: "A generator powering a large outdoor event at night.", hint: "outdoor event" },
+    { src: "https://i.ibb.co/zJtBHT7/image.png", alt: "A compact backup generator for a modern home.", hint: "home backup" },
 ]
 
 export function HeroBanner({ onCTAClick }: HeroBannerProps) {

@@ -4,29 +4,19 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
 import { LogOut, Home, History, Settings, Phone, Power } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { BottomNav } from '@/components/user/bottom-nav';
-import { Sidebar } from '@/components/sidebar';
 import { ProfileViewManager } from '@/components/user/profile-view-manager';
 import { RentalHistory } from '@/components/rental-history';
 import { SupportView } from '@/components/user/support-view';
 import { BookingForm } from '@/components/booking-form';
 import Image from 'next/image';
 import { UserDashboard } from '@/components/user/user-dashboard';
+import { Button } from '@/components/ui/button';
 
 export default function UserDashboardPage() {
-  const { name, photoURL } = useAuth();
+  const { name } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState('home');
   
@@ -43,8 +33,6 @@ export default function UserDashboardPage() {
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
   
-  const mainNavItems = navItems.filter(item => item.name !== 'booking');
-
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -64,55 +52,24 @@ export default function UserDashboardPage() {
 
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        navItems={mainNavItems}
-      />
-      <div className="flex flex-col sm:gap-4 sm:pl-14 flex-1">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-          <div className="flex items-center gap-2 sm:hidden">
+    <div className="flex min-h-screen w-full bg-background flex-col">
+       <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4">
+          <div className="flex items-center gap-2">
             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={24} height={24} />
-            <span className="text-xs font-bold">AMG</span>
+            <h1 className="text-lg font-semibold">Generator Rentals</h1>
           </div>
-           <div className="ml-auto flex items-center gap-4">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src={photoURL || ''} alt={name || 'User'} />
-                            <AvatarFallback className="bg-primary text-primary-foreground">{name?.[0]?.toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setActiveTab('profile')}>
-                        Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setActiveTab('profile')}>
+                <Settings className="h-5 w-5"/>
+                <span className="sr-only">Settings</span>
+            </Button>
           </div>
         </header>
-
-        <div className="px-4 md:px-6 py-4 bg-muted/30 border-b">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                Welcome back, {name ? name.split(' ')[0] : 'User'}!
-            </h1>
-            <p className="text-muted-foreground mt-1">Here's what's happening with your power solutions.</p>
-        </div>
         
-        <main className="flex-1 space-y-4 pb-20 md:pb-4 p-4 md:p-6">
+        <main className="flex-1 space-y-4 pb-20 md:pb-4">
           {renderContent()}
         </main>
-      </div>
+      
         
       <div className="md:hidden">
           <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
