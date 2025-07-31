@@ -30,7 +30,7 @@ export interface Generator {
 export interface GeneratorGroup {
   kvaCategory: string;
   quantity: number;
-  usageHours: number[];
+  additionalHours?: number;
 }
 
 export interface Booking {

@@ -75,12 +75,13 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         timers
     } = booking;
 
-    const formatUsageHours = (usageHours: number | number[]) => {
-        if (Array.isArray(usageHours)) {
-            return usageHours.join(', ');
-        }
-        return usageHours;
-    }
+    const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
+        const baseHours = 5;
+        const additional = gen.additionalHours || 0;
+        const totalHours = baseHours + additional;
+        return `Usage: ${totalHours} hours (5 base + ${additional} additional)`;
+    };
+
 
   return (
     <div className="space-y-6">
@@ -111,7 +112,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <Separator/>
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
-                <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
+                <DetailItem icon={BadgeIndianRupee} label="Estimated Cost (Additional Hours)" value={`₹${estimatedCost.toLocaleString()}`} />
                 {additionalNotes && (
                     <>
                         <Separator/>
@@ -129,7 +130,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 {generators.map((gen, index) => (
                     <DetailItem key={index} icon={Package} label={`${gen.quantity} x ${gen.kvaCategory} KVA`}>
                         <p className="text-xs text-muted-foreground">
-                            Usage per unit: {formatUsageHours(gen.usageHours)} hours
+                             {formatGeneratorDetails(gen)}
                         </p>
                     </DetailItem>
                 ))}

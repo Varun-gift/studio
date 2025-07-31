@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addDays, format } from 'date-fns';
@@ -10,8 +10,6 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -40,27 +38,18 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { CalendarDays, Download, Loader2, Plus, Trash, ChevronDown } from 'lucide-react';
+import { CalendarDays, Loader2, Plus, Trash } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const KVA_CATEGORIES = ['62', '125', '180', '250', '320', '380', '500'];
 const GST_RATE = 0.18;
-
-const PRICING_PER_HOUR: { [key: string]: number } = {
-  '62': 5000,
-  '125': 6000,
-  '180': 7000,
-  '250': 8000,
-  '320': 9000,
-  '380': 10000,
-  '500': 11000,
-};
+const ADDITIONAL_HOUR_RATE = 850;
 
 const generatorGroupSchema = z.object({
     kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
     quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
-    usageHours: z.array(z.coerce.number().min(1, 'Usage must be at least 1 hour.')),
+    additionalHours: z.coerce.number().min(0, 'Additional hours cannot be negative.').optional(),
 });
 
 const bookingFormSchema = z.object({
@@ -78,11 +67,7 @@ const bookingFormSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: number, remove: (index: number) => void }) => {
-    const { fields, append, remove: removeHour } = useFieldArray({
-        control,
-        name: `generators.${index}.usageHours`
-    });
-
+    
     const quantity = useWatch({
         control,
         name: `generators.${index}.quantity`,
@@ -93,20 +78,6 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
         control,
         name: `generators.${index}.kvaCategory`,
     });
-
-    React.useEffect(() => {
-        const currentCount = fields.length;
-        const targetCount = quantity || 0;
-        if (currentCount < targetCount) {
-            for (let i = currentCount; i < targetCount; i++) {
-                append(1); // Default 1 hour
-            }
-        } else if (currentCount > targetCount) {
-            for (let i = currentCount - 1; i >= targetCount; i--) {
-                removeHour(i);
-            }
-        }
-    }, [quantity, fields.length, append, removeHour]);
 
     return (
         <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
@@ -125,7 +96,7 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                 </Button>
             </div>
             <AccordionContent className="pt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <FormField
                         control={control}
                         name={`generators.${index}.kvaCategory`}
@@ -141,7 +112,7 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                                     <SelectContent>
                                         {KVA_CATEGORIES.map(kva => (
                                           <SelectItem key={kva} value={kva}>
-                                            {kva} KVA - ₹{PRICING_PER_HOUR[kva]}/hr
+                                            {kva} KVA
                                           </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -157,32 +128,29 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                             <FormItem>
                                 <FormLabel>Quantity</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="e.g., 3" {...field} min="1" />
+                                    <Input type="number" placeholder="e.g., 5" {...field} min="1" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
+                     <FormField
+                        control={control}
+                        name={`generators.${index}.additionalHours`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Additional Hours</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="e.g., 2" {...field} min="0" />
+                                </FormControl>
+                                <FormDescription className="text-xs">
+                                    Each unit runs 5hrs minimum.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
-                 <h4 className="text-sm font-medium mb-2">Usage Hours per Unit</h4>
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {fields.map((field, hourIndex) => (
-                        <FormField
-                            key={field.id}
-                            control={control}
-                            name={`generators.${index}.usageHours.${hourIndex}`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs text-muted-foreground">Unit {hourIndex + 1}</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="Hours" {...field} min="1"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    ))}
-                 </div>
             </AccordionContent>
         </AccordionItem>
     );
@@ -206,7 +174,7 @@ export function BookingForm() {
       email: '',
       location: '',
       bookingDate: addDays(new Date(), 7),
-      generators: [{ kvaCategory: '62', quantity: 1, usageHours: [1] }],
+      generators: [{ kvaCategory: '62', quantity: 1, additionalHours: 0 }],
       needsElectrician: false,
       additionalNotes: '',
     },
@@ -222,12 +190,11 @@ export function BookingForm() {
 
   React.useEffect(() => {
     const total = watchedGenerators.reduce((acc, genGroup) => {
-        if (genGroup.kvaCategory && genGroup.usageHours && genGroup.usageHours.length > 0) {
-            const pricePerHour = PRICING_PER_HOUR[genGroup.kvaCategory];
-            if(!pricePerHour) return acc;
+        const quantity = Number(genGroup.quantity) || 0;
+        const additionalHours = Number(genGroup.additionalHours) || 0;
 
-            const totalHours = genGroup.usageHours.reduce((sum, hours) => sum + (Number(hours) || 0), 0);
-            return acc + (pricePerHour * totalHours);
+        if (quantity > 0 && additionalHours > 0) {
+            return acc + (quantity * additionalHours * ADDITIONAL_HOUR_RATE);
         }
         return acc;
     }, 0);
@@ -251,53 +218,6 @@ export function BookingForm() {
     }
   }, [user, name, email, company, phone, form]);
 
-  const handlePdfDownload = () => {
-    const values = form.getValues();
-    const doc = new jsPDF();
-    
-    doc.setFontSize(22);
-    doc.text('Booking Estimate', 20, 20);
-    
-    doc.setFontSize(12);
-    doc.text(`Name: ${values.name}`, 20, 40);
-    doc.text(`Email: ${values.email}`, 20, 47);
-    doc.text(`Phone: ${values.phone}`, 20, 54);
-    doc.text(`Booking Date: ${format(values.bookingDate, 'PPP')}`, 20, 61);
-    
-    const tableBody = values.generators.flatMap((genGroup) => {
-      if (genGroup.quantity > 0 && genGroup.usageHours.length === genGroup.quantity) {
-          return genGroup.usageHours.map((h, i) => [
-              `${genGroup.kvaCategory} KVA`,
-              `Unit ${i + 1}`,
-              `${h} hrs`,
-              `₹${PRICING_PER_HOUR[genGroup.kvaCategory]}/hr`,
-              `₹${(PRICING_PER_HOUR[genGroup.kvaCategory] * h).toFixed(2)}`
-          ]);
-      }
-      return [];
-    });
-    
-    (doc as any).autoTable({
-        startY: 70,
-        head: [['Generator', 'Unit', 'Usage', 'Rate', 'Cost']],
-        body: tableBody,
-        theme: 'striped',
-        headStyles: { fillColor: [255, 79, 0] },
-    });
-
-    let yPos = (doc as any).lastAutoTable.finalY + 15;
-    
-    doc.setFontSize(14);
-    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 200, yPos, { align: 'right' });
-    yPos += 7;
-    doc.text(`GST (18%): INR ${gstAmount.toFixed(2)}`, 200, yPos, { align: 'right' });
-    yPos += 10;
-    
-    doc.setFontSize(16);
-    doc.text(`Total Estimated Cost: INR ${estimatedCost.toFixed(2)}`, 200, yPos, { align: 'right' });
-
-    doc.save('booking-estimate.pdf');
-  };
 
   async function onSubmit(data: BookingFormValues) {
     if (!user) {
@@ -321,6 +241,7 @@ export function BookingForm() {
         gstAmount,
         estimatedCost,
         createdAt: new Date(),
+        generators: data.generators.map(g => ({ ...g, additionalHours: Number(g.additionalHours) || 0 })),
       };
       
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -354,7 +275,7 @@ export function BookingForm() {
                 <CardHeader>
                   <CardTitle>Generator Selection</CardTitle>
                   <CardDescription>
-                    Add generator groups, set quantities, and specify usage hours for each unit.
+                    Each generator runs for a minimum of 5 hours. Additional hours will be charged.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -373,7 +294,7 @@ export function BookingForm() {
                     variant="outline"
                     size="sm"
                     className="mt-4"
-                    onClick={() => append({ kvaCategory: '62', quantity: 1, usageHours: [1] })}
+                    onClick={() => append({ kvaCategory: '62', quantity: 1, additionalHours: 0 })}
                    >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Another Generator Group
@@ -543,7 +464,7 @@ export function BookingForm() {
                 <CardHeader>
                   <CardTitle>Cost Estimate</CardTitle>
                   <CardDescription>
-                    Based on your selection.
+                    Based on additional hours only.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -562,10 +483,6 @@ export function BookingForm() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
-                  <Button type="button" variant="outline" onClick={handlePdfDownload} className="w-full">
-                    <Download className="mr-2 h-4 w-4"/>
-                    Download Estimate
-                  </Button>
                   <Button type="submit" disabled={loading} className="w-full">
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Booking Request
