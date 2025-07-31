@@ -1,5 +1,4 @@
 
-
 export interface User {
   id: string;
   name: string;
@@ -24,7 +23,7 @@ export interface Generator {
   power: string;
   output: string;
   fuelType: 'Diesel' | 'Gasoline' | 'Propane';
-  pricePerHour: number;
+  pricePerAdditionalHour: number;
 }
 
 export interface GeneratorGroup {

@@ -11,7 +11,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '49.6 kW',
     output: '240V, Single-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 248,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-125',
@@ -22,7 +22,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '100 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 500,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-180',
@@ -33,7 +33,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '144 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 720,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-250',
@@ -44,7 +44,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '200 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 1000,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-320',
@@ -55,7 +55,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '256 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 1280,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-380',
@@ -66,7 +66,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '304 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 1520,
+    pricePerAdditionalHour: 850,
   },
   {
     id: 'gen-500',
@@ -77,6 +77,6 @@ export const GENERATORS_DATA: Generator[] = [
     power: '400 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerHour: 2000,
+    pricePerAdditionalHour: 850,
   },
 ];

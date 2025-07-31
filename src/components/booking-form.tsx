@@ -38,13 +38,12 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { CalendarDays, Loader2, Plus, Trash } from 'lucide-react';
+import { CalendarDays, Download, Loader2, Plus, Trash } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-
-const KVA_CATEGORIES = ['62', '125', '180', '250', '320', '380', '500'];
-const GST_RATE = 0.18;
-const ADDITIONAL_HOUR_RATE = 850;
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { GENERATORS_DATA } from '@/lib/generators';
 
 const generatorGroupSchema = z.object({
     kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
@@ -110,9 +109,9 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {KVA_CATEGORIES.map(kva => (
-                                          <SelectItem key={kva} value={kva}>
-                                            {kva} KVA
+                                        {GENERATORS_DATA.map(gen => (
+                                          <SelectItem key={gen.kva} value={gen.kva}>
+                                            {gen.kva} KVA (₹{gen.pricePerAdditionalHour}/hr)
                                           </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -164,6 +163,8 @@ export function BookingForm() {
   const [estimatedCost, setEstimatedCost] = React.useState(0);
   const [subtotal, setSubtotal] = React.useState(0);
   const [gstAmount, setGstAmount] = React.useState(0);
+  
+  const GST_RATE = 0.18;
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -190,11 +191,15 @@ export function BookingForm() {
 
   React.useEffect(() => {
     const total = watchedGenerators.reduce((acc, genGroup) => {
+        const genData = GENERATORS_DATA.find(g => g.kva === genGroup.kvaCategory);
+        if(!genData) return acc;
+        
+        const pricePerHour = genData.pricePerAdditionalHour;
         const quantity = Number(genGroup.quantity) || 0;
         const additionalHours = Number(genGroup.additionalHours) || 0;
 
         if (quantity > 0 && additionalHours > 0) {
-            return acc + (quantity * additionalHours * ADDITIONAL_HOUR_RATE);
+            return acc + (quantity * additionalHours * pricePerHour);
         }
         return acc;
     }, 0);
@@ -203,7 +208,7 @@ export function BookingForm() {
     setSubtotal(total);
     setGstAmount(gst);
     setEstimatedCost(total + gst);
-  }, [watchedGenerators]);
+  }, [watchedGenerators, GST_RATE]);
 
 
   React.useEffect(() => {
@@ -219,6 +224,62 @@ export function BookingForm() {
   }, [user, name, email, company, phone, form]);
 
 
+    const handleDownloadEstimate = () => {
+        const doc = new jsPDF();
+        const formData = form.getValues();
+
+        doc.setFontSize(20);
+        doc.text("Booking Estimate", 14, 22);
+        doc.setFontSize(12);
+        doc.text("Ashik Mobile Generators", 14, 30);
+
+        doc.setFontSize(10);
+        doc.text(`Name: ${formData.name}`, 14, 40);
+        doc.text(`Date: ${format(new Date(), 'PPP')}`, 140, 40);
+        doc.text(`Booking Date: ${format(formData.bookingDate, 'PPP')}`, 14, 45);
+        doc.text(`Location: ${formData.location.substring(0,50)}...`, 14, 50);
+
+        const tableColumn = ["KVA Category", "Quantity", "Additional Hours", "Rate/Hr", "Cost"];
+        const tableRows: any[] = [];
+
+        formData.generators.forEach(gen => {
+            const genData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
+            const rate = genData ? genData.pricePerAdditionalHour : 0;
+            const cost = (gen.quantity || 0) * (gen.additionalHours || 0) * rate;
+
+            const row = [
+                gen.kvaCategory,
+                gen.quantity,
+                gen.additionalHours || 0,
+                `₹${rate}`,
+                `₹${cost.toFixed(2)}`
+            ];
+            tableRows.push(row);
+        });
+
+        (doc as any).autoTable({
+            startY: 55,
+            head: [tableColumn],
+            body: tableRows,
+            foot: [
+                ['', '', '', 'Subtotal', `₹${subtotal.toFixed(2)}`],
+                ['', '', '', `GST (${GST_RATE * 100}%)`, `₹${gstAmount.toFixed(2)}`],
+                ['', '', '', 'Total Estimate', `₹${estimatedCost.toFixed(2)}`],
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [255, 79, 0] },
+            footStyles: { fontStyle: 'bold' }
+        });
+        
+        const finalY = (doc as any).lastAutoTable.finalY;
+        doc.setFontSize(8);
+        doc.text("Note: This estimate is based on additional hours only. The base 5-hour rental has a separate charge not included here.", 14, finalY + 10);
+
+
+        doc.save("AMG_Estimate.pdf");
+    };
+
+
   async function onSubmit(data: BookingFormValues) {
     if (!user) {
       toast({
@@ -232,16 +293,21 @@ export function BookingForm() {
     setLoading(true);
     try {
       const bookingData = {
-        ...data,
         userId: user.uid,
         userName: data.name,
         userEmail: data.email,
+        companyName: data.companyName,
+        phone: data.phone,
+        location: data.location,
+        bookingDate: data.bookingDate,
+        generators: data.generators.map(g => ({ ...g, additionalHours: Number(g.additionalHours) || 0, kvaCategory: g.kvaCategory })),
+        needsElectrician: data.needsElectrician,
+        additionalNotes: data.additionalNotes,
         status: 'Pending' as const,
         subtotal,
         gstAmount,
         estimatedCost,
         createdAt: new Date(),
-        generators: data.generators.map(g => ({ ...g, additionalHours: Number(g.additionalHours) || 0 })),
       };
       
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -483,6 +549,10 @@ export function BookingForm() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
+                   <Button variant="outline" onClick={handleDownloadEstimate} className="w-full">
+                     <Download className="mr-2 h-4 w-4" />
+                     Download Estimate
+                   </Button>
                   <Button type="submit" disabled={loading} className="w-full">
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Booking Request
