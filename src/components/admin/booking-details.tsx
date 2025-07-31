@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package, BadgeIndianRupee } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +58,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                 <div className="grid gap-6 sm:grid-cols-2">
                     <DetailItem icon={Calendar} label="Booking Date" value={format(booking.bookingDate, 'PPP')} />
                     <DetailItem icon={MapPin} label="Location" value={booking.location} />
-                    <DetailItem icon={Power} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
+                    <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
                 </div>
                 <div className="space-y-4">
                     <h4 className="font-semibold text-foreground">Generators Requested</h4>
@@ -70,7 +70,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                                 <div>
                                     <p className="font-semibold">{genGroup.quantity} x {genGroup.kvaCategory} KVA</p>
                                     <p className="text-xs text-muted-foreground">
-                                        Hours: {genGroup.usageHours.join(', ')}
+                                       Additional Hours: {genGroup.additionalHours || 0}
                                     </p>
                                 </div>
                             </div>
@@ -137,3 +137,5 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
     </div>
   );
 }
+
+    

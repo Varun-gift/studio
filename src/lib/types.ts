@@ -23,6 +23,7 @@ export interface Generator {
   power: string;
   output: string;
   fuelType: 'Diesel' | 'Gasoline' | 'Propane';
+  basePrice: number;
   pricePerAdditionalHour: number;
 }
 
@@ -43,10 +44,7 @@ export interface Booking {
   location: string;
   bookingDate: Date;
   additionalNotes?: string;
-  needsElectrician: boolean;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
-  subtotal: number;
-  gstAmount: number;
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
   driverInfo?: {
@@ -68,3 +66,5 @@ export interface TimerLog {
     duration?: number; // in seconds
     status: 'running' | 'stopped';
 }
+
+    

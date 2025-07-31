@@ -112,7 +112,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <Separator/>
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
-                <DetailItem icon={BadgeIndianRupee} label="Estimated Cost (Additional Hours)" value={`₹${estimatedCost.toLocaleString()}`} />
+                <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
                 {additionalNotes && (
                     <>
                         <Separator/>
@@ -169,3 +169,5 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
     </div>
   );
 }
+
+    

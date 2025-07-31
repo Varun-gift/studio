@@ -11,6 +11,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '49.6 kW',
     output: '240V, Single-Phase',
     fuelType: 'Diesel',
+    basePrice: 4250,
     pricePerAdditionalHour: 850,
   },
   {
@@ -22,6 +23,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '100 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
+    basePrice: 6000,
     pricePerAdditionalHour: 850,
   },
   {
@@ -33,6 +35,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '144 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
+    basePrice: 7800,
     pricePerAdditionalHour: 850,
   },
   {
@@ -44,6 +47,19 @@ export const GENERATORS_DATA: Generator[] = [
     power: '200 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
+    basePrice: 9500,
+    pricePerAdditionalHour: 850,
+  },
+  {
+    id: 'gen-280',
+    name: 'Heavy Duty 280',
+    kva: '280',
+    imageUrl: 'https://i.ibb.co/Xz9Zk6Q/image.png',
+    description: 'A powerful generator for demanding applications, providing reliable power for large sites and critical systems.',
+    power: '224 kW',
+    output: '415V, Three-Phase',
+    fuelType: 'Diesel',
+    basePrice: 11000,
     pricePerAdditionalHour: 850,
   },
   {
@@ -55,17 +71,7 @@ export const GENERATORS_DATA: Generator[] = [
     power: '256 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
-    pricePerAdditionalHour: 850,
-  },
-  {
-    id: 'gen-380',
-    name: 'Mega Power 380',
-    kva: '380',
-    imageUrl: 'https://i.ibb.co/rGtLp7R/image.png',
-    description: 'An extreme power solution for the most demanding scenarios, including large-scale industrial operations and emergency power.',
-    power: '304 kW',
-    output: '415V, Three-Phase',
-    fuelType: 'Diesel',
+    basePrice: 12500,
     pricePerAdditionalHour: 850,
   },
   {
@@ -77,6 +83,9 @@ export const GENERATORS_DATA: Generator[] = [
     power: '400 kW',
     output: '415V, Three-Phase',
     fuelType: 'Diesel',
+    basePrice: 15000,
     pricePerAdditionalHour: 850,
   },
 ];
+
+    
