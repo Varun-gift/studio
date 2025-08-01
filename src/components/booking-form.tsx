@@ -43,10 +43,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { GENERATORS_DATA } from '@/lib/generators';
 import { Separator } from './ui/separator';
 
+// Updated schema (no quantity)
 const generatorGroupSchema = z.object({
-    kvaCategory: z.string({ required_error: 'Please select a KVA category.'}),
-    quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
-    additionalHours: z.coerce.number().min(0, 'Additional hours cannot be negative.').optional(),
+  kvaCategory: z.string(),
+  additionalHours: z.coerce.number().min(0, 'Additional hours cannot be negative.').optional(),
 });
 
 const bookingFormSchema = z.object({
@@ -56,108 +56,92 @@ const bookingFormSchema = z.object({
   email: z.string().email(),
   location: z.string().min(10, 'Please enter a complete address.'),
   bookingDate: z.date(),
-  generators: z.array(generatorGroupSchema).min(1, 'Please add at least one generator group.'),
+  generators: z.array(generatorGroupSchema).min(1, 'Please add at least one generator.').refine(
+    (gens) => gens.some(g => g.kvaCategory), 
+    { message: "Please select at least one generator category." }
+  ),
   additionalNotes: z.string().optional(),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: number, remove: (index: number) => void }) => {
-    
-    const quantity = useWatch({
-        control,
-        name: `generators.${index}.quantity`,
-        defaultValue: 1
-    });
+  const kvaCategory = useWatch({
+    control,
+    name: `generators.${index}.kvaCategory`,
+  });
 
-    const kvaCategory = useWatch({
-        control,
-        name: `generators.${index}.kvaCategory`,
-    });
-
-    return (
-        <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
-            <div className="flex items-center w-full">
-                <AccordionTrigger className="flex-1">
-                    <div className="font-semibold">{kvaCategory ? `${quantity} x ${kvaCategory} KVA` : 'New Generator Group'}</div>
-                </AccordionTrigger>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(index)}
-                    className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2"
-                >
-                    <Trash className="h-4 w-4 text-destructive" />
-                </Button>
-            </div>
-            <AccordionContent className="pt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <FormField
-                        control={control}
-                        name={`generators.${index}.kvaCategory`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>KVA Category</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select KVA" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {GENERATORS_DATA.map(gen => (
-                                          <SelectItem key={gen.kva} value={gen.kva}>
-                                            {gen.kva} KVA (₹{gen.basePrice} for 5hrs)
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={control}
-                        name={`generators.${index}.quantity`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Quantity</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="e.g., 1" {...field} min="1" />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={control}
-                        name={`generators.${index}.additionalHours`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Additional Hours</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="e.g., 2" {...field} min="0" />
-                                </FormControl>
-                                <FormDescription className="text-xs">
-                                    Beyond the initial 5 hours.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-            </AccordionContent>
-        </AccordionItem>
-    );
+  return (
+    <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
+      <div className="flex items-center w-full">
+        <AccordionTrigger className="flex-1">
+          <div className="font-semibold">
+            {kvaCategory ? `${kvaCategory} KVA Generator` : 'New Generator'}
+          </div>
+        </AccordionTrigger>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => remove(index)}
+          className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2"
+        >
+          <Trash className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+      <AccordionContent className="pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <FormField
+            control={control}
+            name={`generators.${index}.kvaCategory`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>KVA Category</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select KVA" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {GENERATORS_DATA.map(gen => (
+                      <SelectItem key={gen.kva} value={gen.kva}>
+                        {gen.kva} KVA (₹{gen.basePrice} for 5hrs)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`generators.${index}.additionalHours`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Hours</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="e.g., 2" {...field} min="0" />
+                </FormControl>
+                <FormDescription className="text-xs">
+                  Beyond the initial 5 hours.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
 };
-
 
 export function BookingForm() {
   const { user, name, email, company, phone } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
-  
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -167,7 +151,7 @@ export function BookingForm() {
       email: '',
       location: '',
       bookingDate: addDays(new Date(), 7),
-      generators: [{ kvaCategory: '62', quantity: 1, additionalHours: 0 }],
+      generators: [{ kvaCategory: '', additionalHours: 0 }],
       additionalNotes: '',
     },
   });
@@ -175,36 +159,35 @@ export function BookingForm() {
   const { control, watch } = form;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "generators"
+    name: 'generators',
   });
 
   const watchedGenerators = watch('generators');
 
   const estimate = React.useMemo(() => {
-    const items = watchedGenerators.map(genGroup => {
-      const genData = GENERATORS_DATA.find(g => g.kva === genGroup.kvaCategory);
-      if (!genData) return null;
+    const items = watchedGenerators
+      .filter(genGroup => genGroup.kvaCategory) // Only calculate for selected generators
+      .map(genGroup => {
+        const genData = GENERATORS_DATA.find(g => g.kva === genGroup.kvaCategory);
+        if (!genData) return null;
 
-      const quantity = Number(genGroup.quantity) || 0;
-      const additionalHours = Number(genGroup.additionalHours) || 0;
+        const additionalHours = Number(genGroup.additionalHours) || 0;
+        const baseCost = genData.basePrice;
+        const additionalCost = additionalHours * genData.pricePerAdditionalHour;
+        const totalCost = baseCost + additionalCost;
 
-      const baseCost = quantity * genData.basePrice;
-      const additionalCost = quantity * additionalHours * genData.pricePerAdditionalHour;
-      const totalCost = baseCost + additionalCost;
-
-      return {
-        name: `${quantity} x ${genData.kva} KVA`,
-        baseCost,
-        additionalCost,
-        totalCost,
-      };
-    }).filter(Boolean);
+        return {
+          name: `${genData.kva} KVA Generator`,
+          baseCost,
+          additionalCost,
+          totalCost,
+        };
+      })
+      .filter(Boolean); // Filter out any null returns
 
     const grandTotal = items.reduce((acc, item) => acc + (item?.totalCost || 0), 0);
-
     return { items, grandTotal };
   }, [watchedGenerators]);
-
 
   React.useEffect(() => {
     if (user) {
@@ -238,27 +221,31 @@ export function BookingForm() {
         phone: data.phone,
         location: data.location,
         bookingDate: data.bookingDate,
-        generators: data.generators.map(g => ({ ...g, additionalHours: Number(g.additionalHours) || 0, kvaCategory: g.kvaCategory })),
+        generators: data.generators
+            .filter(g => g.kvaCategory) // Ensure only selected generators are submitted
+            .map(g => ({
+                quantity: 1, // Each item is one unit
+                additionalHours: Number(g.additionalHours) || 0,
+                kvaCategory: g.kvaCategory,
+        })),
         additionalNotes: data.additionalNotes,
         status: 'Pending' as const,
         estimatedCost: estimate.grandTotal,
         createdAt: new Date(),
       };
-      
+
       await addDoc(collection(db, 'bookings'), bookingData);
 
       toast({
         title: 'Booking Request Submitted!',
-        description:
-          'We have received your request and will be in touch shortly.',
+        description: 'We have received your request and will be in touch shortly.',
       });
       form.reset();
     } catch (error) {
       console.error('Error submitting booking:', error);
       toast({
         title: 'Submission Error',
-        description:
-          'There was an error submitting your booking. Please try again.',
+        description: 'There was an error submitting your booking. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -280,26 +267,31 @@ export function BookingForm() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={['item-0']}>
-                        {fields.map((field, index) => (
-                           <GeneratorGroupItem 
-                             key={field.id}
-                             control={form.control} 
-                             index={index} 
-                             remove={remove} 
-                           />
-                        ))}
-                    </Accordion>
-                   <Button
+                  <Accordion type="multiple" className="w-full space-y-4" defaultValue={['item-0']}>
+                    {fields.map((field, index) => (
+                      <GeneratorGroupItem
+                        key={field.id}
+                        control={form.control}
+                        index={index}
+                        remove={remove}
+                      />
+                    ))}
+                  </Accordion>
+                  {form.formState.errors.generators?.root && (
+                     <p className="text-sm font-medium text-destructive">
+                       {form.formState.errors.generators.root.message}
+                     </p>
+                  )}
+                  <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="mt-4"
-                    onClick={() => append({ kvaCategory: '62', quantity: 1, additionalHours: 0 })}
-                   >
+                    onClick={() => append({ kvaCategory: '', additionalHours: 0 })}
+                  >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Another Generator Group
-                   </Button>
+                    Add Another Generator
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -379,18 +371,11 @@ export function BookingForm() {
                                 )}
                               >
                                 <CalendarDays className="mr-2 h-4 w-4" />
-                                {field.value ? (
-                                  format(field.value, 'PPP')
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0"
-                            align="start"
-                          >
+                          <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
                               selected={field.value}
@@ -464,10 +449,12 @@ export function BookingForm() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center">Your estimate will appear here.</p>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Select a generator to see your booking estimate.
+                    </p>
                   )}
-                  
-                  <Separator className="my-4"/>
+
+                  <Separator className="my-4" />
 
                   <div className="flex items-center justify-between font-bold text-lg">
                     <span>Grand Total</span>
@@ -491,5 +478,3 @@ export function BookingForm() {
     </div>
   );
 }
-
-    
