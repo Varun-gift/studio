@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
-import { Progress } from '@/components/ui/progress';
-// ... (rest of the existing code)
 interface BookingDetailsViewProps {
   booking: Booking;
   onBack: () => void;
@@ -63,94 +61,6 @@ const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) =
     )
 }
 
-const TimelineItem = ({ label, time, isActual = false }: { label: string; time: Date | null; isActual?: boolean }) => {
-    if (!time) return null;
-    return (
-        <div className="flex flex-col items-start gap-1">
-            <p className={`text-xs font-semibold ${isActual ? 'text-primary' : 'text-muted-foreground'}`}>{label}</p>
-            <p className={`text-sm ${isActual ? 'font-medium' : 'text-foreground'}`}>{format(time, 'MMM dd, p')}</p>
-        </div>
-    );
-};
-
-const TimelineView = ({ booking }: { booking: Booking }) => {
-    const { bookingDate, estimatedEndTime, runtime_stats } = booking;
-
-    const actualStartTime = runtime_stats?.Engine_ON_hours?.find(log => log.Status === 'ON')?.Timestamp;
-    const actualEndTime = runtime_stats?.Engine_ON_hours?.find(log => log.Status === 'OFF')?.Timestamp; // Assuming the last OFF time is the end
-
-    const totalRuntimeSeconds = runtime_stats?.Engine_ON_hours?.reduce((total, log, index, arr) => {
-        if (log.Status === 'ON' && arr[index + 1]?.Status === 'OFF') {
-            const startTime = new Date(log.Timestamp);
-            const endTime = new Date(arr[index + 1].Timestamp);
-            return total + (endTime.getTime() - startTime.getTime()) / 1000;
-        }
-        return total;
-    }, 0) || 0;
-    const formatTotalRuntime = (seconds: number) => {
-        if (!seconds || seconds <= 0) return '0s';
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        return [
-            hours > 0 ? `${hours}h` : '',
-            minutes > 0 ? `${minutes}m` : '',
-        ].filter(Boolean).join(' ');
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Rental Timeline & Runtime</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4 overflow-x-auto pb-2">
-                    <TimelineItem label="Booking Start" time={bookingDate} />
-                    {actualStartTime && <TimelineItem label="Engine Start (Actual)" time={new Date(actualStartTime)} isActual />}
-                    {actualEndTime && <TimelineItem label="Engine Stop (Actual)" time={new Date(actualEndTime)} isActual />}
-                    {estimatedEndTime && <TimelineItem label="Booking End (Est.)" time={estimatedEndTime} />}
-                </div>
-                <Separator/>
-                <DetailItem icon={Timer} label="Total Engine Runtime">
-                    <p className="text-lg font-semibold">{formatTotalRuntime(totalRuntimeSeconds)}</p>
-                </DetailItem>
-            </CardContent>
-        </Card>
-    );
-};
-
-const BookingProgressBar = ({ booking, currentRuntime }: { booking: Booking, currentRuntime: any }) => {
-    const stages = ['Request Received', 'Approved', 'Generator ON'];
-    const currentStageIndex = (() => {
-        if (currentRuntime?.Current_Status === 'ON') return 2;
-        if (booking.status === 'Approved' || booking.status === 'Active') return 1;
-        if (booking.status !== 'Pending') return 0;
-        return -1;
-    })();
-
-    const progressValue = ((currentStageIndex + 1) / stages.length) * 100;
-
-    return (
-        <Card>
-            <CardHeader><CardTitle>Booking Progress</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                    {stages.map((stage, index) => (
-                        <React.Fragment key={stage}>
-                            <div className={`flex items-center gap-1 ${index <= currentStageIndex ? 'text-primary' : ''}`}>
-                                <CheckCircle className={`h-4 w-4 ${index <= currentStageIndex ? 'fill-primary text-primary-foreground' : 'text-muted-foreground'}`} />
-                                <span>{stage}</span>
-                            </div>
-                            {index < stages.length - 1 && (
-                                <Separator orientation="vertical" className="h-4" />
-                            )}
-                        </React.Fragment>
-                    ))}
-                </div>
-                <Progress value={progressValue} className="w-full" />
-            </CardContent>
-        </Card>
-    );
-};
 export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps) {
     const {
         id,
@@ -162,9 +72,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         generators,
         driverInfo,
         additionalNotes,
-        timers, // Ensure timers is included in the destructuring
-        currentRuntime, // Ensure currentRuntime is included
-        runtime_stats
+        timers, 
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -205,11 +113,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
                 <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
-
-                {/* Timeline View */}
-                <TimelineView booking={booking} />
                 {additionalNotes && (
-
                     <>
                         <Separator/>
                         <DetailItem icon={FileText} label="Additional Notes" value={additionalNotes}/>
@@ -218,8 +122,6 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             </CardContent>
         </Card>
 
-        {/* Booking Progress Bar */}
-        <BookingProgressBar booking={booking} currentRuntime={currentRuntime} />
         <Card>
             <CardHeader>
                 <CardTitle>Generators</CardTitle>

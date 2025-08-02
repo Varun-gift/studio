@@ -29,7 +29,6 @@ export interface Generator {
 
 export interface GeneratorGroup {
   kvaCategory: string;
-  quantity: number; // This will be 1 for each item, but kept for backend compatibility
   additionalHours?: number;
 }
 
@@ -66,5 +65,3 @@ export interface TimerLog {
     duration?: number; // in seconds
     status: 'running' | 'stopped';
 }
-
-    
