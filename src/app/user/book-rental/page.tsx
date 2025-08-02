@@ -7,6 +7,9 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { format } from 'date-fns';
 
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
@@ -21,7 +24,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Trash, Plus, Download, Send, Loader2 } from 'lucide-react';
 
 const generatorGroupSchema = z.object({
@@ -144,7 +146,6 @@ export default function BookRentalPage() {
         status: 'Pending' as const,
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
-        // Re-adding quantity for backend compatibility, always 1 per item
         generators: data.generators.map(g => ({...g, quantity: 1})),
       };
 
@@ -159,6 +160,61 @@ export default function BookRentalPage() {
     }
   };
 
+   const handleDownloadEstimate = () => {
+    const doc = new jsPDF();
+    const bookingDetails = form.getValues();
+
+    doc.setFontSize(20);
+    doc.text('Booking Estimate - AMG POWER', 14, 22);
+    doc.setFontSize(12);
+    doc.text(`Date: ${format(new Date(), 'PPP')}`, 14, 30);
+    
+    doc.setFontSize(14);
+    doc.text('Customer Details', 14, 45);
+    doc.setFontSize(10);
+    autoTable(doc, {
+        startY: 50,
+        body: [
+            ['Name', bookingDetails.name],
+            ['Email', bookingDetails.email],
+            ['Phone', bookingDetails.phone],
+            ['Company', bookingDetails.company || 'N/A'],
+            ['Booking Date', format(bookingDetails.bookingDate, 'PPP')],
+            ['Location', bookingDetails.location],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 10 },
+    });
+    
+    const tableStartY = (doc as any).lastAutoTable.finalY + 15;
+    
+    doc.setFontSize(14);
+    doc.text('Estimate Details', 14, tableStartY);
+    
+    const tableData = estimate.items.map(item => [
+        `1 x ${item.kvaCategory} KVA`,
+        `₹${item.baseCost.toLocaleString()}`,
+        `${item.additionalHours} hrs`,
+        `₹${item.additionalCost.toLocaleString()}`,
+        `₹${item.total.toLocaleString()}`,
+    ]);
+
+    autoTable(doc, {
+        startY: tableStartY + 5,
+        head: [['Generator', 'Base Cost (5 hrs)', 'Additional Hours', 'Additional Cost', 'Subtotal']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [255, 79, 0] },
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY;
+    doc.setFontSize(14);
+    doc.text('Grand Total:', 14, finalY + 15);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`₹${estimate.grandTotal.toLocaleString()}`, 200, finalY + 15, { align: 'right' });
+
+    doc.save('booking-estimate.pdf');
+  };
 
   return (
     <div className="container mx-auto p-4 pb-24 md:pb-4">
@@ -307,8 +363,21 @@ export default function BookRentalPage() {
                      </>
                   )}
                 </CardContent>
-                <CardFooter>
-                    <Button type="submit" className="w-full" disabled={isSubmitting || estimate.items.length === 0}>
+                <CardFooter className="flex-col gap-2 items-stretch">
+                   <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleDownloadEstimate}
+                      disabled={isSubmitting || estimate.items.length === 0}
+                    >
+                       <Download className="mr-2 h-4 w-4" />
+                       Download Estimate
+                   </Button>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={isSubmitting || estimate.items.length === 0}
+                    >
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Send Booking Request
                     </Button>
