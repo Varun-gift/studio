@@ -1,9 +1,8 @@
-// File: BookingForm.tsx
 
 'use client';
 
 import * as React from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addDays, format } from 'date-fns';
@@ -38,7 +37,7 @@ const bookingFormSchema = z.object({
   location: z.string().min(10, 'Please provide a detailed location'),
   bookingDate: z.date(),
   generators: z.array(generatorGroupSchema).min(1).refine(
-    gens => gens.some(g => g.kvaCategory),
+    (gens) => gens.some(g => g.kvaCategory),
     { message: 'Please select at least one generator category.' }
   ),
   additionalNotes: z.string().optional(),
@@ -92,8 +91,7 @@ const BookingSummary = ({ bookingDetails, onClose, onSubmit, estimate, onDownloa
 
 // Generator card item
 const GeneratorGroupItem = ({ control, index, remove }) => {
-  const values = useWatch({ control, name: `generators.${index}` });
-  const kvaCategory = values.kvaCategory;
+  const kvaCategory = useForm({ control }).watch(`generators.${index}.kvaCategory`);
 
   return (
     <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
@@ -170,19 +168,19 @@ export function BookingForm() {
     },
   });
 
-  const { control, watch, reset, handleSubmit } = form;
+  const { control, reset, handleSubmit, watch } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'generators' });
-  const watchedGenerators = watch('generators');
+
+  const formValues = watch(); // Watch all form values to trigger re-renders
 
   const estimate = React.useMemo(() => {
-    const items = watchedGenerators
-      .filter(g => g.kvaCategory) // Only include generators that have been selected
+    const items = formValues.generators
+      .filter(g => g.kvaCategory)
       .map((gen) => {
         const genData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
         if (!genData) return null;
 
         const additionalHours = Number(gen.additionalHours) || 0;
-        
         const baseCost = genData.basePrice;
         const additionalCost = additionalHours * genData.pricePerAdditionalHour;
         const totalCost = baseCost + additionalCost;
@@ -193,13 +191,14 @@ export function BookingForm() {
             additionalCost, 
             totalCost,
             additionalHours,
-            quantity: 1, // Each item is one unit
+            quantity: 1,
          };
       }).filter((item): item is NonNullable<typeof item> => item !== null);
 
     const grandTotal = items.reduce((acc, item) => acc + item.totalCost, 0);
     return { items, grandTotal };
-  }, [watchedGenerators]);
+  }, [formValues.generators]);
+
 
   const [expandedItems, setExpandedItems] = React.useState(['item-0']);
 
@@ -270,7 +269,7 @@ export function BookingForm() {
 
   const handleDownloadEstimate = () => {
     const doc = new jsPDF();
-    const formValues = form.getValues();
+    const currentFormValues = form.getValues();
     
     // Header
     doc.setFontSize(20);
@@ -288,9 +287,9 @@ export function BookingForm() {
     doc.setFontSize(12);
     doc.text("Bill To:", 14, 65);
     doc.setFontSize(10);
-    doc.text(formValues.name, 14, 70);
-    doc.text(formValues.email, 14, 75);
-    doc.text(formValues.location, 14, 80);
+    doc.text(currentFormValues.name, 14, 70);
+    doc.text(currentFormValues.email, 14, 75);
+    doc.text(currentFormValues.location, 14, 80);
 
     // Estimate Table
     const tableColumn = ["Item", "Base Cost (5 hrs)", "Additional Cost", "Total"];
@@ -321,12 +320,11 @@ export function BookingForm() {
     doc.setFontSize(8);
     doc.text("This is an estimate, final costs may vary. All prices inclusive of GST.", 14, doc.internal.pageSize.height - 10);
 
-    doc.save(`Estimate-${formValues.name}.pdf`);
+    doc.save(`Estimate-${currentFormValues.name}.pdf`);
 };
 
 
-  const formValues = watch();
-  const generatorsInCart = watchedGenerators.filter(g => g.kvaCategory).length;
+  const generatorsInCart = estimate.items.length;
 
 
   return (
