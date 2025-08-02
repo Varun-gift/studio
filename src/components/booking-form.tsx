@@ -1,3 +1,4 @@
+// File: BookingForm.tsx
 
 'use client';
 
@@ -5,99 +6,106 @@ import * as React from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { addDays, format } from 'date-fns';
+import { addDays } from 'date-fns';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { CalendarDays, Loader2, Plus, Trash, BadgeIndianRupee } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { GENERATORS_DATA } from '@/lib/generators';
 import { Separator } from './ui/separator';
+import { GENERATORS_DATA } from '@/lib/generators';
+import { Trash, Plus, Download, Send } from 'lucide-react';
 
-// Updated schema (no quantity)
 const generatorGroupSchema = z.object({
   kvaCategory: z.string(),
-  additionalHours: z.coerce.number().min(0, 'Additional hours cannot be negative.').optional(),
+  additionalHours: z.coerce.number().min(0).optional(),
 });
 
 const bookingFormSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
+  name: z.string().min(1),
   companyName: z.string().optional(),
-  phone: z.string().min(1, 'Phone number is required.'),
+  phone: z.string().min(1),
   email: z.string().email(),
-  location: z.string().min(10, 'Please enter a complete address.'),
+  location: z.string().min(10),
   bookingDate: z.date(),
-  generators: z.array(generatorGroupSchema).min(1, 'Please add at least one generator.').refine(
-    (gens) => gens.some(g => g.kvaCategory), 
-    { message: "Please select at least one generator category." }
+  generators: z.array(generatorGroupSchema).min(1).refine(
+    gens => gens.some(g => g.kvaCategory),
+    { message: 'Please select at least one generator category.' }
   ),
   additionalNotes: z.string().optional(),
 });
 
-type BookingFormValues = z.infer<typeof bookingFormSchema>;
+// Booking summary modal
+const BookingSummary = ({ bookingDetails, onClose, onSubmit, estimate }) => {
+  if (!bookingDetails) return null;
 
-const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: number, remove: (index: number) => void }) => {
-  const kvaCategory = useWatch({
-    control,
-    name: `generators.${index}.kvaCategory`,
-  });
+  return (
+    <div className="fixed inset-0 bg-background z-50 flex flex-col shadow-lg border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-lg font-semibold">Booking Summary</h2>
+        <Button variant="ghost" onClick={onClose}>Close</Button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <h3 className="font-semibold">Contact Details</h3>
+        <p><b>Name:</b> {bookingDetails.name}</p>
+        <p><b>Email:</b> {bookingDetails.email}</p>
+        <p><b>Phone:</b> {bookingDetails.phone}</p>
+        <p><b>Company:</b> {bookingDetails.companyName}</p>
+        <p><b>Location:</b> {bookingDetails.location}</p>
+
+        <Separator />
+
+        <h3 className="font-semibold mt-4">Selected Generators</h3>
+        {estimate.items.map((item, idx) => (
+          <div key={idx} className="text-sm">
+            🔹 {item.name} – ₹{item.totalCost} (₹{item.baseCost} base + ₹{item.additionalCost} extra)
+          </div>
+        ))}
+
+        <p className="font-semibold mt-4">Total Estimate: ₹{estimate.grandTotal}</p>
+      </div>
+      <div className="p-4 border-t flex justify-end space-x-2">
+        <Button variant="outline">
+          <Download className="h-4 w-4 mr-2" /> Download Estimate
+        </Button>
+        <Button onClick={onSubmit}>
+          <Send className="h-4 w-4 mr-2" /> Send Booking Request
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Generator card item
+const GeneratorGroupItem = ({ control, index, remove }) => {
+  const values = useWatch({ control, name: `generators.${index}` });
+  const kvaCategory = values.kvaCategory;
 
   return (
     <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
       <div className="flex items-center w-full">
         <AccordionTrigger className="flex-1">
-          <div className="font-semibold">
-            {kvaCategory ? `${kvaCategory} KVA Generator` : 'New Generator'}
-          </div>
+          <div className="font-semibold">{kvaCategory ? `${kvaCategory} KVA Generator` : 'New Generator'}</div>
         </AccordionTrigger>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => remove(index)}
-          className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2"
-        >
+        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2">
           <Trash className="h-4 w-4 text-destructive" />
         </Button>
       </div>
       <AccordionContent className="pt-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <FormField
             control={control}
             name={`generators.${index}.kvaCategory`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>KVA Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select KVA" />
@@ -124,9 +132,6 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
                 <FormControl>
                   <Input type="number" placeholder="e.g., 2" {...field} min="0" />
                 </FormControl>
-                <FormDescription className="text-xs">
-                  Beyond the initial 5 hours.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -140,9 +145,11 @@ const GeneratorGroupItem = ({ control, index, remove }: { control: any, index: n
 export function BookingForm() {
   const { user, name, email, company, phone } = useAuth();
   const { toast } = useToast();
+  const [generatorsInCart, setGeneratorsInCart] = React.useState(0);
+  const [showSummary, setShowSummary] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
-  const form = useForm<BookingFormValues>({
+  const form = useForm({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
       name: '',
@@ -156,42 +163,35 @@ export function BookingForm() {
     },
   });
 
-  const { control, watch } = form;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'generators',
-  });
-
+  const { control, watch, reset, handleSubmit } = form;
+  const { fields, append, remove } = useFieldArray({ control, name: 'generators' });
   const watchedGenerators = watch('generators');
 
   const estimate = React.useMemo(() => {
-    const items = watchedGenerators
-      .filter(genGroup => genGroup.kvaCategory) // Only calculate for selected generators
-      .map(genGroup => {
-        const genData = GENERATORS_DATA.find(g => g.kva === genGroup.kvaCategory);
-        if (!genData) return null;
-
-        const additionalHours = Number(genGroup.additionalHours) || 0;
-        const baseCost = genData.basePrice;
-        const additionalCost = additionalHours * genData.pricePerAdditionalHour;
-        const totalCost = baseCost + additionalCost;
-
-        return {
-          name: `${genData.kva} KVA Generator`,
-          baseCost,
-          additionalCost,
-          totalCost,
-        };
-      })
-      .filter(Boolean); // Filter out any null returns
-
-    const grandTotal = items.reduce((acc, item) => acc + (item?.totalCost || 0), 0);
+    const items = watchedGenerators.filter(g => g.kvaCategory).map((gen) => {
+      const genData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
+      if (!genData) return null;
+      const additionalHours = Number(gen.additionalHours) || 0;
+      const baseCost = genData.basePrice;
+      const additionalCost = additionalHours * genData.pricePerAdditionalHour;
+      const totalCost = baseCost + additionalCost;
+      return { name: `${genData.kva} KVA Generator`, baseCost, additionalCost, totalCost };
+    }).filter(Boolean);
+    const grandTotal = items.reduce((acc, item) => acc + item.totalCost, 0);
     return { items, grandTotal };
   }, [watchedGenerators]);
 
+  const [expandedItems, setExpandedItems] = React.useState(['item-0']);
+
+  React.useEffect(() => {
+    if (fields.length > 0) {
+      setExpandedItems(prev => [...new Set([...prev, `item-${fields.length - 1}`])]);
+    }
+  }, [fields.length]);
+
   React.useEffect(() => {
     if (user) {
-      form.reset({
+      reset({
         ...form.getValues(),
         name: name || '',
         email: email || '',
@@ -199,18 +199,17 @@ export function BookingForm() {
         phone: phone || '',
       });
     }
-  }, [user, name, email, company, phone, form]);
+  }, [user]);
 
-  async function onSubmit(data: BookingFormValues) {
+  React.useEffect(() => {
+    setGeneratorsInCart(watchedGenerators.filter(g => g.kvaCategory).length);
+  }, [watchedGenerators]);
+
+  async function submitBooking(data) {
     if (!user) {
-      toast({
-        title: 'Authentication Error',
-        description: 'You must be logged in to submit a booking.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Not logged in', description: 'Please login to submit', variant: 'destructive' });
       return;
     }
-
     setLoading(true);
     try {
       const bookingData = {
@@ -221,260 +220,105 @@ export function BookingForm() {
         phone: data.phone,
         location: data.location,
         bookingDate: data.bookingDate,
-        generators: data.generators
-            .filter(g => g.kvaCategory) // Ensure only selected generators are submitted
-            .map(g => ({
-                quantity: 1, // Each item is one unit
-                additionalHours: Number(g.additionalHours) || 0,
-                kvaCategory: g.kvaCategory,
+        generators: data.generators.filter(g => g.kvaCategory).map(g => ({
+          kvaCategory: g.kvaCategory,
+          additionalHours: Number(g.additionalHours) || 0,
+          quantity: 1,
         })),
         additionalNotes: data.additionalNotes,
-        status: 'Pending' as const,
+        status: 'Pending',
         estimatedCost: estimate.grandTotal,
         createdAt: new Date(),
       };
-
       await addDoc(collection(db, 'bookings'), bookingData);
-
-      toast({
-        title: 'Booking Request Submitted!',
-        description: 'We have received your request and will be in touch shortly.',
-      });
+      toast({ title: 'Booking Submitted', description: 'We will contact you soon.' });
       form.reset();
-    } catch (error) {
-      console.error('Error submitting booking:', error);
-      toast({
-        title: 'Submission Error',
-        description: 'There was an error submitting your booking. Please try again.',
-        variant: 'destructive',
-      });
+      setShowSummary(false);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Booking failed.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   }
 
+  const formValues = watch();
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generator Selection</CardTitle>
-                  <CardDescription>
-                    Base price includes first 5 hours. Additional hours cost extra.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Accordion type="multiple" className="w-full space-y-4" defaultValue={['item-0']}>
-                    {fields.map((field, index) => (
-                      <GeneratorGroupItem
-                        key={field.id}
-                        control={form.control}
-                        index={index}
-                        remove={remove}
-                      />
-                    ))}
-                  </Accordion>
-                  {form.formState.errors.generators?.root && (
-                     <p className="text-sm font-medium text-destructive">
-                       {form.formState.errors.generators.root.message}
-                     </p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => append({ kvaCategory: '', additionalHours: 0 })}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Another Generator
-                  </Button>
-                </CardContent>
-              </Card>
+        <form className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generator Booking</CardTitle>
+              <CardDescription>Select generator and enter hours.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems}>
+                {fields.map((field, index) => (
+                  <GeneratorGroupItem key={field.id} control={control} index={index} remove={remove} />
+                ))}
+              </Accordion>
+              <Button type="button" onClick={() => append({ kvaCategory: '', additionalHours: 0 })} className="mt-4">
+                <Plus className="h-4 w-4 mr-2" /> Add Another Generator
+              </Button>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Booking & Contact Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization (Optional)</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="bookingDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Setup Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'pl-3 text-left font-normal justify-start',
-                                  !field.value && 'text-muted-foreground'
-                                )}
-                              >
-                                <CalendarDays className="mr-2 h-4 w-4" />
-                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Venue Details / Address</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Enter the full delivery address"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="additionalNotes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Additional Notes</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Any special instructions for the team..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+          <Card>
+            <CardHeader><CardTitle>Contact Info</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <FormField control={control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={control} name="companyName" render={({ field }) => (
+                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={control} name="phone" render={({ field }) => (
+                <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={control} name="email" render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={control} name="location" render={({ field }) => (
+                <FormItem><FormLabel>Location</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>
+              )} />
+            </CardContent>
+          </Card>
 
-            <div className="lg:col-span-1">
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle>Booking Estimate</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {estimate.items.length > 0 ? (
-                    estimate.items.map((item, index) => (
-                      <div key={index} className="space-y-2">
-                        <p className="font-semibold">{item?.name}</p>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <div className="flex justify-between">
-                            <span>Base Cost (5 hrs)</span>
-                            <span>₹{item?.baseCost.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Additional Cost</span>
-                            <span>₹{item?.additionalCost.toLocaleString()}</span>
-                          </div>
-                        </div>
-                        {index < estimate.items.length - 1 && <Separator />}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Select a generator to see your booking estimate.
-                    </p>
-                  )}
-
-                  <Separator className="my-4" />
-
-                  <div className="flex items-center justify-between font-bold text-lg">
-                    <span>Grand Total</span>
-                    <div className="flex items-center gap-1">
-                      <BadgeIndianRupee className="h-5 w-5" />
-                      <span>{estimate.grandTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Booking Request
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </div>
+          <Card>
+            <CardHeader><CardTitle>Estimate Summary</CardTitle></CardHeader>
+            <CardContent>
+              {estimate.items.map((item, idx) => (
+                <div key={idx} className="text-sm">
+                  ✅ {item.name} – ₹{item.totalCost} (₹{item.baseCost} base + ₹{item.additionalCost} extra)
+                </div>
+              ))}
+              <div className="font-semibold mt-2">Total: ₹{estimate.grandTotal}</div>
+            </CardContent>
+          </Card>
         </form>
       </Form>
+
+      {/* Sticky cart */}
+      {generatorsInCart > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 text-center cursor-pointer z-40"
+          onClick={() => setShowSummary(true)}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <span>{generatorsInCart} Generator{generatorsInCart > 1 ? 's' : ''} Added to Cart</span>
+            <Plus className="h-4 w-4" />
+          </div>
+        </div>
+      )}
+
+      {/* Summary modal */}
+      <BookingSummary
+        bookingDetails={showSummary ? formValues : null}
+        onClose={() => setShowSummary(false)}
+        onSubmit={handleSubmit(submitBooking)}
+        estimate={estimate}
+      />
     </div>
   );
 }
