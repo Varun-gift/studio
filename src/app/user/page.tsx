@@ -12,6 +12,7 @@ import { RentalHistory } from '@/components/rental-history';
 import { SupportView } from '@/components/user/support-view';
 import Image from 'next/image';
 import { UserDashboard } from '@/components/user/user-dashboard';
+import BookRentalPage from './book-rental/page';
 import { Button } from '@/components/ui/button';
 
 export default function UserDashboardPage() {
@@ -39,30 +40,20 @@ export default function UserDashboardPage() {
       const previousTab = newHistory[newHistory.length - 1];
       setHistoryStack(newHistory);
       setActiveTab(previousTab);
-      // We handled it, so we don't want the default browser back behavior
       return true;
     }
-    // If we're at the beginning of the stack, let the browser handle it (e.g., exit app)
     return false;
   }, [historyStack]);
 
 
   React.useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      // Intercept browser back button press
       if (handleBackPress()) {
-         // This is a bit of a hack to keep the URL state consistent 
-         // without causing a full re-render, preventing the browser's default back action.
          history.pushState(null, '', window.location.href);
       }
     };
-
-    // Add event listener for the browser's back button
     window.addEventListener('popstate', handlePopState);
-    
-    // Set initial state
     history.pushState(null, '', window.location.href);
-
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
@@ -71,6 +62,7 @@ export default function UserDashboardPage() {
 
    const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
+    { name: 'booking', icon: Power, label: 'Book' },
     { name: 'history', icon: History, label: 'History' },
     { name: 'support', icon: Phone, label: 'Support' },
     { name: 'profile', icon: Settings, label: 'Profile' },
@@ -80,6 +72,8 @@ export default function UserDashboardPage() {
     switch (activeTab) {
       case 'home':
         return <UserDashboard setActiveTab={handleSetActiveTab} />;
+      case 'booking':
+        return <BookRentalPage />;
       case 'history':
         return <RentalHistory />;
       case 'support':

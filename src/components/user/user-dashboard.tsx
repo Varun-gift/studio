@@ -6,6 +6,8 @@ import { DashboardCards } from './dashboard-cards';
 import { RecommendedForYou } from './recommended-for-you';
 import { useAuth } from '@/hooks/use-auth';
 import { HeroBanner } from './hero-banner';
+import { Button } from '../ui/button';
+import { ArrowRight } from 'lucide-react';
 
 interface UserDashboardProps {
     setActiveTab: (tab: string) => void;
@@ -22,6 +24,12 @@ export function UserDashboard({ setActiveTab }: UserDashboardProps) {
                     <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                         Welcome back, {name ? name.split(' ')[0] : 'User'}!
                     </h1>
+                </div>
+
+                <div className="text-center">
+                    <Button size="lg" onClick={() => setActiveTab('booking')} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                        Get a Quote <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
                 </div>
 
                <RecommendedForYou setActiveTab={setActiveTab} />
