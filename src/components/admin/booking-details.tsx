@@ -68,7 +68,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                             <div className="flex items-start gap-3">
                                 <Package className="h-5 w-5 mt-1" />
                                 <div>
-                                    <p className="font-semibold">{genGroup.quantity} x {genGroup.kvaCategory} KVA</p>
+                                    <p className="font-semibold">1 x {genGroup.kvaCategory} KVA</p>
                                     <p className="text-xs text-muted-foreground">
                                        Additional Hours: {genGroup.additionalHours || 0}
                                     </p>

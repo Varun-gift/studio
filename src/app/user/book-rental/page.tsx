@@ -26,7 +26,6 @@ import { Trash, Plus, Download, Send, Loader2 } from 'lucide-react';
 
 const generatorGroupSchema = z.object({
   kvaCategory: z.string().min(1, 'Please select a KVA category.'),
-  quantity: z.number().min(1, 'Quantity must be at least 1.'),
   additionalHours: z.number().min(0, 'Additional hours cannot be negative.').optional().default(0),
 });
 
@@ -46,7 +45,6 @@ type BookingFormValues = z.infer<typeof bookingFormSchema>;
 interface Estimate {
   items: {
     kvaCategory: string;
-    quantity: number;
     baseCost: number;
     additionalHours: number;
     additionalCost: number;
@@ -71,7 +69,7 @@ export default function BookRentalPage() {
       location: '',
       additionalNotes: '',
       bookingDate: new Date(),
-      generators: [{ kvaCategory: '', quantity: 1, additionalHours: 0 }],
+      generators: [{ kvaCategory: '', additionalHours: 0 }],
     },
   });
 
@@ -104,16 +102,14 @@ export default function BookRentalPage() {
         const generatorData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
         if (!generatorData) return null;
 
-        const quantity = gen.quantity || 1;
         const additionalHours = gen.additionalHours || 0;
 
-        const baseCost = generatorData.basePrice * quantity;
-        const additionalCost = generatorData.pricePerAdditionalHour * additionalHours * quantity;
+        const baseCost = generatorData.basePrice;
+        const additionalCost = generatorData.pricePerAdditionalHour * additionalHours;
         const total = baseCost + additionalCost;
         
         return {
           kvaCategory: gen.kvaCategory,
-          quantity,
           baseCost,
           additionalHours,
           additionalCost,
@@ -148,6 +144,8 @@ export default function BookRentalPage() {
         status: 'Pending' as const,
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
+        // Re-adding quantity for backend compatibility, always 1 per item
+        generators: data.generators.map(g => ({...g, quantity: 1})),
       };
 
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -217,6 +215,7 @@ export default function BookRentalPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Generator Selection</CardTitle>
+                  <CardDescription>Add each generator unit you require individually.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
@@ -227,7 +226,7 @@ export default function BookRentalPage() {
                          </Button>
                        )}
                       <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="grid gap-2 sm:col-span-2">
+                        <div className="grid gap-2 sm:col-span-3">
                           <Label>Generator (KVA)</Label>
                            <Select onValueChange={(value) => form.setValue(`generators.${index}.kvaCategory`, value)} defaultValue={field.kvaCategory}>
                             <SelectTrigger>
@@ -243,11 +242,6 @@ export default function BookRentalPage() {
                            </Select>
                            {form.formState.errors.generators?.[index]?.kvaCategory && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.kvaCategory?.message}</p>}
                         </div>
-                        <div className="grid gap-2">
-                          <Label>Quantity</Label>
-                          <Input type="number" min="1" {...form.register(`generators.${index}.quantity`, { valueAsNumber: true })} />
-                          {form.formState.errors.generators?.[index]?.quantity && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.quantity?.message}</p>}
-                        </div>
                       </div>
                        <div className="grid gap-2">
                           <Label>Additional Hours (after first 5)</Label>
@@ -257,7 +251,7 @@ export default function BookRentalPage() {
                         </div>
                     </div>
                   ))}
-                  <Button type="button" variant="outline" onClick={() => append({ kvaCategory: '', quantity: 1, additionalHours: 0 })}>
+                  <Button type="button" variant="outline" onClick={() => append({ kvaCategory: '', additionalHours: 0 })}>
                     <Plus className="mr-2 h-4 w-4"/>
                     Add Another Generator
                   </Button>
@@ -286,7 +280,7 @@ export default function BookRentalPage() {
                   ) : (
                     estimate.items.map((item, index) => (
                       <div key={index} className="space-y-2 pb-2">
-                        <p className="font-semibold">{item.quantity} x {item.kvaCategory} KVA</p>
+                        <p className="font-semibold">1 x {item.kvaCategory} KVA</p>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Base Cost (incl. 5 hrs)</span>
                           <span>₹{item.baseCost.toLocaleString()}</span>

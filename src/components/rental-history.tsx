@@ -70,18 +70,11 @@ export function RentalHistory() {
   }, [user]);
 
   const getGeneratorSummary = (booking: Booking) => {
-    const totalGenerators = booking.generators.reduce((sum, gen) => sum + gen.quantity, 0);
-    const kvaList = booking.generators.map(g => g.kvaCategory).join('/');
+    const totalGenerators = booking.generators.length;
+    const kvaList = booking.generators.map(g => g.kvaCategory).join(', ');
     
-    const totalHours = booking.generators.reduce((sum, gen) => {
-        if (Array.isArray(gen.usageHours)) {
-            return sum + gen.usageHours.reduce((hSum, h) => hSum + (h || 0), 0);
-        }
-        return sum + (Number(gen.usageHours) || 0);
-    }, 0);
-
     const generatorText = totalGenerators > 1 ? 'Generators' : 'Generator';
-    return `${totalGenerators} ${generatorText}, ${kvaList} KVA, ${totalHours} Hours`;
+    return `${totalGenerators} ${generatorText} - ${kvaList} KVA`;
   }
 
   const renderSkeleton = () => (

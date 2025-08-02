@@ -128,7 +128,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             </CardHeader>
             <CardContent className="space-y-3">
                 {generators.map((gen, index) => (
-                    <DetailItem key={index} icon={Package} label={`${gen.quantity} x ${gen.kvaCategory} KVA`}>
+                    <DetailItem key={index} icon={Package} label={`1 x ${gen.kvaCategory} KVA`}>
                         <p className="text-xs text-muted-foreground">
                              {formatGeneratorDetails(gen)}
                         </p>

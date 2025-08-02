@@ -120,9 +120,8 @@ export default function DriverDashboard() {
             if(booking && (!booking.timers || booking.timers.length === 0)) {
                 const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
                 
-                booking.generators.forEach(genGroup => {
-                  for (let i = 0; i < genGroup.quantity; i++) {
-                     const generatorId = `${genGroup.kvaCategory}KVA-U${i+1}`;
+                booking.generators.forEach((genGroup, index) => {
+                     const generatorId = `${genGroup.kvaCategory}KVA-U${index+1}`;
                      const timerDocRef = doc(timersCollectionRef);
                      batch.set(timerDocRef, {
                         generatorId,
@@ -131,7 +130,6 @@ export default function DriverDashboard() {
                         endTime: null,
                         duration: 0,
                     });
-                  }
                 });
             }
              await batch.commit();
@@ -201,7 +199,7 @@ export default function DriverDashboard() {
     const baseHours = 5;
     const additional = gen.additionalHours || 0;
     const totalHours = baseHours + additional;
-    return `${gen.quantity} x ${gen.kvaCategory} KVA (${totalHours} hrs)`;
+    return `1 x ${gen.kvaCategory} KVA (${totalHours} hrs)`;
   }
 
 

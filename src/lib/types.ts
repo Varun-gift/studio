@@ -29,7 +29,7 @@ export interface Generator {
 
 export interface GeneratorGroup {
   kvaCategory: string;
-  quantity: number;
+  quantity: number; // This will be 1 for each item, but kept for backend compatibility
   additionalHours?: number;
 }
 

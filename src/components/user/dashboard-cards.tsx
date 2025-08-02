@@ -45,7 +45,7 @@ export function DashboardCards({ setActiveTab }: DashboardCardsProps) {
                             {activeRental ? (
                                 <>
                                     <p className="text-sm text-muted-foreground">Ongoing Rental</p>
-                                    <p className="font-semibold">{activeRental.generators.map(g => `${g.quantity}x ${g.kvaCategory}KVA`).join(', ')}</p>
+                                    <p className="font-semibold">{activeRental.generators.map(g => `1x ${g.kvaCategory}KVA`).join(', ')}</p>
                                     <p className="text-xs text-muted-foreground">Booking ID: {activeRental.id.substring(0, 6)}</p>
                                     <Button variant="ghost" size="sm" className="px-0 h-auto text-primary" onClick={() => setActiveTab('history')}>
                                         View Details <ArrowRight className="ml-1 h-4 w-4" />
