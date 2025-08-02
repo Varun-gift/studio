@@ -6,7 +6,7 @@ import * as React from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -21,6 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Separator } from './ui/separator';
 import { GENERATORS_DATA } from '@/lib/generators';
 import { Trash, Plus, Download, Send } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { AmgLogo } from './amg-logo';
 
 const generatorGroupSchema = z.object({
   kvaCategory: z.string(),
@@ -28,11 +31,11 @@ const generatorGroupSchema = z.object({
 });
 
 const bookingFormSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1, 'Name is required'),
   companyName: z.string().optional(),
-  phone: z.string().min(1),
+  phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email(),
-  location: z.string().min(10),
+  location: z.string().min(10, 'Please provide a detailed location'),
   bookingDate: z.date(),
   generators: z.array(generatorGroupSchema).min(1).refine(
     gens => gens.some(g => g.kvaCategory),
@@ -42,7 +45,7 @@ const bookingFormSchema = z.object({
 });
 
 // Booking summary modal
-const BookingSummary = ({ bookingDetails, onClose, onSubmit, estimate }) => {
+const BookingSummary = ({ bookingDetails, onClose, onSubmit, estimate, onDownload }) => {
   if (!bookingDetails) return null;
 
   return (
@@ -56,22 +59,27 @@ const BookingSummary = ({ bookingDetails, onClose, onSubmit, estimate }) => {
         <p><b>Name:</b> {bookingDetails.name}</p>
         <p><b>Email:</b> {bookingDetails.email}</p>
         <p><b>Phone:</b> {bookingDetails.phone}</p>
-        <p><b>Company:</b> {bookingDetails.companyName}</p>
+        <p><b>Company:</b> {bookingDetails.companyName || 'N/A'}</p>
         <p><b>Location:</b> {bookingDetails.location}</p>
 
         <Separator />
 
         <h3 className="font-semibold mt-4">Selected Generators</h3>
         {estimate.items.map((item, idx) => (
-          <div key={idx} className="text-sm">
-            🔹 {item.name} – ₹{item.totalCost} (₹{item.baseCost} base + ₹{item.additionalCost} extra)
-          </div>
+           <div key={idx} className="text-sm border-b pb-2">
+             <p className="font-bold">🔹 {item.name}</p>
+             <div className="pl-4">
+               <p>Base Cost (incl. 5 hours): ₹{item.baseCost.toLocaleString()}</p>
+               <p>Additional Cost ({item.additionalHours} hrs): ₹{item.additionalCost.toLocaleString()}</p>
+               <p className="font-semibold">Total: ₹{item.totalCost.toLocaleString()}</p>
+             </div>
+           </div>
         ))}
 
-        <p className="font-semibold mt-4">Total Estimate: ₹{estimate.grandTotal}</p>
+        <p className="font-semibold text-xl mt-4 text-right">Grand Total: ₹{estimate.grandTotal.toLocaleString()}</p>
       </div>
       <div className="p-4 border-t flex justify-end space-x-2">
-        <Button variant="outline">
+        <Button variant="outline" onClick={onDownload}>
           <Download className="h-4 w-4 mr-2" /> Download Estimate
         </Button>
         <Button onClick={onSubmit}>
@@ -91,7 +99,7 @@ const GeneratorGroupItem = ({ control, index, remove }) => {
     <AccordionItem value={`item-${index}`} className="border rounded-lg px-4 bg-muted/20">
       <div className="flex items-center w-full">
         <AccordionTrigger className="flex-1">
-          <div className="font-semibold">{kvaCategory ? `${kvaCategory} KVA Generator` : 'New Generator'}</div>
+          <div className="font-semibold">{kvaCategory ? `${kvaCategory} KVA Generator` : 'Select a Generator'}</div>
         </AccordionTrigger>
         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-8 w-8 hover:bg-destructive/10 shrink-0 ml-2">
           <Trash className="h-4 w-4 text-destructive" />
@@ -114,7 +122,7 @@ const GeneratorGroupItem = ({ control, index, remove }) => {
                   <SelectContent>
                     {GENERATORS_DATA.map(gen => (
                       <SelectItem key={gen.kva} value={gen.kva}>
-                        {gen.kva} KVA (₹{gen.basePrice} for 5hrs)
+                        {gen.kva} KVA (₹{gen.pricePerAdditionalHour}/hr extra)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -132,7 +140,7 @@ const GeneratorGroupItem = ({ control, index, remove }) => {
                 <FormControl>
                   <Input type="number" placeholder="e.g., 2" {...field} min="0" />
                 </FormControl>
-                <FormMessage />
+                 <FormMessage />
               </FormItem>
             )}
           />
@@ -145,7 +153,6 @@ const GeneratorGroupItem = ({ control, index, remove }) => {
 export function BookingForm() {
   const { user, name, email, company, phone } = useAuth();
   const { toast } = useToast();
-  const [generatorsInCart, setGeneratorsInCart] = React.useState(0);
   const [showSummary, setShowSummary] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
@@ -157,7 +164,7 @@ export function BookingForm() {
       phone: '',
       email: '',
       location: '',
-      bookingDate: addDays(new Date(), 7),
+      bookingDate: addDays(new Date(), 1),
       generators: [{ kvaCategory: '', additionalHours: 0 }],
       additionalNotes: '',
     },
@@ -168,15 +175,28 @@ export function BookingForm() {
   const watchedGenerators = watch('generators');
 
   const estimate = React.useMemo(() => {
-    const items = watchedGenerators.filter(g => g.kvaCategory).map((gen) => {
-      const genData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
-      if (!genData) return null;
-      const additionalHours = Number(gen.additionalHours) || 0;
-      const baseCost = genData.basePrice;
-      const additionalCost = additionalHours * genData.pricePerAdditionalHour;
-      const totalCost = baseCost + additionalCost;
-      return { name: `${genData.kva} KVA Generator`, baseCost, additionalCost, totalCost };
-    }).filter(Boolean);
+    const items = watchedGenerators
+      .filter(g => g.kvaCategory) // Only include generators that have been selected
+      .map((gen) => {
+        const genData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
+        if (!genData) return null;
+
+        const additionalHours = Number(gen.additionalHours) || 0;
+        
+        const baseCost = genData.basePrice;
+        const additionalCost = additionalHours * genData.pricePerAdditionalHour;
+        const totalCost = baseCost + additionalCost;
+
+        return { 
+            name: `${genData.kva} KVA Generator`, 
+            baseCost, 
+            additionalCost, 
+            totalCost,
+            additionalHours,
+            quantity: 1, // Each item is one unit
+         };
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
     const grandTotal = items.reduce((acc, item) => acc + item.totalCost, 0);
     return { items, grandTotal };
   }, [watchedGenerators]);
@@ -199,11 +219,8 @@ export function BookingForm() {
         phone: phone || '',
       });
     }
-  }, [user]);
+  }, [user, name, email, company, phone, reset]);
 
-  React.useEffect(() => {
-    setGeneratorsInCart(watchedGenerators.filter(g => g.kvaCategory).length);
-  }, [watchedGenerators]);
 
   async function submitBooking(data) {
     if (!user) {
@@ -223,7 +240,7 @@ export function BookingForm() {
         generators: data.generators.filter(g => g.kvaCategory).map(g => ({
           kvaCategory: g.kvaCategory,
           additionalHours: Number(g.additionalHours) || 0,
-          quantity: 1,
+          quantity: 1, // Each item is one unit
         })),
         additionalNotes: data.additionalNotes,
         status: 'Pending',
@@ -232,28 +249,97 @@ export function BookingForm() {
       };
       await addDoc(collection(db, 'bookings'), bookingData);
       toast({ title: 'Booking Submitted', description: 'We will contact you soon.' });
-      form.reset();
+      form.reset({
+        name: name || '',
+        email: email || '',
+        companyName: company || '',
+        phone: phone || '',
+        location: '',
+        bookingDate: addDays(new Date(), 1),
+        generators: [{ kvaCategory: '', additionalHours: 0 }],
+        additionalNotes: '',
+      });
       setShowSummary(false);
     } catch (err) {
-      toast({ title: 'Error', description: 'Booking failed.', variant: 'destructive' });
+      console.error("Booking submission error:", err);
+      toast({ title: 'Error', description: 'Booking failed. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   }
 
+  const handleDownloadEstimate = () => {
+    const doc = new jsPDF();
+    const formValues = form.getValues();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text("Booking Estimate", 14, 22);
+    doc.setFontSize(12);
+    doc.text(`Date: ${format(new Date(), 'PPP')}`, 14, 30);
+    
+    // Company Info
+    doc.setFontSize(10);
+    doc.text("Ashik Mobile Generators", 14, 40);
+    doc.text("your-email@amg.com", 14, 45);
+    doc.text("your-phone-number", 14, 50);
+
+    // Customer Info
+    doc.setFontSize(12);
+    doc.text("Bill To:", 14, 65);
+    doc.setFontSize(10);
+    doc.text(formValues.name, 14, 70);
+    doc.text(formValues.email, 14, 75);
+    doc.text(formValues.location, 14, 80);
+
+    // Estimate Table
+    const tableColumn = ["Item", "Base Cost (5 hrs)", "Additional Cost", "Total"];
+    const tableRows = [];
+
+    estimate.items.forEach(item => {
+        const itemData = [
+            `${item.quantity} x ${item.name}`,
+            `₹${item.baseCost.toLocaleString()}`,
+            `₹${item.additionalCost.toLocaleString()} (${item.additionalHours} hrs)`,
+            `₹${item.totalCost.toLocaleString()}`
+        ];
+        tableRows.push(itemData);
+    });
+
+    doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 90,
+    });
+
+    // Grand Total
+    const finalY = (doc as any).lastAutoTable.finalY;
+    doc.setFontSize(14);
+    doc.text(`Grand Total: ₹${estimate.grandTotal.toLocaleString()}`, 14, finalY + 15);
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.text("This is an estimate, final costs may vary. All prices inclusive of GST.", 14, doc.internal.pageSize.height - 10);
+
+    doc.save(`Estimate-${formValues.name}.pdf`);
+};
+
+
   const formValues = watch();
+  const generatorsInCart = watchedGenerators.filter(g => g.kvaCategory).length;
+
 
   return (
     <div className="max-w-4xl mx-auto py-8">
       <Form {...form}>
-        <form className="space-y-8">
+        <form onSubmit={handleSubmit(submitBooking)} className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Generator Booking</CardTitle>
-              <CardDescription>Select generator and enter hours.</CardDescription>
+              <CardDescription>Add generators to your booking. Each item represents one unit. The base price includes 5 hours of usage.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems}>
+              <Accordion type="multiple" value={expandedItems} onValueChange={setExpandedItems} className="space-y-2">
                 {fields.map((field, index) => (
                   <GeneratorGroupItem key={field.id} control={control} index={index} remove={remove} />
                 ))}
@@ -265,49 +351,86 @@ export function BookingForm() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Contact Info</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Contact & Booking Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <FormField control={control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input placeholder="Your full name" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={control} name="companyName" render={({ field }) => (
-                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Company (Optional)</FormLabel><FormControl><Input placeholder="Your company name" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="Your contact number" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="Your email address" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+               <FormField control={control} name="bookingDate" render={({ field }) => (
+                  <FormItem><FormLabel>Booking Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ? format(field.value, 'yyyy-MM-dd') : ''} onChange={(e) => field.onChange(e.target.valueAsDate)} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={control} name="location" render={({ field }) => (
-                <FormItem><FormLabel>Location</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Full Location & Address</FormLabel><FormControl><Textarea placeholder="Detailed address for generator delivery and setup" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+               <FormField control={control} name="additionalNotes" render={({ field }) => (
+                <FormItem><FormLabel>Additional Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Any special requirements or instructions..." {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </CardContent>
           </Card>
+          
+           <Card>
+              <CardHeader>
+                <CardTitle>Booking Estimate</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {estimate.items.length > 0 ? (
+                    estimate.items.map((item, index) => (
+                        <div key={index} className="space-y-2 pb-2 border-b last:border-none">
+                           <div className="flex justify-between font-semibold">
+                                <span>{item.name}</span>
+                                <span>₹{item.totalCost.toLocaleString()}</span>
+                           </div>
+                           <div className="text-sm text-muted-foreground pl-2">
+                                <div className="flex justify-between">
+                                    <span>Base Cost (incl. 5 hours)</span>
+                                    <span>₹{item.baseCost.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Additional Cost ({item.additionalHours} hrs)</span>
+                                     <span>₹{item.additionalCost.toLocaleString()}</span>
+                                </div>
+                           </div>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-muted-foreground">Select a generator to see your booking estimate.</p>
+                )}
 
-          <Card>
-            <CardHeader><CardTitle>Estimate Summary</CardTitle></CardHeader>
-            <CardContent>
-              {estimate.items.map((item, idx) => (
-                <div key={idx} className="text-sm">
-                  ✅ {item.name} – ₹{item.totalCost} (₹{item.baseCost} base + ₹{item.additionalCost} extra)
-                </div>
-              ))}
-              <div className="font-semibold mt-2">Total: ₹{estimate.grandTotal}</div>
-            </CardContent>
-          </Card>
+                {estimate.items.length > 0 && (
+                     <div className="flex justify-between items-center pt-4 text-xl font-bold">
+                        <span>Grand Total</span>
+                        <span>₹{estimate.grandTotal.toLocaleString()}</span>
+                    </div>
+                )}
+              </CardContent>
+               <CardFooter>
+                 <Button type="button" onClick={() => form.trigger().then(isValid => isValid && setShowSummary(true))} className="w-full" size="lg" disabled={generatorsInCart === 0}>
+                    Proceed to Summary
+                 </Button>
+              </CardFooter>
+            </Card>
+
         </form>
       </Form>
 
       {/* Sticky cart */}
       {generatorsInCart > 0 && (
         <div
-          className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 text-center cursor-pointer z-40"
-          onClick={() => setShowSummary(true)}
+          className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 text-center cursor-pointer z-40 md:hidden"
+          onClick={() => form.trigger().then(isValid => isValid && setShowSummary(true))}
         >
           <div className="flex items-center justify-center space-x-2">
-            <span>{generatorsInCart} Generator{generatorsInCart > 1 ? 's' : ''} Added to Cart</span>
-            <Plus className="h-4 w-4" />
+            <span>{generatorsInCart} Generator{generatorsInCart > 1 ? 's' : ''} Added | Total: ₹{estimate.grandTotal.toLocaleString()}</span>
+            <span className="font-bold">View Summary</span>
           </div>
         </div>
       )}
@@ -318,6 +441,7 @@ export function BookingForm() {
         onClose={() => setShowSummary(false)}
         onSubmit={handleSubmit(submitBooking)}
         estimate={estimate}
+        onDownload={handleDownloadEstimate}
       />
     </div>
   );
