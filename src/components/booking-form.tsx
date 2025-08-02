@@ -171,7 +171,7 @@ export function BookingForm() {
   const { control, reset, handleSubmit, watch } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'generators' });
 
-  const formValues = watch(); // Watch all form values to trigger re-renders
+  const formValues = watch(); 
 
   const estimate = React.useMemo(() => {
     const items = formValues.generators
@@ -323,10 +323,6 @@ export function BookingForm() {
     doc.save(`Estimate-${currentFormValues.name}.pdf`);
 };
 
-
-  const generatorsInCart = estimate.items.length;
-
-
   return (
     <div className="max-w-4xl mx-auto py-8">
       <Form {...form}>
@@ -411,7 +407,7 @@ export function BookingForm() {
                 )}
               </CardContent>
                <CardFooter>
-                 <Button type="button" onClick={() => form.trigger().then(isValid => isValid && setShowSummary(true))} className="w-full" size="lg" disabled={generatorsInCart === 0}>
+                 <Button type="button" onClick={() => form.trigger().then(isValid => isValid && setShowSummary(true))} className="w-full" size="lg" disabled={estimate.items.length === 0}>
                     Proceed to Summary
                  </Button>
               </CardFooter>
@@ -421,14 +417,20 @@ export function BookingForm() {
       </Form>
 
       {/* Sticky cart */}
-      {generatorsInCart > 0 && (
+      {fields.length > 0 && (
         <div
           className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 text-center cursor-pointer z-40 md:hidden"
           onClick={() => form.trigger().then(isValid => isValid && setShowSummary(true))}
         >
           <div className="flex items-center justify-center space-x-2">
-            <span>{generatorsInCart} Generator{generatorsInCart > 1 ? 's' : ''} Added | Total: ₹{estimate.grandTotal.toLocaleString()}</span>
-            <span className="font-bold">View Summary</span>
+            {estimate.items.length > 0 ? (
+                <>
+                    <span>{estimate.items.length} Generator{estimate.items.length > 1 ? 's' : ''} Added | Total: ₹{estimate.grandTotal.toLocaleString()}</span>
+                    <span className="font-bold">View Summary</span>
+                </>
+            ) : (
+                 <span className="font-bold">Select a generator to get a quote</span>
+            )}
           </div>
         </div>
       )}
