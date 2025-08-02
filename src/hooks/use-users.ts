@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,32 +12,44 @@ interface UseUsersProps {
 export function useUsers({ role }: UseUsersProps = {}) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
+
     const usersRef = collection(db, 'users');
-    let q;
+    const q = role
+      ? query(usersRef, where('role', '==', role), orderBy('createdAt', 'desc'))
+      : query(usersRef, orderBy('createdAt', 'desc'));
 
-    if (role) {
-      q = query(usersRef, where('role', '==', role), orderBy('createdAt', 'desc'));
-    } else {
-      q = query(usersRef, orderBy('createdAt', 'desc'));
-    }
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        try {
+          const allUsers: User[] = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as any)?.toDate?.(), // Optional chaining for safety
+          })) as User[];
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const allUsers: User[] = [];
-      querySnapshot.forEach((doc) => {
-        allUsers.push({ id: doc.id, ...doc.data() } as User);
-      });
-      setUsers(allUsers);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching users:", error);
-      setLoading(false);
-    });
+          setUsers(allUsers);
+        } catch (err) {
+          console.error('Error processing user data:', err);
+          setError('Failed to parse user records.');
+        } finally {
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error('Error fetching users:', err);
+        setError('Failed to fetch users.');
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [role]);
 
-  return { users, loading };
+  return { users, loading, error };
 }

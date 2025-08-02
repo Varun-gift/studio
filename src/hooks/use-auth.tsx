@@ -1,9 +1,22 @@
-
 'use client';
 
-import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+  useCallback,
+} from 'react';
+import {
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from 'firebase/auth';
+import {
+  doc,
+  onSnapshot,
+  Unsubscribe,
+} from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -61,38 +74,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let unsubscribeDoc: Unsubscribe | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      // Clean up previous Firestore listener
       if (unsubscribeDoc) {
         unsubscribeDoc();
       }
 
       if (authUser) {
-        setLoading(true); // Start loading when authUser is found
+        setLoading(true);
+
         const userDocRef = doc(db, 'users', authUser.uid);
-        unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            setUser(authUser);
-            setRole(userData.role || null);
-            setName(userData.name || authUser.displayName || null);
-            setPhotoURL(userData.photoURL || authUser.photoURL || null);
-            setCompany(userData.company || null);
-            setAddress(userData.address || null);
-            setVehicleNumber(userData.vehicleNumber || null);
-            setElectricianName(userData.electricianName || null);
-            setElectricianContact(userData.electricianContact || null);
-            (authUser as any).phone = userData.phone;
-          } else {
-            // User authenticated but no data in Firestore.
-            // This is an inconsistent state, log them out.
+        unsubscribeDoc = onSnapshot(
+          userDocRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setUser(authUser);
+              setRole(data.role ?? null);
+              setName(data.name ?? authUser.displayName ?? null);
+              setPhotoURL(data.photoURL ?? authUser.photoURL ?? null);
+              setCompany(data.company ?? null);
+              setAddress(data.address ?? null);
+              setVehicleNumber(data.vehicleNumber ?? null);
+              setElectricianName(data.electricianName ?? null);
+              setElectricianContact(data.electricianContact ?? null);
+              (authUser as any).phone = data.phone;
+            } else {
+              console.warn('Authenticated user has no Firestore record');
+              auth.signOut(); // Prevent ghost auth sessions
+            }
+            setLoading(false);
+          },
+          (error) => {
+            console.error('Error syncing user Firestore data:', error);
             auth.signOut();
           }
-          setLoading(false); // Finish loading after Firestore data is fetched
-        }, (error) => {
-          console.error("Error fetching user document:", error);
-          auth.signOut(); // Log out on error
-        });
+        );
       } else {
-        // No authenticated user.
         resetState();
       }
     });
@@ -106,7 +123,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [resetState]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, name, photoURL, company, address, vehicleNumber, electricianName, electricianContact }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        role,
+        name,
+        photoURL,
+        company,
+        address,
+        vehicleNumber,
+        electricianName,
+        electricianContact,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
