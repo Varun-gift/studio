@@ -1,9 +1,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, onSnapshot, orderBy, where, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useFleetopApi } from '@/hooks/use-fleetop-api'; // Assuming this hook exists and handles token logic
+import dayjs from 'dayjs'; // Assuming dayjs is installed for date comparisons
 import type { Booking } from '@/lib/types';
 
 interface UseBookingsProps {
@@ -14,6 +16,7 @@ export function useBookings({ status }: UseBookingsProps = {}) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { fetchRuntimeData } = useFleetopApi(); // Assuming useFleetopApi provides this function
   useEffect(() => {
     setLoading(true);
     const bookingsRef = collection(db, 'bookings');
