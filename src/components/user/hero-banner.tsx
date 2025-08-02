@@ -68,16 +68,6 @@ export function HeroBanner({ onCTAClick }: HeroBannerProps) {
                                 >
                                     From construction sites to special events, we have the right generator for you.
                                 </motion.p>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.6 }}
-                                    className="mt-8"
-                                >
-                                    <Button size="lg" onClick={onCTAClick}>
-                                        Get a Quote
-                                    </Button>
-                                </motion.div>
                             </div>
                         </div>
                     </CarouselItem>

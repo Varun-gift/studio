@@ -10,7 +10,6 @@ import { BottomNav } from '@/components/user/bottom-nav';
 import { ProfileViewManager } from '@/components/user/profile-view-manager';
 import { RentalHistory } from '@/components/rental-history';
 import { SupportView } from '@/components/user/support-view';
-import { BookingForm } from '@/components/booking-form';
 import Image from 'next/image';
 import { UserDashboard } from '@/components/user/user-dashboard';
 import { Button } from '@/components/ui/button';
@@ -72,7 +71,6 @@ export default function UserDashboardPage() {
 
    const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
-    { name: 'booking', icon: Power, label: 'Book' },
     { name: 'history', icon: History, label: 'History' },
     { name: 'support', icon: Phone, label: 'Support' },
     { name: 'profile', icon: Settings, label: 'Profile' },
@@ -82,8 +80,6 @@ export default function UserDashboardPage() {
     switch (activeTab) {
       case 'home':
         return <UserDashboard setActiveTab={handleSetActiveTab} />;
-      case 'booking':
-        return <BookingForm />;
       case 'history':
         return <RentalHistory />;
       case 'support':

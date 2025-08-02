@@ -95,16 +95,13 @@ export function DashboardCards({ setActiveTab }: DashboardCardsProps) {
                         </div>
                     </CardContent>
                 </Card>
-                 <Button variant="ghost" className="mt-2 w-full justify-start p-0 h-auto text-primary" onClick={() => setActiveTab('booking')}>
-                    Request New Quote <Plus className="ml-1 h-4 w-4" />
-                </Button>
             </div>
 
             <div>
                 <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
                 <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                        <Button variant="secondary" className="w-full h-12" onClick={() => setActiveTab('booking')}>Renew/Rebook</Button>
+                        <Button variant="secondary" className="w-full h-12" onClick={() => setActiveTab('history')}>Renew/Rebook</Button>
                         <Button variant="secondary" className="w-full h-12" disabled>Cancel Booking</Button>
                     </div>
                     <Button variant="secondary" className="w-full h-12" onClick={() => setActiveTab('support')}>Contact Support</Button>

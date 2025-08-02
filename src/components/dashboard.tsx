@@ -1,7 +1,6 @@
 
 'use client';
 import type { Dispatch, SetStateAction } from 'react';
-import { BookingForm } from './booking-form';
 import { RentalHistory } from './rental-history';
 import { SupportView } from './user/support-view';
 import { UserDashboard } from './user/user-dashboard';
@@ -18,8 +17,6 @@ export function Dashboard({ activeTab, setActiveTab, name }: DashboardProps) {
     switch (activeTab) {
       case 'home':
         return <UserDashboard setActiveTab={setActiveTab} />;
-      case 'booking':
-        return <BookingForm />;
       case 'history':
         return <RentalHistory />;
       case 'support':
