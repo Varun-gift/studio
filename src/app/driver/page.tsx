@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { format, formatDistanceToNowStrict } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package } from 'lucide-react';
+import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -80,6 +80,8 @@ export default function DriverDashboard() {
               ...bookingData,
               bookingDate: (bookingData.bookingDate as any).toDate(),
               createdAt: (bookingData.createdAt as any).toDate(),
+              dutyStartTime: bookingData.dutyStartTime ? (bookingData.dutyStartTime as any).toDate() : null,
+              dutyEndTime: bookingData.dutyEndTime ? (bookingData.dutyEndTime as any).toDate() : null,
               timers,
             } as Booking;
           });
@@ -109,39 +111,50 @@ export default function DriverDashboard() {
     }
   }, [user?.uid, toast]);
   
-  const handleStatusUpdate = async (bookingId: string, newStatus: Booking['status']) => {
+ const handleStartDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     try {
-        if(newStatus === 'Active') {
-            const batch = writeBatch(db);
-            batch.update(bookingRef, { status: newStatus });
+        const batch = writeBatch(db);
+        batch.update(bookingRef, { 
+            status: 'Active',
+            dutyStartTime: serverTimestamp(),
+        });
+        
+        const booking = bookings.find(b => b.id === bookingId);
+        if(booking && (!booking.timers || booking.timers.length === 0)) {
+            const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
             
-            const booking = bookings.find(b => b.id === bookingId);
-            if(booking && (!booking.timers || booking.timers.length === 0)) {
-                const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
-                
-                booking.generators.forEach((genGroup, index) => {
-                     const generatorId = `${genGroup.kvaCategory}KVA-U${index+1}`;
-                     const timerDocRef = doc(timersCollectionRef);
-                     batch.set(timerDocRef, {
-                        generatorId,
-                        status: 'stopped',
-                        startTime: new Date(),
-                        endTime: null,
-                        duration: 0,
-                    });
+            booking.generators.forEach((genGroup, index) => {
+                 const generatorId = `${genGroup.kvaCategory}KVA-U${index+1}`;
+                 const timerDocRef = doc(timersCollectionRef);
+                 batch.set(timerDocRef, {
+                    generatorId,
+                    status: 'stopped',
+                    startTime: new Date(),
+                    endTime: null,
+                    duration: 0,
                 });
-            }
-             await batch.commit();
-
-        } else {
-             await updateDoc(bookingRef, { status: newStatus });
+            });
         }
-       
-        toast({ title: "Success", description: `Booking status updated to ${newStatus}` });
+         await batch.commit();
+        toast({ title: "Duty Started", description: "Booking is now active." });
     } catch(error) {
-        console.error("Error updating status: ", error);
-        toast({ title: "Error", description: "Could not update booking status.", variant: "destructive"});
+        console.error("Error starting duty: ", error);
+        toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
+    }
+  }
+
+  const handleEndDuty = async (bookingId: string) => {
+    const bookingRef = doc(db, 'bookings', bookingId);
+    try {
+        await updateDoc(bookingRef, { 
+            status: 'Completed',
+            dutyEndTime: serverTimestamp(),
+        });
+        toast({ title: "Duty Ended", description: "Booking has been marked as completed." });
+    } catch(error) {
+        console.error("Error ending duty: ", error);
+        toast({ title: "Error", description: "Could not end duty.", variant: "destructive"});
     }
   }
 
@@ -301,10 +314,10 @@ export default function DriverDashboard() {
                               </CardContent>
                               <CardFooter className="flex justify-end gap-2">
                                   {booking.status === 'Approved' && (
-                                       <Button onClick={() => handleStatusUpdate(booking.id, 'Active')}>Start Duty</Button>
+                                       <Button onClick={() => handleStartDuty(booking.id)}><Power className="mr-2 h-4 w-4" /> Start Duty</Button>
                                   )}
                                   {booking.status === 'Active' && (
-                                       <Button onClick={() => handleStatusUpdate(booking.id, 'Completed')}>End Duty</Button>
+                                       <Button onClick={() => handleEndDuty(booking.id)} variant="destructive"><PowerOff className="mr-2 h-4 w-4"/> End Duty</Button>
                                   )}
                               </CardFooter>
                           </Card>

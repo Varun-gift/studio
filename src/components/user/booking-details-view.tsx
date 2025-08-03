@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { format, addDays } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText, Cpu } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText, Cpu, Car } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) =
     const formatDuration = (seconds: number) => {
         if (!seconds || seconds <= 0) return '0s';
         const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
+        const minutes = Math.floor((durationInSeconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
         return [
             hours > 0 ? `${hours}h` : '',
@@ -78,7 +78,12 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         driverInfo,
         additionalNotes,
         timers,
-        imeiNumber, 
+        imeiNumber,
+        generatorName,
+        vehicleNumber,
+        dutyStartTime,
+        dutyEndTime,
+        runtimeHoursFleetop
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -170,18 +175,10 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
                 <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
-                {imeiNumber && (
-                    <>
-                        <Separator/>
-                        <DetailItem icon={Cpu} label="IMEI Number" value={imeiNumber} />
-                    </>
-                )}
-                {additionalNotes && (
-                    <>
-                        <Separator/>
-                        <DetailItem icon={FileText} label="Additional Notes" value={additionalNotes}/>
-                    </>
-                )}
+                {generatorName && <><Separator/><DetailItem icon={Package} label="Generator Name/ID" value={generatorName} /></>}
+                {vehicleNumber && <><Separator/><DetailItem icon={Car} label="Vehicle Number" value={vehicleNumber} /></>}
+                {imeiNumber && <><Separator/><DetailItem icon={Cpu} label="IMEI Number" value={imeiNumber} /></>}
+                {additionalNotes && <><Separator/><DetailItem icon={FileText} label="Additional Notes" value={additionalNotes}/></>}
             </CardContent>
         </Card>
 
@@ -218,6 +215,19 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             </Card>
         )}
         
+         <Card>
+            <CardHeader>
+                <CardTitle>Duty & Runtime</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <DetailItem icon={Timer} label="Duty Start Time" value={dutyStartTime ? format(dutyStartTime, 'Pp') : 'Not started'} />
+                <Separator />
+                <DetailItem icon={Timer} label="Duty End Time" value={dutyEndTime ? format(dutyEndTime, 'Pp') : 'Not ended'} />
+                <Separator />
+                 <DetailItem icon={Cpu} label="Fleetop Runtime" value={runtimeHoursFleetop || 'Not fetched'} />
+            </CardContent>
+        </Card>
+
         {timers && timers.length > 0 && (
             <Card>
                 <CardHeader><CardTitle>Manual Usage Logs</CardTitle></CardHeader>

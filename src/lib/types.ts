@@ -46,6 +46,9 @@ export interface Booking {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
+  imeiNumber?: string;
+  generatorName?: string;
+  vehicleNumber?: string;
   driverInfo?: {
       driverId: string;
       name: string;
@@ -55,7 +58,10 @@ export interface Booking {
       electricianContact?: string;
   };
   timers?: TimerLog[];
-  imeiNumber?: string;
+  dutyStartTime?: Date;
+  dutyEndTime?: Date;
+  runtimeHoursManual?: number; // total seconds from manual timers
+  runtimeHoursFleetop?: string; // e.g., "07:39"
 }
 
 export interface TimerLog {
