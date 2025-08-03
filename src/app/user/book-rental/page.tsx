@@ -40,6 +40,7 @@ const bookingFormSchema = z.object({
   additionalNotes: z.string().optional(),
   bookingDate: z.date({ required_error: "Booking date is required." }),
   generators: z.array(generatorGroupSchema).min(1, "Please add at least one generator."),
+  imeiNumber: z.string().min(1, "IMEI Number is required."),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -72,6 +73,7 @@ export default function BookRentalPage() {
       additionalNotes: '',
       bookingDate: new Date(),
       generators: [{ kvaCategory: '', additionalHours: 0 }],
+      imeiNumber: '',
     },
   });
 
@@ -147,6 +149,7 @@ export default function BookRentalPage() {
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
         generators: data.generators.map(g => ({...g, quantity: 1})),
+        imeiNumber: data.imeiNumber,
       };
 
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -265,6 +268,19 @@ export default function BookRentalPage() {
                       />
                        {form.formState.errors.bookingDate && <p className="text-destructive text-sm">{form.formState.errors.bookingDate.message}</p>}
                    </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                    <CardTitle>Device Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-2">
+                        <Label htmlFor="imeiNumber">IMEI Number</Label>
+                        <Input id="imeiNumber" {...form.register('imeiNumber')} />
+                        {form.formState.errors.imeiNumber && <p className="text-destructive text-sm">{form.formState.errors.imeiNumber.message}</p>}
+                    </div>
                 </CardContent>
               </Card>
 

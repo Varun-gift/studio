@@ -55,6 +55,7 @@ export interface Booking {
       electricianContact?: string;
   };
   timers?: TimerLog[];
+  imeiNumber?: string;
 }
 
 export interface TimerLog {

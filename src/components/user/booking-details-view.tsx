@@ -2,14 +2,15 @@
 'use client';
 
 import React from 'react';
-import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText } from 'lucide-react';
+import { format, addDays } from 'date-fns';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText, Cpu } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 interface BookingDetailsViewProps {
   booking: Booking;
@@ -62,6 +63,10 @@ const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) =
 }
 
 export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps) {
+    const { toast } = useToast();
+    const [ignitionData, setIgnitionData] = React.useState<any>(null);
+    const [isLoadingData, setIsLoadingData] = React.useState(false);
+    
     const {
         id,
         bookingDate,
@@ -72,7 +77,8 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         generators,
         driverInfo,
         additionalNotes,
-        timers, 
+        timers,
+        imeiNumber, 
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -80,6 +86,57 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         const additional = gen.additionalHours || 0;
         const totalHours = baseHours + additional;
         return `Usage: ${totalHours} hours (5 base + ${additional} additional)`;
+    };
+    
+    const fetchIgnitionData = async () => {
+        if (!imeiNumber) {
+            toast({
+                title: "IMEI not found",
+                description: "This booking does not have an associated IMEI number.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsLoadingData(true);
+        try {
+            const startDate = new Date(bookingDate);
+            const endDate = addDays(startDate, 1);
+
+            const res = await fetch('/api/fleetop/ignition-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  start_date_time: format(startDate, 'dd-MM-yyyy HH:mm:ss'),
+                  end_date_time: format(endDate, 'dd-MM-yyyy HH:mm:ss'),
+                  imei_nos: imeiNumber,
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to fetch ignition data.");
+            }
+
+            const data = await res.json();
+            if (data.data && data.data.length > 0) {
+                 setIgnitionData(data.data[0]);
+                 toast({ title: "Success", description: "Runtime data fetched successfully."});
+            } else {
+                 setIgnitionData(null);
+                 toast({ title: "No Data", description: "No runtime data found for the specified period."});
+            }
+
+        } catch (error: any) {
+            console.error("Error fetching ignition data:", error);
+            toast({
+                title: "Error",
+                description: error.message || "An unexpected error occurred.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoadingData(false);
+        }
     };
 
 
@@ -113,6 +170,12 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
                 <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
+                {imeiNumber && (
+                    <>
+                        <Separator/>
+                        <DetailItem icon={Cpu} label="IMEI Number" value={imeiNumber} />
+                    </>
+                )}
                 {additionalNotes && (
                     <>
                         <Separator/>
@@ -157,7 +220,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         
         {timers && timers.length > 0 && (
             <Card>
-                <CardHeader><CardTitle>Usage Logs</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Manual Usage Logs</CardTitle></CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
                     {timers.map(timer => (
                         <TimerLogCard key={timer.id} timer={timer} />
@@ -165,6 +228,28 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 </CardContent>
             </Card>
         )}
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Fleetop Runtime Data</CardTitle>
+                <CardDescription>Fetch live ignition data from the Fleetop API.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button onClick={fetchIgnitionData} disabled={isLoadingData}>
+                    {isLoadingData ? 'Loading...' : 'Fetch Runtime Data'}
+                </Button>
+                {ignitionData && (
+                    <div className="mt-4 space-y-2 text-sm">
+                        <p><span className="font-semibold">Distance:</span> {ignitionData.distance} km</p>
+                        <p><span className="font-semibold">Average Speed:</span> {ignitionData.avg_speed} km/h</p>
+                        <p><span className="font-semibold">Stop Duration:</span> {ignitionData.stop_duration}</p>
+                        <p><span className="font-semibold">Idle Duration:</span> {ignitionData.idle_duration}</p>
+                        <p><span className="font-semibold">Run Duration:</span> {ignitionData.run_duration}</p>
+                        <p><span className="font-semibold">Inactive Duration:</span> {ignitionData.inactive_duration}</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
 
     </div>
   );
