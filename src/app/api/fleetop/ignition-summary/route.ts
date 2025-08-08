@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 
 async function getFleetopToken(baseUrl: string) {

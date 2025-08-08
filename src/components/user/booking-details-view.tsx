@@ -11,6 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Loader2 } from 'lucide-react';
+
 
 interface BookingDetailsViewProps {
   booking: Booking;
@@ -64,7 +68,6 @@ const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) =
 
 export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps) {
     const { toast } = useToast();
-    const [ignitionData, setIgnitionData] = React.useState<any>(null);
     const [isLoadingData, setIsLoadingData] = React.useState(false);
     
     const {
@@ -91,7 +94,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         return `Usage: ${totalHours} hours (5 base + ${additional} additional)`;
     };
     
-    const fetchIgnitionData = async () => {
+    const fetchEngineHours = async () => {
         const imeiNumber = vehicleInfo?.imeiNumber;
         if (!imeiNumber) {
             toast({
@@ -107,32 +110,35 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             const startDate = new Date(bookingDate);
             const endDate = addDays(startDate, 1);
 
-            const res = await fetch('/api/fleetop/ignition-summary', {
+            const res = await fetch('/api/fleetop/hours', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  start_date_time: format(startDate, 'dd-MM-yyyy HH:mm:ss'),
-                  end_date_time: format(endDate, 'dd-MM-yyyy HH:mm:ss'),
-                  imei_nos: imeiNumber,
+                  start: startDate.toISOString(),
+                  end: endDate.toISOString(),
+                  imei: imeiNumber,
                 })
             });
 
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.error || "Failed to fetch ignition data.");
+                throw new Error(errorData.error || "Failed to fetch engine hours.");
             }
 
             const data = await res.json();
-            if (data.data && data.data.length > 0) {
-                 setIgnitionData(data.data[0]);
-                 toast({ title: "Success", description: "Runtime data fetched successfully."});
+            
+            if (data.engineOnHours) {
+                 const bookingRef = doc(db, 'bookings', booking.id);
+                 await updateDoc(bookingRef, {
+                     runtimeHoursFleetop: data.engineOnHours
+                 });
+                 toast({ title: "Success", description: "Engine hours fetched and saved successfully."});
             } else {
-                 setIgnitionData(null);
-                 toast({ title: "No Data", description: "No runtime data found for the specified period."});
+                 toast({ title: "No Data", description: "No engine hours found for the specified period."});
             }
 
         } catch (error: any) {
-            console.error("Error fetching ignition data:", error);
+            console.error("Error fetching engine hours:", error);
             toast({
                 title: "Error",
                 description: error.message || "An unexpected error occurred.",
@@ -226,7 +232,13 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <Separator />
                 <DetailItem icon={Timer} label="Duty End Time" value={dutyEndTime ? format(dutyEndTime, 'Pp') : 'Not ended'} />
                 <Separator />
-                 <DetailItem icon={Cpu} label="Fleetop Runtime" value={runtimeHoursFleetop || 'Not fetched'} />
+                 <DetailItem icon={Cpu} label="Fleetop Engine Hours" value={runtimeHoursFleetop || 'Not fetched'} />
+            </CardContent>
+             <CardContent>
+                <Button onClick={fetchEngineHours} disabled={isLoadingData || !vehicleInfo}>
+                    {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />}
+                    Fetch Engine Hours
+                </Button>
             </CardContent>
         </Card>
 
@@ -240,28 +252,6 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 </CardContent>
             </Card>
         )}
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Fleetop Runtime Data</CardTitle>
-                <CardDescription>Fetch live ignition data from the Fleetop API.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button onClick={fetchIgnitionData} disabled={isLoadingData || !vehicleInfo}>
-                    {isLoadingData ? 'Loading...' : 'Fetch Runtime Data'}
-                </Button>
-                {ignitionData && (
-                    <div className="mt-4 space-y-2 text-sm">
-                        <p><span className="font-semibold">Distance:</span> {ignitionData.distance} km</p>
-                        <p><span className="font-semibold">Average Speed:</span> {ignitionData.avg_speed} km/h</p>
-                        <p><span className="font-semibold">Stop Duration:</span> {ignitionData.stop_duration}</p>
-                        <p><span className="font-semibold">Idle Duration:</span> {ignitionData.idle_duration}</p>
-                        <p><span className="font-semibold">Run Duration:</span> {ignitionData.run_duration}</p>
-                        <p><span className="font-semibold">Inactive Duration:</span> {ignitionData.inactive_duration}</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
 
     </div>
   );
