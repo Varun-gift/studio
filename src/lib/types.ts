@@ -14,6 +14,15 @@ export interface User {
   electricianContact?: string;
 }
 
+export interface Vehicle {
+    id: string;
+    vehicleName: string;
+    plateNumber: string;
+    imeiNumber: string;
+    vehicleModel: string;
+    status: 'active' | 'inactive' | 'in-maintenance';
+}
+
 export interface Generator {
   id: string;
   name: string;
@@ -46,16 +55,20 @@ export interface Booking {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
-  imeiNumber?: string;
-  generatorName?: string;
-  vehicleNumber?: string;
+  imeiNumber?: string; // This will be populated from vehicleInfo
+  generatorName?: string; // This can be deprecated or kept for old data
+  vehicleNumber?: string; // This will be populated from vehicleInfo
   driverInfo?: {
       driverId: string;
       name: string;
       contact: string;
-      vehicleNumber?: string;
-      electricianName?: string;
-      electricianContact?: string;
+  };
+  vehicleInfo?: {
+      vehicleId: string;
+      vehicleName: string;
+      plateNumber: string;
+      imeiNumber: string;
+      vehicleModel: string;
   };
   timers?: TimerLog[];
   dutyStartTime?: Date;

@@ -32,7 +32,7 @@ const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) =
     const formatDuration = (seconds: number) => {
         if (!seconds || seconds <= 0) return '0s';
         const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((durationInSeconds % 3600) / 60);
+        const minutes = Math.floor((seconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
         return [
             hours > 0 ? `${hours}h` : '',
@@ -76,11 +76,9 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         estimatedCost,
         generators,
         driverInfo,
+        vehicleInfo,
         additionalNotes,
         timers,
-        imeiNumber,
-        generatorName,
-        vehicleNumber,
         dutyStartTime,
         dutyEndTime,
         runtimeHoursFleetop
@@ -94,10 +92,11 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
     };
     
     const fetchIgnitionData = async () => {
+        const imeiNumber = vehicleInfo?.imeiNumber;
         if (!imeiNumber) {
             toast({
                 title: "IMEI not found",
-                description: "This booking does not have an associated IMEI number.",
+                description: "No vehicle with an IMEI number has been assigned to this booking.",
                 variant: "destructive"
             });
             return;
@@ -175,9 +174,6 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <DetailItem icon={MapPin} label="Location" value={location} />
                 <Separator/>
                 <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${estimatedCost.toLocaleString()}`} />
-                {generatorName && <><Separator/><DetailItem icon={Package} label="Generator Name/ID" value={generatorName} /></>}
-                {vehicleNumber && <><Separator/><DetailItem icon={Car} label="Vehicle Number" value={vehicleNumber} /></>}
-                {imeiNumber && <><Separator/><DetailItem icon={Cpu} label="IMEI Number" value={imeiNumber} /></>}
                 {additionalNotes && <><Separator/><DetailItem icon={FileText} label="Additional Notes" value={additionalNotes}/></>}
             </CardContent>
         </Card>
@@ -199,18 +195,24 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         
         {driverInfo && (
             <Card>
-                <CardHeader><CardTitle>Driver & Team</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Assigned Team</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                      <DetailItem icon={Truck} label="Assigned Driver" value={driverInfo.name} />
                      <Separator/>
                      <DetailItem icon={Phone} label="Driver Contact" value={driverInfo.contact} />
-                     {driverInfo.electricianName && (
-                        <>
-                            <Separator/>
-                            <DetailItem icon={UserCheck} label="Electrician" value={driverInfo.electricianName}/>
-                            {driverInfo.electricianContact && <DetailItem icon={Phone} label="Electrician Contact" value={driverInfo.electricianContact}/>}
-                        </>
-                     )}
+                </CardContent>
+            </Card>
+        )}
+
+        {vehicleInfo && (
+             <Card>
+                <CardHeader><CardTitle>Assigned Vehicle</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                     <DetailItem icon={Car} label="Vehicle" value={vehicleInfo.vehicleName} />
+                     <Separator/>
+                     <DetailItem icon={Car} label="Plate Number" value={vehicleInfo.plateNumber} />
+                      <Separator/>
+                     <DetailItem icon={Cpu} label="IMEI" value={vehicleInfo.imeiNumber} />
                 </CardContent>
             </Card>
         )}
@@ -245,7 +247,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <CardDescription>Fetch live ignition data from the Fleetop API.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button onClick={fetchIgnitionData} disabled={isLoadingData}>
+                <Button onClick={fetchIgnitionData} disabled={isLoadingData || !vehicleInfo}>
                     {isLoadingData ? 'Loading...' : 'Fetch Runtime Data'}
                 </Button>
                 {ignitionData && (

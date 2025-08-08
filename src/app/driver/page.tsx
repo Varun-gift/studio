@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { format, formatDistanceToNowStrict } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff } from 'lucide-react';
+import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff, Car } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -274,6 +274,12 @@ export default function DriverDashboard() {
                                         ))}
                                     </ul>
                                   </div>
+                                  {booking.vehicleInfo && (
+                                     <div className="space-y-2">
+                                        <h4 className="font-semibold text-sm flex items-center gap-2"><Car className="h-4 w-4" /> Vehicle</h4>
+                                         <p className="text-sm text-muted-foreground">{booking.vehicleInfo.vehicleName} ({booking.vehicleInfo.plateNumber})</p>
+                                      </div>
+                                  )}
                                   <div className="space-y-2">
                                       <h4 className="font-semibold">Customer Details</h4>
                                       <div className="flex items-center gap-2 text-sm">
@@ -329,5 +335,3 @@ export default function DriverDashboard() {
     </div>
   );
 }
-
-    

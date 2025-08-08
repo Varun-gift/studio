@@ -40,9 +40,6 @@ const bookingFormSchema = z.object({
   additionalNotes: z.string().optional(),
   bookingDate: z.date({ required_error: "Booking date is required." }),
   generators: z.array(generatorGroupSchema).min(1, "Please add at least one generator."),
-  imeiNumber: z.string().min(1, "IMEI Number is required."),
-  generatorName: z.string().min(1, "Generator Name/ID is required."),
-  vehicleNumber: z.string().optional(),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -75,9 +72,6 @@ export default function BookRentalPage() {
       additionalNotes: '',
       bookingDate: new Date(),
       generators: [{ kvaCategory: '', additionalHours: 0 }],
-      imeiNumber: '',
-      generatorName: '',
-      vehicleNumber: '',
     },
   });
 
@@ -153,9 +147,6 @@ export default function BookRentalPage() {
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
         generators: data.generators.map(g => ({...g})),
-        imeiNumber: data.imeiNumber,
-        generatorName: data.generatorName,
-        vehicleNumber: data.vehicleNumber,
       };
 
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -274,29 +265,6 @@ export default function BookRentalPage() {
                       />
                        {form.formState.errors.bookingDate && <p className="text-destructive text-sm">{form.formState.errors.bookingDate.message}</p>}
                    </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                    <CardTitle>Device Information</CardTitle>
-                </CardHeader>
-                <CardContent className="grid sm:grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="generatorName">Generator Name/ID</Label>
-                        <Input id="generatorName" placeholder="e.g., KA01AB1234" {...form.register('generatorName')} />
-                        {form.formState.errors.generatorName && <p className="text-destructive text-sm">{form.formState.errors.generatorName.message}</p>}
-                    </div>
-                     <div className="grid gap-2">
-                        <Label htmlFor="vehicleNumber">Vehicle Number (Optional)</Label>
-                        <Input id="vehicleNumber" placeholder="e.g., KA01AB1234" {...form.register('vehicleNumber')} />
-                        {form.formState.errors.vehicleNumber && <p className="text-destructive text-sm">{form.formState.errors.vehicleNumber.message}</p>}
-                    </div>
-                    <div className="grid gap-2 sm:col-span-2">
-                        <Label htmlFor="imeiNumber">IMEI Number</Label>
-                        <Input id="imeiNumber" {...form.register('imeiNumber')} />
-                        {form.formState.errors.imeiNumber && <p className="text-destructive text-sm">{form.formState.errors.imeiNumber.message}</p>}
-                    </div>
                 </CardContent>
               </Card>
 

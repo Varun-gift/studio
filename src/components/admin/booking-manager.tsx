@@ -3,7 +3,7 @@
 'use client';
 
 import * as React from 'react';
-import { MoreHorizontal, Truck, Check, UserX, XCircle, Package } from 'lucide-react';
+import { MoreHorizontal, Truck, Check, UserX, XCircle, Package, Car } from 'lucide-react';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 
@@ -146,7 +146,7 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                     <div className='space-y-1'>
                       <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" /> Generators</p>
                       <div className="text-sm text-foreground pl-2">
-                        {booking.generators.map((g, i) => <div key={i}>{`${g.quantity} x ${g.kvaCategory} KVA`}</div>)}
+                        {booking.generators.map((g, i) => <div key={i}>{`1 x ${g.kvaCategory} KVA`}</div>)}
                       </div>
                     </div>
                      {booking.driverInfo && (
@@ -154,6 +154,14 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                             <div className="flex items-center gap-2">
                                 <Truck className="h-3 w-3"/>
                                 <span>{booking.driverInfo.name}</span>
+                            </div>
+                        </div>
+                     )}
+                     {booking.vehicleInfo && (
+                        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                            <div className="flex items-center gap-2">
+                                <Car className="h-3 w-3"/>
+                                <span>{booking.vehicleInfo.vehicleName}</span>
                             </div>
                         </div>
                      )}
@@ -177,7 +185,7 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => handleAssignDriver(booking)}>
-                                <Truck className='mr-2'/> Assign Driver
+                                <Truck className='mr-2'/> Assign Driver/Vehicle
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Approved')}>
