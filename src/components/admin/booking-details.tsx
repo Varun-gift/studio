@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package, BadgeIndianRupee } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package, BadgeIndianRupee, Cpu } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface BookingDetailsProps {
   booking: Booking;
@@ -20,6 +22,33 @@ interface BookingDetailsProps {
 }
 
 export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetailsProps) {
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [liveHours, setLiveHours] = React.useState<string | null>(null);
+
+    const fetchLiveEngineHours = async () => {
+        if (!booking.vehicleInfo?.imeiNumber) {
+            toast({ title: "Error", description: "No IMEI number assigned.", variant: "destructive"});
+            return;
+        }
+        setIsLoading(true);
+        setLiveHours(null);
+        try {
+            const res = await fetch('/api/fleetop/hours', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imei: booking.vehicleInfo.imeiNumber })
+            });
+            if (!res.ok) throw new Error("API request failed");
+            const data = await res.json();
+            setLiveHours(data.engineOnHours || "N/A");
+            toast({ title: "Live Engine Hours", description: `Current reading: ${data.engineOnHours}`});
+        } catch(e) {
+            toast({ title: "Error", description: "Failed to fetch live hours.", variant: "destructive"});
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
   const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -99,36 +128,62 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
         
         <Card>
             <CardHeader>
-                <CardTitle>Driver Assignment</CardTitle>
+                <CardTitle>Driver & Vehicle</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {booking.driverInfo ? (
                     <>
                         <DetailItem icon={Truck} label="Driver Name" value={booking.driverInfo.name} />
                         <Separator />
-                        <DetailItem icon={Phone} label="Contact" value={booking.driverInfo.contact} />
-                        <DetailItem icon={User} label="Electrician" value={booking.driverInfo.electricianName} />
-                        <DetailItem icon={Phone} label="Electrician Contact" value={booking.driverInfo.electricianContact} />
+                        <DetailItem icon={Phone} label="Driver Contact" value={booking.driverInfo.contact} />
                     </>
                 ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No driver assigned yet.</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No driver assigned.</p>
+                )}
+                 {booking.vehicleInfo ? (
+                    <>
+                       <Separator />
+                       <DetailItem icon={Truck} label="Vehicle" value={`${booking.vehicleInfo.vehicleName} (${booking.vehicleInfo.plateNumber})`} />
+                    </>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No vehicle assigned.</p>
                 )}
             </CardContent>
         </Card>
 
+        <Card>
+            <CardHeader><CardTitle>Duty & Engine Hours</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <DetailItem icon={Clock} label="Engine Start Hours" value={booking.engineStartHours} />
+                <DetailItem icon={Clock} label="Engine End Hours" value={booking.engineEndHours} />
+                <DetailItem icon={Power} label="Final Engine Duration" value={booking.finalEngineDuration} />
+                 {liveHours && (
+                     <DetailItem icon={Cpu} label="Live Engine Hours" value={liveHours} />
+                 )}
+            </CardContent>
+            {booking.status === 'Active' && (
+                <CardFooter>
+                    <Button onClick={fetchLiveEngineHours} disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Fetch Live Engine Hours
+                    </Button>
+                </CardFooter>
+            )}
+        </Card>
+
         <Card className="lg:col-span-3">
             <CardHeader>
-                <CardTitle>Timer Logs</CardTitle>
-                <CardDescription>Real-time usage tracking for each generator.</CardDescription>
+                <CardTitle>Manual Timer Logs</CardTitle>
+                <CardDescription>Manual usage tracking for each generator.</CardDescription>
             </CardHeader>
             <CardContent>
                 {booking.timers && booking.timers.length > 0 ? (
                     <Button onClick={onViewTimers}>
                         <TimerIcon className="mr-2 h-4 w-4" />
-                        View Timer Logs
+                        View Manual Timer Logs
                     </Button>
                 ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No timer logs available for this booking.</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No manual timer logs available for this booking.</p>
                 )}
             </CardContent>
         </Card>
@@ -138,4 +193,3 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
   );
 }
 
-    

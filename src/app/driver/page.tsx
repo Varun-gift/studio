@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Booking, TimerLog } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
-import { format, formatDistanceToNowStrict } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff, Car } from 'lucide-react';
+import { format, formatDistanceToNowStrict, addDays } from 'date-fns';
+import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff, Car, Cpu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,11 +36,20 @@ function TimerDisplay({ startTime }: { startTime: Date }) {
     );
 }
 
+const parseDuration = (durationStr: string): number => {
+    if (!durationStr || !durationStr.includes(':')) return 0;
+    const parts = durationStr.split(':');
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    return hours * 60 + minutes;
+};
+
 export default function DriverDashboard() {
   const { user, loading, name, role } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [isFetchingHours, setIsFetchingHours] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,19 +120,59 @@ export default function DriverDashboard() {
     }
   }, [user?.uid, toast]);
   
+ const fetchEngineHours = async (booking: Booking): Promise<string | null> => {
+    const imeiNumber = booking.vehicleInfo?.imeiNumber;
+    if (!imeiNumber) {
+        toast({ title: "IMEI not found", description: "Vehicle has no IMEI number.", variant: "destructive" });
+        return null;
+    }
+
+    setIsFetchingHours(booking.id);
+    try {
+        const res = await fetch('/api/fleetop/hours', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imei: imeiNumber })
+        });
+        if (!res.ok) throw new Error("Failed to fetch from API.");
+        
+        const data = await res.json();
+        return data.engineOnHours || null;
+    } catch (error) {
+        console.error("Error fetching engine hours:", error);
+        toast({ title: "API Error", description: "Could not fetch engine hours.", variant: "destructive" });
+        return null;
+    } finally {
+        setIsFetchingHours(null);
+    }
+ };
+  
  const handleStartDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
+    const bookingDoc = await getDoc(bookingRef);
+    const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
+    
+    if(!booking.vehicleInfo?.imeiNumber) {
+         toast({ title: "Cannot Start Duty", description: "No vehicle with an IMEI number is assigned.", variant: "destructive"});
+         return;
+    }
+
+    const startHours = await fetchEngineHours(booking);
+    if (startHours === null) {
+        toast({ title: "Failed", description: "Could not get start engine hours. Duty not started.", variant: "destructive"});
+        return;
+    }
+    
     try {
         const batch = writeBatch(db);
         batch.update(bookingRef, { 
             status: 'Active',
             dutyStartTime: serverTimestamp(),
+            engineStartHours: startHours,
         });
         
-        const booking = bookings.find(b => b.id === bookingId);
-        if(booking && (!booking.timers || booking.timers.length === 0)) {
+        if(!booking.timers || booking.timers.length === 0) {
             const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
-            
             booking.generators.forEach((genGroup, index) => {
                  const generatorId = `${genGroup.kvaCategory}KVA-U${index+1}`;
                  const timerDocRef = doc(timersCollectionRef);
@@ -137,7 +186,7 @@ export default function DriverDashboard() {
             });
         }
          await batch.commit();
-        toast({ title: "Duty Started", description: "Booking is now active." });
+        toast({ title: "Duty Started", description: `Engine start hours: ${startHours}. Booking is now active.` });
     } catch(error) {
         console.error("Error starting duty: ", error);
         toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
@@ -146,17 +195,42 @@ export default function DriverDashboard() {
 
   const handleEndDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
+    const bookingDoc = await getDoc(bookingRef);
+    const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
+
+    const endHours = await fetchEngineHours(booking);
+    if (endHours === null) {
+        toast({ title: "Failed", description: "Could not get end engine hours. Duty not ended.", variant: "destructive"});
+        return;
+    }
+    
+    const startMinutes = parseDuration(booking.engineStartHours || '0:0');
+    const endMinutes = parseDuration(endHours);
+    const durationInMinutes = endMinutes - startMinutes;
+    const hours = Math.floor(durationInMinutes / 60);
+    const minutes = durationInMinutes % 60;
+    const finalEngineDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
     try {
         await updateDoc(bookingRef, { 
             status: 'Completed',
             dutyEndTime: serverTimestamp(),
+            engineEndHours: endHours,
+            finalEngineDuration: finalEngineDuration
         });
-        toast({ title: "Duty Ended", description: "Booking has been marked as completed." });
+        toast({ title: "Duty Ended", description: `Engine end hours: ${endHours}. Total duration: ${finalEngineDuration}` });
     } catch(error) {
         console.error("Error ending duty: ", error);
         toast({ title: "Error", description: "Could not end duty.", variant: "destructive"});
     }
   }
+  
+  const handleViewLiveHours = async (booking: Booking) => {
+      const liveHours = await fetchEngineHours(booking);
+      if (liveHours !== null) {
+          toast({ title: "Live Engine Hours", description: `Current reading: ${liveHours}`});
+      }
+  };
 
   const handleTimerToggle = async (bookingId: string, timerId: string) => {
     const timerRef = doc(db, 'bookings', bookingId, 'timers', timerId);
@@ -318,12 +392,21 @@ export default function DriverDashboard() {
                                       </div>
                                   )}
                               </CardContent>
-                              <CardFooter className="flex justify-end gap-2">
+                              <CardFooter className="flex flex-col gap-2 items-stretch">
                                   {booking.status === 'Approved' && (
-                                       <Button onClick={() => handleStartDuty(booking.id)}><Power className="mr-2 h-4 w-4" /> Start Duty</Button>
+                                       <Button onClick={() => handleStartDuty(booking.id)} disabled={isFetchingHours === booking.id}>
+                                           {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4" />} Start Duty
+                                       </Button>
                                   )}
                                   {booking.status === 'Active' && (
-                                       <Button onClick={() => handleEndDuty(booking.id)} variant="destructive"><PowerOff className="mr-2 h-4 w-4"/> End Duty</Button>
+                                      <>
+                                          <Button onClick={() => handleViewLiveHours(booking)} variant="outline" disabled={isFetchingHours === booking.id}>
+                                              {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Cpu className="mr-2 h-4 w-4"/>} View Live Hours
+                                          </Button>
+                                          <Button onClick={() => handleEndDuty(booking.id)} variant="destructive" disabled={isFetchingHours === booking.id}>
+                                              {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
+                                          </Button>
+                                      </>
                                   )}
                               </CardFooter>
                           </Card>

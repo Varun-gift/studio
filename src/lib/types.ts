@@ -62,6 +62,8 @@ export interface Booking {
       driverId: string;
       name: string;
       contact: string;
+      electricianName?: string;
+      electricianContact?: string;
   };
   vehicleInfo?: {
       vehicleId: string;
@@ -75,6 +77,10 @@ export interface Booking {
   dutyEndTime?: Date;
   runtimeHoursManual?: number; // total seconds from manual timers
   runtimeHoursFleetop?: string; // e.g., "07:39"
+  engineStartHours?: string;   // From Fleetop, e.g. "02:15"
+  engineEndHours?: string;     // Final hours from Fleetop
+  finalEngineDuration?: string; // "05:20"
+  engineStatus?: "active" | "idle" | "offline"; // optional
 }
 
 export interface TimerLog {
