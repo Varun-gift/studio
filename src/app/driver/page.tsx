@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc, collection } from 'firebase/firestore';
 import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
