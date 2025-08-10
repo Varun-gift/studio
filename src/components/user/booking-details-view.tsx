@@ -48,8 +48,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         driverInfo,
         vehicleInfo,
         additionalNotes,
-        engineEndHours,
-        dutyStartTime
+        runtimeHoursFleetop,
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -65,6 +64,11 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             return;
         }
 
+        if (!booking.timers || booking.timers.length === 0) {
+            toast({ title: "Error", description: "Duty has not started yet.", variant: "destructive"});
+            return;
+        }
+
         setIsLoadingData(true);
         setLiveHours(null);
         try {
@@ -73,7 +77,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     imei: vehicleInfo.imeiNumber,
-                    start: booking.dutyStartTime?.toISOString(),
+                    start: booking.timers[0].startTime.toISOString(),
                     end: new Date().toISOString()
                 })
             });
@@ -174,8 +178,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <CardTitle>Duty & Runtime</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                 <DetailItem icon={Clock} label="Duty Start Time" value={dutyStartTime ? format(dutyStartTime, 'Pp') : 'Not Started'} />
-                <DetailItem icon={Clock} label="Engine End Hours (at Duty End)" value={engineEndHours} />
+                 <DetailItem icon={Clock} label="Final Runtime (from Fleetop)" value={runtimeHoursFleetop} />
                  {liveHours && (
                      <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}

@@ -3,9 +3,9 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
+import { format, formatDistance } from 'date-fns';
 import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Power } from 'lucide-react';
-import type { Booking } from '@/lib/types';
+import type { Booking, Timer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,11 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             toast({ title: "Error", description: "No IMEI number assigned to this booking.", variant: "destructive"});
             return;
         }
+        if (!booking.timers || booking.timers.length === 0) {
+            toast({ title: "Error", description: "Duty has not started yet.", variant: "destructive"});
+            return;
+        }
+
         setIsLoading(true);
         setLiveHours(null);
         try {
@@ -38,7 +43,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     imei: booking.vehicleInfo.imeiNumber,
-                    start: booking.dutyStartTime?.toISOString(),
+                    start: booking.timers[0].startTime.toISOString(), // Use first timer's start time
                     end: new Date().toISOString()
                 })
             });
@@ -59,6 +64,23 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             setIsLoading(false);
         }
     };
+    
+    const calculateTotalRuntime = (timers: Timer[] = []): string => {
+        const totalMilliseconds = timers.reduce((acc, timer) => {
+            if (timer.startTime && timer.endTime) {
+                return acc + (timer.endTime.getTime() - timer.startTime.getTime());
+            }
+            return acc;
+        }, 0);
+        
+        if(totalMilliseconds === 0) return '0 minutes';
+
+        const totalSeconds = Math.floor(totalMilliseconds / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+        return `${hours}h ${minutes}m`;
+    }
 
   const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
     <div className="flex items-start gap-3">
@@ -164,8 +186,8 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Duty & Engine Hours</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <DetailItem icon={Clock} label="Duty Start Time" value={booking.dutyStartTime ? format(booking.dutyStartTime, 'Pp') : 'N/A'} />
-                <DetailItem icon={Clock} label="Engine End Hours (at Duty End)" value={booking.engineEndHours} />
+                <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(booking.timers)} />
+                <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={booking.runtimeHoursFleetop} />
                  {liveHours && (
                      <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}

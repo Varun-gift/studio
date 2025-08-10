@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc, collection } from 'firebase/firestore';
-import type { Booking } from '@/lib/types';
+import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc, collection, addDoc, getDocs, orderBy } from 'firebase/firestore';
+import type { Booking, Timer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Package, Power, PowerOff, Car, Cpu } from 'lucide-react';
+import { Loader2, LogOut, Phone, User as UserIcon, Package, Power, PowerOff, Car, Cpu, Play, Pause } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -49,13 +49,24 @@ export default function DriverDashboard() {
           const bookingsPromises = snapshot.docs.map(async (bookingDoc) => {
             const bookingData = bookingDoc.data();
             
+            const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
+            const timersSnapshot = await getDocs(query(timersCollectionRef, orderBy('startTime', 'asc')));
+            const timers = timersSnapshot.docs.map(timerDoc => {
+                const timerData = timerDoc.data();
+                return {
+                    id: timerDoc.id,
+                    ...timerData,
+                    startTime: (timerData.startTime as any)?.toDate(),
+                    endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
+                } as Timer;
+            });
+            
             return {
               id: bookingDoc.id,
               ...bookingData,
               bookingDate: (bookingData.bookingDate as any).toDate(),
               createdAt: (bookingData.createdAt as any).toDate(),
-              dutyStartTime: bookingData.dutyStartTime ? (bookingData.dutyStartTime as any).toDate() : null,
-              dutyEndTime: bookingData.dutyEndTime ? (bookingData.dutyEndTime as any).toDate() : null,
+              timers: timers,
             } as Booking;
           });
 
@@ -91,13 +102,20 @@ export default function DriverDashboard() {
         return null;
     }
     
+    // Fetch hours for the entire duty period
+    const dutyStartTime = booking.timers?.[0]?.startTime;
+    if (!dutyStartTime) {
+       toast({ title: "Duty not started", description: "Cannot fetch hours before duty starts.", variant: "destructive" });
+       return null;
+    }
+
     try {
         const res = await fetch('/api/fleetop/hours', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 imei: imeiNumber,
-                start: booking.dutyStartTime?.toISOString(),
+                start: dutyStartTime.toISOString(),
                 end: new Date().toISOString()
             })
         });
@@ -122,11 +140,12 @@ export default function DriverDashboard() {
     const bookingRef = doc(db, 'bookings', bookingId);
     setIsUpdatingDuty(bookingId);
     try {
-        await updateDoc(bookingRef, { 
-            status: 'Active',
-            dutyStartTime: serverTimestamp(),
-        });
-        toast({ title: "Duty Started", description: "Booking is now active. User and Admin can now fetch live hours." });
+        // Start duty and create the first timer
+        const timersRef = collection(db, 'bookings', bookingId, 'timers');
+        await addDoc(timersRef, { startTime: serverTimestamp() });
+        await updateDoc(bookingRef, { status: 'Active' });
+        
+        toast({ title: "Duty Started", description: "Booking is now active and generator is running." });
     } catch(error) {
         console.error("Error starting duty: ", error);
         toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
@@ -135,30 +154,54 @@ export default function DriverDashboard() {
     }
   }
 
-  const handleEndDuty = async (bookingId: string) => {
-    setIsUpdatingDuty(bookingId);
-    const bookingRef = doc(db, 'bookings', bookingId);
-    const bookingDoc = await getDoc(bookingRef);
-    if (!bookingDoc.exists()) {
-        toast({ title: "Error", description: "Booking not found.", variant: "destructive"});
-        setIsUpdatingDuty(null);
-        return;
-    }
-    
-    // Manually create booking object with converted dates
-    const bookingData = bookingDoc.data();
-    const booking: Booking = {
-        id: bookingDoc.id,
-        ...bookingData,
-        bookingDate: (bookingData.bookingDate as any).toDate(),
-        createdAt: (bookingData.createdAt as any).toDate(),
-        dutyStartTime: bookingData.dutyStartTime ? (bookingData.dutyStartTime as any).toDate() : undefined,
-    } as Booking;
+  const handlePauseGenerator = async (booking: Booking) => {
+      const activeTimer = booking.timers?.find(t => !t.endTime);
+      if (!activeTimer) {
+          toast({ title: "Error", description: "No active timer to pause.", variant: "destructive" });
+          return;
+      }
+      
+      setIsUpdatingDuty(booking.id);
+      const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
+      try {
+          await updateDoc(timerRef, { endTime: serverTimestamp() });
+          toast({ title: "Generator Paused", description: "Generator timer has been paused." });
+      } catch (error) {
+          console.error("Error pausing generator: ", error);
+          toast({ title: "Error", description: "Could not pause generator.", variant: "destructive" });
+      } finally {
+          setIsUpdatingDuty(null);
+      }
+  };
 
+  const handleResumeGenerator = async (bookingId: string) => {
+      setIsUpdatingDuty(bookingId);
+      const timersRef = collection(db, 'bookings', bookingId, 'timers');
+      try {
+          await addDoc(timersRef, { startTime: serverTimestamp() });
+          toast({ title: "Generator Resumed", description: "Generator timer has resumed." });
+      } catch (error) {
+          console.error("Error resuming generator: ", error);
+          toast({ title: "Error", description: "Could not resume generator.", variant: "destructive" });
+      } finally {
+          setIsUpdatingDuty(null);
+      }
+  };
+
+  const handleEndDuty = async (booking: Booking) => {
+    setIsUpdatingDuty(booking.id);
+    const bookingRef = doc(db, 'bookings', booking.id);
+    
+    // Ensure any active timer is stopped first.
+    const activeTimer = booking.timers?.find(t => !t.endTime);
+    if(activeTimer) {
+         const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
+         await updateDoc(timerRef, { endTime: serverTimestamp() });
+    }
 
     const endHours = await fetchEngineHours(booking);
     if (endHours === null) {
-        toast({ title: "Failed", description: "Could not get end engine hours from API. Duty not ended.", variant: "destructive"});
+        toast({ title: "Failed", description: "Could not get final engine hours from API. Duty not ended.", variant: "destructive"});
         setIsUpdatingDuty(null);
         return;
     }
@@ -166,8 +209,7 @@ export default function DriverDashboard() {
     try {
         await updateDoc(bookingRef, { 
             status: 'Completed',
-            dutyEndTime: serverTimestamp(),
-            engineEndHours: endHours,
+            runtimeHoursFleetop: endHours,
         });
         toast({ title: "Duty Ended", description: `Final engine hours recorded: ${endHours}` });
     } catch(error) {
@@ -183,6 +225,11 @@ export default function DriverDashboard() {
     const additional = gen.additionalHours || 0;
     const totalHours = baseHours + additional;
     return `1 x ${gen.kvaCategory} KVA (${totalHours} hrs)`;
+  }
+
+  const isGeneratorRunning = (booking: Booking) => {
+      if(booking.status !== 'Active') return false;
+      return booking.timers?.some(t => !t.endTime) ?? false;
   }
 
 
@@ -225,8 +272,10 @@ export default function DriverDashboard() {
             ) : (
                 <ScrollArea className="w-full">
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-4">
-                      {bookings.map(booking => (
-                          <Card key={booking.id} className="min-w-[300px] flex flex-col">
+                      {bookings.map(booking => {
+                          const isRunning = isGeneratorRunning(booking);
+                          return (
+                            <Card key={booking.id} className="min-w-[300px] flex flex-col">
                               <CardHeader>
                                   <CardTitle className="truncate">{booking.userName}</CardTitle>
                                   <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
@@ -236,6 +285,14 @@ export default function DriverDashboard() {
                                       <span className="text-muted-foreground">Status</span>
                                       <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                                   </div>
+                                   {booking.status === 'Active' && (
+                                     <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">Generator</span>
+                                        <Badge variant={isRunning ? 'success' : 'secondary'}>
+                                            {isRunning ? 'Running' : 'Paused'}
+                                        </Badge>
+                                    </div>
+                                   )}
                                   <div className="space-y-2">
                                     <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Generators</h4>
                                     <ul className="list-disc list-inside text-sm text-muted-foreground">
@@ -272,15 +329,25 @@ export default function DriverDashboard() {
                                        </Button>
                                   )}
                                   {booking.status === 'Active' && (
-                                      <>
-                                          <Button onClick={() => handleEndDuty(booking.id)} variant="destructive" disabled={isUpdatingDuty === booking.id}>
+                                      <div className="grid grid-cols-2 gap-2">
+                                         {isRunning ? (
+                                             <Button onClick={() => handlePauseGenerator(booking)} variant="secondary" disabled={isUpdatingDuty === booking.id}>
+                                                {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Pause className="mr-2 h-4 w-4"/>} Pause
+                                             </Button>
+                                         ) : (
+                                              <Button onClick={() => handleResumeGenerator(booking.id)} disabled={isUpdatingDuty === booking.id}>
+                                                {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2 h-4 w-4"/>} Resume
+                                              </Button>
+                                         )}
+                                          <Button onClick={() => handleEndDuty(booking)} variant="destructive" disabled={isUpdatingDuty === booking.id || isRunning}>
                                               {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
                                           </Button>
-                                      </>
+                                      </div>
                                   )}
                               </CardFooter>
-                          </Card>
-                      ))}
+                            </Card>
+                          )
+                      })}
                   </div>
                 </ScrollArea>
             )}

@@ -43,6 +43,12 @@ export interface GeneratorGroup {
   additionalHours?: number;
 }
 
+export interface Timer {
+    id: string;
+    startTime: Date;
+    endTime?: Date;
+}
+
 export interface Booking {
   id:string;
   userId: string;
@@ -69,11 +75,6 @@ export interface Booking {
       imeiNumber: string;
       vehicleModel: string;
   };
-  dutyStartTime?: Date;
-  dutyEndTime?: Date;
-  engineStartHours?: string;
-  engineEndHours?: string;
-  finalEngineDuration?: string | null;
+  timers?: Timer[];
   runtimeHoursFleetop?: string;
-  lastFleetopFetchAt?: { seconds: number, nanoseconds: number } | Date;
 }

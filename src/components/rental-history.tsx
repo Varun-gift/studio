@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Booking } from '@/lib/types';
+import type { Booking, Timer } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
@@ -32,19 +33,35 @@ export function RentalHistory() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
-      const bookingsData = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          bookingDate: (data.bookingDate as any).toDate(),
-          createdAt: (data.createdAt as any).toDate(),
-          dutyStartTime: data.dutyStartTime ? (data.dutyStartTime as any).toDate() : undefined,
-        } as Booking;
-      });
-      setBookings(bookingsData);
-      setLoading(false);
+    const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
+        const bookingsDataPromises = snapshot.docs.map(async (doc) => {
+            const data = doc.data();
+
+            // Fetch timers sub-collection
+            const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
+            const timersSnapshot = await getDocs(query(timersCollectionRef, orderBy('startTime', 'asc')));
+            const timers: Timer[] = timersSnapshot.docs.map(timerDoc => {
+                const timerData = timerDoc.data();
+                return {
+                    id: timerDoc.id,
+                    ...timerData,
+                    startTime: (timerData.startTime as any).toDate(),
+                    endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
+                } as Timer;
+            });
+
+            return {
+                id: doc.id,
+                ...data,
+                bookingDate: (data.bookingDate as any).toDate(),
+                createdAt: (data.createdAt as any).toDate(),
+                timers: timers,
+            } as Booking;
+        });
+        
+        const bookingsData = await Promise.all(bookingsDataPromises);
+        setBookings(bookingsData);
+        setLoading(false);
     }, (error) => {
       console.error("Error fetching bookings:", error);
       setLoading(false);
