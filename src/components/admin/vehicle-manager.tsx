@@ -9,7 +9,7 @@ import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from '
 import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
 
 import { useVehicles } from '@/hooks/use-vehicles';
-import { db } from '@/lib/firebase/client';
+import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Vehicle } from '@/lib/types';
 import { Button } from '@/components/ui/button';

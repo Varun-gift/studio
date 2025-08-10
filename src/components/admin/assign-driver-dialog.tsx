@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react';
 
 import { useUsers } from '@/hooks/use-users';
 import { useVehicles } from '@/hooks/use-vehicles';
-import { db } from '@/lib/firebase/client';
+import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Booking, User, Vehicle } from '@/lib/types';
 import { Button } from '@/components/ui/button';

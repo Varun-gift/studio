@@ -9,7 +9,7 @@ import { CalendarView } from '@/components/admin/calendar-view';
 import { ProfileView } from '@/components/admin/profile-view';
 import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { auth } from '@/lib/firebase/client';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Home, Calendar, Bell, Settings, LogOut, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
