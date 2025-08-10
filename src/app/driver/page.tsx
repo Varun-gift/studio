@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -119,16 +118,18 @@ export default function DriverDashboard() {
                 end: new Date().toISOString()
             })
         });
+
+        const data = await res.json();
+        
         if (!res.ok) {
-            const errorData = await res.json();
-            const errorMessage = errorData.error === 'No ignition data' 
-                ? 'No ignition data found for the active period.' 
-                : 'Failed to fetch from API.';
-            throw new Error(errorMessage);
+            // Handle "No ignition data" as 0 hours, not an error.
+            if (data.error === 'No ignition data') {
+                return "00:00:00"; 
+            }
+            throw new Error(data.error || 'Failed to fetch from API.');
         }
         
-        const data = await res.json();
-        return data.engineOnHours || null;
+        return data.engineOnHours || "00:00:00";
     } catch (error: any) {
         console.error("Error fetching engine hours:", error);
         toast({ title: "API Error", description: error.message, variant: "destructive" });
