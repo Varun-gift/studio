@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -62,7 +62,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
     
     const fetchLiveEngineHours = async () => {
         if (!vehicleInfo?.imeiNumber) {
-            toast({ title: "IMEI not found", description: "No vehicle assigned.", variant: "destructive"});
+            toast({ title: "IMEI not found", description: "No vehicle assigned to this booking.", variant: "destructive"});
             return;
         }
 
@@ -72,19 +72,23 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             const res = await fetch('/api/fleetop/hours', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imei: vehicleInfo.imeiNumber })
+                body: JSON.stringify({ 
+                    imei: vehicleInfo.imeiNumber,
+                    start: booking.dutyStartTime?.toISOString(),
+                    end: new Date().toISOString()
+                })
             });
             if (!res.ok) {
                 const errorData = await res.json();
                  const errorMessage = errorData.error === 'No ignition data' 
-                    ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                    ? 'No ignition data from Fleetop for the active period.' 
                     : 'API request failed.';
                 throw new Error(errorMessage);
             }
             const data = await res.json();
             const hours = data.engineOnHours || "N/A";
             setLiveHours(hours);
-            toast({ title: "Live Engine Hours", description: `Current reading: ${hours}`});
+            toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${hours}`});
         } catch(e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive"});
         } finally {
@@ -111,7 +115,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                     <div>
                         <CardTitle>Booking Summary</CardTitle>
                         <CardDescription>
-                            Booked on {format(createdAt as Date, 'PPP')}
+                            Booked on {createdAt ? format(createdAt as Date, 'PPP') : 'N/A'}
                         </CardDescription>
                     </div>
                     <Badge variant={getStatusVariant(status)}>{status}</Badge>
@@ -175,15 +179,15 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <DetailItem icon={Clock} label="Engine End Hours" value={engineEndHours} />
                 <DetailItem icon={Power} label="Final Engine Duration" value={finalEngineDuration} />
                  {liveHours && (
-                     <DetailItem icon={Cpu} label="Live Engine Hours" value={liveHours} />
+                     <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}
             </CardContent>
-             <CardContent>
+             <CardFooter>
                 <Button onClick={fetchLiveEngineHours} disabled={isLoadingData || !vehicleInfo || !['Active', 'Completed'].includes(status)}>
                     {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />}
                     Fetch Live Engine Hours
                 </Button>
-            </CardContent>
+            </CardFooter>
         </Card>
     </div>
   );

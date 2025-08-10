@@ -2,16 +2,33 @@
 import { NextResponse } from 'next/server';
 import { format, subDays } from 'date-fns';
 
-async function getFleetopToken(baseUrl: string) {
-  const tokenResponse = await fetch(`${baseUrl}/api/fleetop/token`, {
-    cache: 'no-store', 
+async function getFleetopToken() {
+  const tokenResponse = await fetch("http://43.204.86.252/ReportServices/config/usertoken", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: 'no-store',
+    body: JSON.stringify({
+      username: "ashikmobilegenerators@gmail.com",
+      password: "Amg@1234"
+    }),
   });
 
   if (!tokenResponse.ok) {
+    const errorBody = await tokenResponse.text();
+    console.error("Failed to fetch Fleetop token:", errorBody);
     throw new Error('Failed to fetch Fleetop token');
   }
+
   const tokenData = await tokenResponse.json();
-  return tokenData.usertoken;
+  // According to the documentation, the key is 'usertoken'
+  const token = tokenData.usertoken;
+  
+  if (!token) {
+      console.error("Token not found in Fleetop response:", tokenData);
+      throw new Error("Token not found in Fleetop response");
+  }
+
+  return token;
 }
 
 export async function POST(req: Request) {
@@ -21,18 +38,18 @@ export async function POST(req: Request) {
     if (!imei) {
       return NextResponse.json({ error: 'Missing required parameter: imei' }, { status: 400 });
     }
+    
+    const token = await getFleetopToken();
+    
+    // Fleetop expects "dd-MM-yyyy HH:mm:ss" format.
+    const fleetopFormat = 'dd-MM-yyyy HH:mm:ss';
 
-    const absoluteUrl = new URL(req.url);
-    const baseUrl = absoluteUrl.origin;
-    
-    const token = await getFleetopToken(baseUrl);
-    
-    // Default to yesterday and today if start/end dates are not provided
+    // Default to the last 24 hours if start/end dates are not provided
     const startDate = start ? new Date(start) : subDays(new Date(), 1);
     const endDate = end ? new Date(end) : new Date();
     
-    const start_date_time = format(startDate, 'dd-MM-yyyy 00:00:00');
-    const end_date_time = format(endDate, 'dd-MM-yyyy 23:59:59');
+    const start_date_time = format(startDate, fleetopFormat);
+    const end_date_time = format(endDate, fleetopFormat);
 
     const response = await fetch("http://43.204.86.252/ReportServices/customapi/ignitionsummaryreport?user_api_config_id=370", {
       method: "POST",
@@ -43,28 +60,29 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         start_date_time,
         end_date_time,
-        imei_nos: imei
+        imei_nos: String(imei) // Ensure imei is a string
       }),
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Engine hours fetch failed with status: ' + response.status }));
+        const errorData = await response.text();
         console.error("Engine hours fetch failed:", errorData);
-        return NextResponse.json({ error: "Engine hours fetch failed" }, { status: response.status });
+        return NextResponse.json({ error: "Engine hours fetch failed", details: errorData }, { status: response.status });
     }
 
     const data = await response.json();
 
-    if (data.data && data.data.length > 0) {
-        // Assuming the first record is the one we want
+    // Check for success status and if data exists
+    if (data.status === "success" && data.data && data.data.length > 0) {
         const summary = data.data[0];
         return NextResponse.json({ engineOnHours: summary.Engine_ON_hours });
     }
     
-    return NextResponse.json({ engineOnHours: "N/A" });
+    // Handle cases where Fleetop returns success but no data for the period
+    return NextResponse.json({ error: "No ignition data" }, { status: 404 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Internal server error fetching engine hours:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

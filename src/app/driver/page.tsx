@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -104,12 +104,18 @@ export default function DriverDashboard() {
         const res = await fetch('/api/fleetop/hours', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imei: imeiNumber })
+            body: JSON.stringify({ 
+                imei: imeiNumber,
+                // For live/current hours, a recent range is needed.
+                // The API route defaults to last 24h if start/end are null.
+                start: booking.dutyStartTime?.toISOString(),
+                end: new Date().toISOString()
+            })
         });
         if (!res.ok) {
             const errorData = await res.json();
             const errorMessage = errorData.error === 'No ignition data' 
-                ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                ? 'No ignition data found for the active period.' 
                 : 'Failed to fetch from API.';
             throw new Error(errorMessage);
         }
@@ -128,14 +134,18 @@ export default function DriverDashboard() {
  const handleStartDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingDoc = await getDoc(bookingRef);
-    const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
+    if (!bookingDoc.exists()) {
+        toast({ title: "Error", description: "Booking not found.", variant: "destructive"});
+        return;
+    }
+    const bookingData = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
     
-    if(!booking.vehicleInfo?.imeiNumber) {
+    if(!bookingData.vehicleInfo?.imeiNumber) {
          toast({ title: "Cannot Start Duty", description: "No vehicle with an IMEI number is assigned.", variant: "destructive"});
          return;
     }
 
-    const startHours = await fetchEngineHours(booking);
+    const startHours = await fetchEngineHours(bookingData);
     if (startHours === null) {
         toast({ title: "Failed", description: "Could not get start engine hours. Duty not started.", variant: "destructive"});
         return;
@@ -147,7 +157,7 @@ export default function DriverDashboard() {
             dutyStartTime: serverTimestamp(),
             engineStartHours: startHours,
         });
-        toast({ title: "Duty Started", description: `Engine start hours: ${startHours}. Booking is now active.` });
+        toast({ title: "Duty Started", description: `Engine start hours recorded: ${startHours}. Booking is now active.` });
     } catch(error) {
         console.error("Error starting duty: ", error);
         toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
@@ -157,6 +167,10 @@ export default function DriverDashboard() {
   const handleEndDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingDoc = await getDoc(bookingRef);
+    if (!bookingDoc.exists()) {
+        toast({ title: "Error", description: "Booking not found.", variant: "destructive"});
+        return;
+    }
     const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
 
     const endHours = await fetchEngineHours(booking);
@@ -167,11 +181,17 @@ export default function DriverDashboard() {
     
     const startMinutes = parseDuration(booking.engineStartHours || '0:0');
     const endMinutes = parseDuration(endHours);
-    const durationInMinutes = endMinutes - startMinutes;
-    const hours = Math.floor(durationInMinutes / 60);
-    const minutes = durationInMinutes % 60;
-    const finalEngineDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     
+    let finalEngineDuration = '00:00';
+    if (endMinutes >= startMinutes) {
+        const durationInMinutes = endMinutes - startMinutes;
+        const hours = Math.floor(durationInMinutes / 60);
+        const minutes = durationInMinutes % 60;
+        finalEngineDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    } else {
+        toast({ title: "Warning", description: "End hours are less than start hours. Duration may be incorrect.", variant: "default" });
+    }
+
     try {
         await updateDoc(bookingRef, { 
             status: 'Completed',
@@ -189,7 +209,7 @@ export default function DriverDashboard() {
   const handleViewLiveHours = async (booking: Booking) => {
       const liveHours = await fetchEngineHours(booking);
       if (liveHours !== null) {
-          toast({ title: "Live Engine Hours", description: `Current reading: ${liveHours}`});
+          toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${liveHours}`});
       }
   };
 

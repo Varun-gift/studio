@@ -27,7 +27,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
 
     const fetchLiveEngineHours = async () => {
         if (!booking.vehicleInfo?.imeiNumber) {
-            toast({ title: "Error", description: "No IMEI number assigned.", variant: "destructive"});
+            toast({ title: "Error", description: "No IMEI number assigned to this booking.", variant: "destructive"});
             return;
         }
         setIsLoading(true);
@@ -36,19 +36,23 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             const res = await fetch('/api/fleetop/hours', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imei: booking.vehicleInfo.imeiNumber })
+                body: JSON.stringify({ 
+                    imei: booking.vehicleInfo.imeiNumber,
+                    start: booking.dutyStartTime?.toISOString(),
+                    end: new Date().toISOString()
+                })
             });
              if (!res.ok) {
                 const errorData = await res.json();
                 const errorMessage = errorData.error === 'No ignition data' 
-                    ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                    ? 'No ignition data from Fleetop for the active period.' 
                     : 'API request failed.';
                 throw new Error(errorMessage);
             }
             const data = await res.json();
             const hours = data.engineOnHours || "N/A";
             setLiveHours(hours);
-            toast({ title: "Live Engine Hours", description: `Current reading: ${hours}`});
+            toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${hours}`});
         } catch(e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive"});
         } finally {
@@ -85,7 +89,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                     <span className="text-sm text-muted-foreground">
-                        Booked on {format(booking.createdAt as Date, 'PPP')}
+                        Booked on {booking.createdAt ? format(booking.createdAt as Date, 'PPP') : 'N/A'}
                     </span>
                 </div>
             </CardHeader>
@@ -123,7 +127,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
                 <Avatar>
-                    <AvatarFallback>{booking.userName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{booking.userName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <DetailItem icon={User} label="Name" value={booking.userName} />
             </div>
@@ -164,7 +168,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 <DetailItem icon={Clock} label="Engine End Hours" value={booking.engineEndHours} />
                 <DetailItem icon={Power} label="Final Engine Duration" value={booking.finalEngineDuration} />
                  {liveHours && (
-                     <DetailItem icon={Cpu} label="Live Engine Hours" value={liveHours} />
+                     <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}
             </CardContent>
             {['Active', 'Completed'].includes(booking.status) && (
