@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { format, subMinutes } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 async function getFleetopToken() {
   const tokenResponse = await fetch(
@@ -47,11 +47,11 @@ export async function POST(req: Request) {
 
     const fleetopFormat = 'dd-MM-yyyy HH:mm:ss';
 
-    // Default to last 5 minutes if no start/end provided
+    // Default to last 24 hours if no start/end provided for live data
     const endDate = end ? new Date(end) : new Date();
     const startDate = start
       ? new Date(start)
-      : subMinutes(endDate, 5);
+      : subDays(endDate, 1);
 
     const start_date_time = format(startDate, fleetopFormat);
     const end_date_time = format(endDate, fleetopFormat);
