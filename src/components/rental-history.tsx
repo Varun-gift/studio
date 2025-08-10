@@ -40,6 +40,7 @@ export function RentalHistory() {
           ...data,
           bookingDate: (data.bookingDate as any).toDate(),
           createdAt: (data.createdAt as any).toDate(),
+          dutyStartTime: data.dutyStartTime ? (data.dutyStartTime as any).toDate() : undefined,
         } as Booking;
       });
       setBookings(bookingsData);
