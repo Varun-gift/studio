@@ -19,7 +19,7 @@ export function useBookings({ status }: UseBookingsProps = {}) {
     const bookingsRef = collection(db, 'bookings');
     
     // Create a query based on the status filter. If no filter is provided, fetch all.
-    const q = status !== undefined 
+    const q = status !== undefined && status !== null
       ? query(bookingsRef, where('status', '==', status), orderBy('createdAt', 'desc'))
       : query(bookingsRef, orderBy('createdAt', 'desc'));
 
@@ -31,6 +31,8 @@ export function useBookings({ status }: UseBookingsProps = {}) {
           ...data,
           bookingDate: (data.bookingDate as any).toDate(),
           createdAt: (data.createdAt as any).toDate(),
+          dutyStartTime: data.dutyStartTime ? (data.dutyStartTime as any).toDate() : undefined,
+          dutyEndTime: data.dutyEndTime ? (data.dutyEndTime as any).toDate() : undefined,
         } as Booking;
       });
       setBookings(bookingsData);
