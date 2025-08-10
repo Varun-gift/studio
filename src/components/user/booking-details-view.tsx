@@ -180,12 +180,14 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                      <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}
             </CardContent>
-             <CardFooter>
-                <Button onClick={fetchLiveEngineHours} disabled={isLoadingData || !vehicleInfo || !['Active', 'Completed'].includes(status)}>
-                    {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />}
-                    Fetch Live Engine Hours
-                </Button>
-            </CardFooter>
+            {['Active', 'Completed'].includes(status) && (
+                 <CardFooter>
+                    <Button onClick={fetchLiveEngineHours} disabled={isLoadingData || !vehicleInfo}>
+                        {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />}
+                        Fetch Live Engine Hours
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     </div>
   );
