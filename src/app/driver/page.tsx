@@ -62,8 +62,8 @@ export default function DriverDashboard() {
           const driverBookings = await Promise.all(bookingsPromises);
           
           const sortedBookings = driverBookings.sort((a, b) => {
-            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.seconds * 1000;
-            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.seconds * 1000;
+            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : (a.createdAt as any).seconds * 1000;
+            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : (b.createdAt as any).seconds * 1000;
             return dateB - dateA;
           });
 
@@ -120,18 +120,11 @@ export default function DriverDashboard() {
   
  const handleStartDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
-    const bookingDoc = await getDoc(bookingRef);
-    if (!bookingDoc.exists() || !bookingDoc.data().vehicleInfo?.imeiNumber) {
-        toast({ title: "Cannot Start Duty", description: "Booking is incomplete or has no vehicle with an IMEI number assigned.", variant: "destructive"});
-        return;
-    }
-
     setIsUpdatingDuty(bookingId);
     try {
         await updateDoc(bookingRef, { 
             status: 'Active',
             dutyStartTime: serverTimestamp(),
-            // No longer fetching start hours here
         });
         toast({ title: "Duty Started", description: "Booking is now active. User and Admin can now fetch live hours." });
     } catch(error) {
@@ -151,7 +144,17 @@ export default function DriverDashboard() {
         setIsUpdatingDuty(null);
         return;
     }
-    const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
+    
+    // Manually create booking object with converted dates
+    const bookingData = bookingDoc.data();
+    const booking: Booking = {
+        id: bookingDoc.id,
+        ...bookingData,
+        bookingDate: (bookingData.bookingDate as any).toDate(),
+        createdAt: (bookingData.createdAt as any).toDate(),
+        dutyStartTime: bookingData.dutyStartTime ? (bookingData.dutyStartTime as any).toDate() : undefined,
+    } as Booking;
+
 
     const endHours = await fetchEngineHours(booking);
     if (endHours === null) {
@@ -165,7 +168,6 @@ export default function DriverDashboard() {
             status: 'Completed',
             dutyEndTime: serverTimestamp(),
             engineEndHours: endHours,
-            finalEngineDuration: null, // No longer calculating duration
         });
         toast({ title: "Duty Ended", description: `Final engine hours recorded: ${endHours}` });
     } catch(error) {
