@@ -8,33 +8,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
 import { doc, updateDoc, writeBatch, collection, onSnapshot, query, where, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
-import type { Booking, TimerLog } from '@/lib/types';
+import type { Booking } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
-import { format, formatDistanceToNowStrict, addDays } from 'date-fns';
-import { Loader2, LogOut, Phone, User as UserIcon, Timer, Play, StopCircle, Package, Power, PowerOff, Car, Cpu } from 'lucide-react';
+import { format } from 'date-fns';
+import { Loader2, LogOut, Phone, User as UserIcon, Package, Power, PowerOff, Car, Cpu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-function TimerDisplay({ startTime }: { startTime: Date }) {
-    const [elapsedTime, setElapsedTime] = useState('');
-
-    useEffect(() => {
-        const updateElapsedTime = () => {
-            setElapsedTime(formatDistanceToNowStrict(startTime));
-        };
-
-        updateElapsedTime();
-        const timer = setInterval(updateElapsedTime, 1000);
-        return () => clearInterval(timer);
-    }, [startTime]);
-
-    return (
-        <span className="font-mono text-sm font-semibold">{elapsedTime}</span>
-    );
-}
 
 const parseDuration = (durationStr: string): number => {
     if (!durationStr || !durationStr.includes(':')) return 0;
@@ -74,16 +56,7 @@ export default function DriverDashboard() {
         try {
           const bookingsPromises = snapshot.docs.map(async (bookingDoc) => {
             const bookingData = bookingDoc.data();
-            const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
-            const timersSnapshot = await getDocs(timersCollectionRef);
             
-            const timers = timersSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-              startTime: (doc.data().startTime as any).toDate(),
-              endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : null,
-            } as TimerLog));
-
             return {
               id: bookingDoc.id,
               ...bookingData,
@@ -91,7 +64,6 @@ export default function DriverDashboard() {
               createdAt: (bookingData.createdAt as any).toDate(),
               dutyStartTime: bookingData.dutyStartTime ? (bookingData.dutyStartTime as any).toDate() : null,
               dutyEndTime: bookingData.dutyEndTime ? (bookingData.dutyEndTime as any).toDate() : null,
-              timers,
             } as Booking;
           });
 
@@ -134,13 +106,19 @@ export default function DriverDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imei: imeiNumber })
         });
-        if (!res.ok) throw new Error("Failed to fetch from API.");
+        if (!res.ok) {
+            const errorData = await res.json();
+            const errorMessage = errorData.error === 'No ignition data' 
+                ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                : 'Failed to fetch from API.';
+            throw new Error(errorMessage);
+        }
         
         const data = await res.json();
         return data.engineOnHours || null;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching engine hours:", error);
-        toast({ title: "API Error", description: "Could not fetch engine hours.", variant: "destructive" });
+        toast({ title: "API Error", description: error.message, variant: "destructive" });
         return null;
     } finally {
         setIsFetchingHours(null);
@@ -164,28 +142,11 @@ export default function DriverDashboard() {
     }
     
     try {
-        const batch = writeBatch(db);
-        batch.update(bookingRef, { 
+        await updateDoc(bookingRef, { 
             status: 'Active',
             dutyStartTime: serverTimestamp(),
             engineStartHours: startHours,
         });
-        
-        if(!booking.timers || booking.timers.length === 0) {
-            const timersCollectionRef = collection(db, 'bookings', bookingId, 'timers');
-            booking.generators.forEach((genGroup, index) => {
-                 const generatorId = `${genGroup.kvaCategory}KVA-U${index+1}`;
-                 const timerDocRef = doc(timersCollectionRef);
-                 batch.set(timerDocRef, {
-                    generatorId,
-                    status: 'stopped',
-                    startTime: new Date(),
-                    endTime: null,
-                    duration: 0,
-                });
-            });
-        }
-         await batch.commit();
         toast({ title: "Duty Started", description: `Engine start hours: ${startHours}. Booking is now active.` });
     } catch(error) {
         console.error("Error starting duty: ", error);
@@ -230,56 +191,6 @@ export default function DriverDashboard() {
       if (liveHours !== null) {
           toast({ title: "Live Engine Hours", description: `Current reading: ${liveHours}`});
       }
-  };
-
-  const handleTimerToggle = async (bookingId: string, timerId: string) => {
-    const timerRef = doc(db, 'bookings', bookingId, 'timers', timerId);
-    
-    const booking = bookings.find(b => b.id === bookingId);
-    const timer = booking?.timers?.find(t => t.id === timerId);
-
-    if (!timer) {
-        toast({ title: 'Error', description: 'Timer not found.', variant: 'destructive' });
-        return;
-    }
-
-    try {
-      if (timer.status === 'running') {
-        const endTime = new Date();
-        const startTime = timer.startTime instanceof Date ? timer.startTime : new Date();
-        const currentDuration = timer.duration || 0;
-        const newDuration = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-        
-        await updateDoc(timerRef, { 
-            status: 'stopped',
-            endTime: endTime,
-            duration: currentDuration + newDuration,
-        });
-        toast({ title: 'Timer Stopped', description: `Timer for ${timer.generatorId} has been stopped.` });
-      } else { // status is 'stopped'
-        await updateDoc(timerRef, { 
-            status: 'running',
-            startTime: new Date(),
-            endTime: null,
-        });
-        toast({ title: 'Timer Started', description: `Timer for ${timer.generatorId} has started.` });
-      }
-    } catch (error) {
-      console.error('Error toggling timer:', error);
-      toast({ title: 'Error', description: 'Could not update timer state.', variant: 'destructive' });
-    }
-  };
-
-  const calculateTotalDuration = (durationInSeconds: number) => {
-    if (!durationInSeconds || durationInSeconds <= 0) return '0s';
-    const hours = Math.floor(durationInSeconds / 3600);
-    const minutes = Math.floor((durationInSeconds % 3600) / 60);
-    const seconds = Math.floor(durationInSeconds % 60);
-    return [
-        hours > 0 ? `${hours}h` : '',
-        minutes > 0 ? `${minutes}m` : '',
-        seconds > 0 ? `${seconds}s` : '',
-    ].filter(Boolean).join(' ');
   };
 
   const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -368,29 +279,6 @@ export default function DriverDashboard() {
                                          <span className='font-semibold text-foreground'>Location:</span> <span className="line-clamp-2">{booking.location}</span>
                                       </p>
                                   </div>
-                                   {booking.status === 'Active' && booking.timers && booking.timers.length > 0 && (
-                                      <div className="space-y-2 border-t pt-4">
-                                          <h4 className="font-semibold flex items-center gap-2"><Timer className="h-4 w-4"/> Generator Timers</h4>
-                                          {booking.timers.map((timer) => (
-                                            <div key={timer.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50">
-                                              <div className='flex flex-col'>
-                                                 <span className="font-medium text-sm">{timer.generatorId}</span>
-                                                  {timer.status === 'running' && timer.startTime ? (
-                                                      <TimerDisplay startTime={timer.startTime} />
-                                                  ) : (
-                                                       <span className="text-xs text-muted-foreground">
-                                                            {timer.duration ? `Used: ${calculateTotalDuration(timer.duration)}` : 'Ready to start'}
-                                                       </span>
-                                                  )}
-                                              </div>
-                                              <Button size="sm" variant={timer.status === 'running' ? 'destructive' : 'default'} onClick={() => handleTimerToggle(booking.id, timer.id)}>
-                                                 {timer.status === 'running' ? <StopCircle className="mr-2 h-4 w-4"/> : <Play className="mr-2 h-4 w-4"/>}
-                                                {timer.status === 'running' ? 'Stop' : 'Start'}
-                                              </Button>
-                                            </div>
-                                          ))}
-                                      </div>
-                                  )}
                               </CardContent>
                               <CardFooter className="flex flex-col gap-2 items-stretch">
                                   {booking.status === 'Approved' && (

@@ -55,9 +55,8 @@ export interface Booking {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
-  imeiNumber?: string; // This will be populated from vehicleInfo
-  generatorName?: string; // This can be deprecated or kept for old data
-  vehicleNumber?: string; // This will be populated from vehicleInfo
+  imeiNumber?: string; 
+  vehicleNumber?: string; 
   driverInfo?: {
       driverId: string;
       name: string;
@@ -72,22 +71,9 @@ export interface Booking {
       imeiNumber: string;
       vehicleModel: string;
   };
-  timers?: TimerLog[];
   dutyStartTime?: Date;
   dutyEndTime?: Date;
-  runtimeHoursManual?: number; // total seconds from manual timers
-  runtimeHoursFleetop?: string; // e.g., "07:39"
-  engineStartHours?: string;   // From Fleetop, e.g. "02:15"
-  engineEndHours?: string;     // Final hours from Fleetop
-  finalEngineDuration?: string; // "05:20"
-  engineStatus?: "active" | "idle" | "offline"; // optional
-}
-
-export interface TimerLog {
-    id: string;
-    generatorId: string;
-    startTime: Date;
-    endTime?: Date;
-    duration?: number; // in seconds
-    status: 'running' | 'stopped';
+  engineStartHours?: string;
+  engineEndHours?: string;
+  finalEngineDuration?: string;
 }

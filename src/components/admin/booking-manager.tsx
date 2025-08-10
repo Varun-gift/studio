@@ -4,14 +4,14 @@
 
 import * as React from 'react';
 import { MoreHorizontal, Truck, Check, UserX, XCircle, Package, Car } from 'lucide-react';
-import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 import { useBookings } from '@/hooks/use-bookings';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { getStatusVariant } from '@/lib/utils';
-import { Booking, TimerLog } from '@/lib/types';
+import { Booking } from '@/lib/types';
 
 import {
   Card,
@@ -39,38 +39,10 @@ interface BookingManagerProps {
 }
 
 export function BookingManager({ statusFilter, onSelectBooking }: BookingManagerProps) {
-  const { bookings: initialBookings, loading } = useBookings({ status: statusFilter });
-  const [bookings, setBookings] = React.useState<Booking[]>([]);
+  const { bookings, loading } = useBookings({ status: statusFilter });
   const { toast } = useToast();
   const [selectedBookingForDriver, setSelectedBookingForDriver] = React.useState<Booking | null>(null);
   const [isAssignDriverOpen, setIsAssignDriverOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const fetchTimersForBookings = async () => {
-        if (!initialBookings) {
-            setBookings([]);
-            return;
-        }
-
-        const bookingsWithTimers = await Promise.all(
-            initialBookings.map(async (booking) => {
-                if (!booking.id) return booking; // Skip if booking id is missing
-                const timersCollectionRef = collection(db, 'bookings', booking.id, 'timers');
-                const timersSnapshot = await getDocs(timersCollectionRef);
-                const timers = timersSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    startTime: (doc.data().startTime as any)?.toDate(),
-                    endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : undefined,
-                } as TimerLog));
-                return { ...booking, timers };
-            })
-        );
-        setBookings(bookingsWithTimers);
-    };
-
-    fetchTimersForBookings();
-  }, [initialBookings]);
 
 
   const handleStatusChange = async (bookingId: string, status: Booking['status']) => {

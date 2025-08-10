@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Hash, Power, Clock, Truck, Timer as TimerIcon, Package, BadgeIndianRupee, Cpu } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Power } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,10 +18,9 @@ import { Loader2 } from 'lucide-react';
 interface BookingDetailsProps {
   booking: Booking;
   onBack: () => void;
-  onViewTimers: () => void;
 }
 
-export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetailsProps) {
+export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
     const [liveHours, setLiveHours] = React.useState<string | null>(null);
@@ -39,12 +38,19 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imei: booking.vehicleInfo.imeiNumber })
             });
-            if (!res.ok) throw new Error("API request failed");
+             if (!res.ok) {
+                const errorData = await res.json();
+                const errorMessage = errorData.error === 'No ignition data' 
+                    ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                    : 'API request failed.';
+                throw new Error(errorMessage);
+            }
             const data = await res.json();
-            setLiveHours(data.engineOnHours || "N/A");
-            toast({ title: "Live Engine Hours", description: `Current reading: ${data.engineOnHours}`});
-        } catch(e) {
-            toast({ title: "Error", description: "Failed to fetch live hours.", variant: "destructive"});
+            const hours = data.engineOnHours || "N/A";
+            setLiveHours(hours);
+            toast({ title: "Live Engine Hours", description: `Current reading: ${hours}`});
+        } catch(e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive"});
         } finally {
             setIsLoading(false);
         }
@@ -151,7 +157,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
             </CardContent>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Duty & Engine Hours</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 <DetailItem icon={Clock} label="Engine Start Hours" value={booking.engineStartHours} />
@@ -161,7 +167,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
                      <DetailItem icon={Cpu} label="Live Engine Hours" value={liveHours} />
                  )}
             </CardContent>
-            {booking.status === 'Active' && (
+            {['Active', 'Completed'].includes(booking.status) && (
                 <CardFooter>
                     <Button onClick={fetchLiveEngineHours} disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -171,25 +177,7 @@ export function BookingDetails({ booking, onBack, onViewTimers }: BookingDetails
             )}
         </Card>
 
-        <Card className="lg:col-span-3">
-            <CardHeader>
-                <CardTitle>Manual Timer Logs</CardTitle>
-                <CardDescription>Manual usage tracking for each generator.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {booking.timers && booking.timers.length > 0 ? (
-                    <Button onClick={onViewTimers}>
-                        <TimerIcon className="mr-2 h-4 w-4" />
-                        View Manual Timer Logs
-                    </Button>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No manual timer logs available for this booking.</p>
-                )}
-            </CardContent>
-        </Card>
-
       </div>
     </div>
   );
 }
-

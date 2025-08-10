@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Booking } from '@/lib/types';
@@ -32,33 +32,16 @@ export function RentalHistory() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
-      const bookingsData = await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const data = doc.data();
-          
-          const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
-          const timersSnapshot = await getDocs(timersCollectionRef);
-          
-          const timers = timersSnapshot.docs.map(timerDoc => {
-            const timerData = timerDoc.data();
-            return {
-              id: timerDoc.id,
-              ...timerData,
-              startTime: (timerData.startTime as any)?.toDate(),
-              endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
-            };
-          });
-
-          return {
-            id: doc.id,
-            ...data,
-            bookingDate: (data.bookingDate as any).toDate(),
-            createdAt: (data.createdAt as any).toDate(),
-            timers,
-          } as Booking;
-        })
-      );
+    const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+      const bookingsData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          bookingDate: (data.bookingDate as any).toDate(),
+          createdAt: (data.createdAt as any).toDate(),
+        } as Booking;
+      });
       setBookings(bookingsData);
       setLoading(false);
     }, (error) => {

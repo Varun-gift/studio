@@ -1,9 +1,9 @@
 
 'use server';
-
+import 'dotenv/config';
 import { auth, sendPasswordResetEmail, db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, Timestamp, updateDoc } from 'firebase/firestore';
-import type { Booking, TimerLog } from '@/lib/types';
+import type { Booking } from '@/lib/types';
 
 
 export async function sendPasswordResetLink(email: string): Promise<void> {
@@ -35,22 +35,12 @@ export async function getDriverBookings(driverId: string): Promise<Booking[]> {
     
     const bookingsPromises = snapshot.docs.map(async (bookingDoc) => {
       const bookingData = bookingDoc.data();
-      const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
-      const timersSnapshot = await getDocs(timersCollectionRef);
       
-      const timers = timersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        startTime: (doc.data().startTime as any).toDate(),
-        endTime: doc.data().endTime ? (doc.data().endTime as any).toDate() : null,
-      } as TimerLog));
-
       return {
         id: bookingDoc.id,
         ...bookingData,
         bookingDate: (bookingData.bookingDate as any).toDate(),
         createdAt: (bookingData.createdAt as any).toDate(),
-        timers,
       } as Booking;
     });
 

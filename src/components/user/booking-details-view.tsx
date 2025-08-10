@@ -3,8 +3,8 @@
 'use client';
 
 import React from 'react';
-import { format, addDays } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Timer, Truck, UserCheck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power } from 'lucide-react';
+import { format } from 'date-fns';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,8 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 
 
@@ -33,39 +31,6 @@ const DetailItem = ({ icon: Icon, label, value, children }: { icon: React.Elemen
     </div>
 );
 
-const TimerLogCard = ({ timer }: { timer: NonNullable<Booking['timers']>[0] }) => {
-    const formatDuration = (seconds: number) => {
-        if (!seconds || seconds <= 0) return '0s';
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-        return [
-            hours > 0 ? `${hours}h` : '',
-            minutes > 0 ? `${minutes}m` : '',
-            secs > 0 ? `${secs}s` : '',
-        ].filter(Boolean).join(' ');
-    };
-
-    return (
-        <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-            <p className="font-semibold text-sm">{timer.generatorId}</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                    <p className="text-muted-foreground">Start</p>
-                    <p>{timer.startTime ? format(timer.startTime, 'p') : 'N/A'}</p>
-                </div>
-                <div>
-                    <p className="text-muted-foreground">End</p>
-                    <p>{timer.endTime ? format(timer.endTime, 'p') : 'N/A'}</p>
-                </div>
-                 <div className="col-span-2">
-                    <p className="text-muted-foreground">Duration</p>
-                    <p className="font-mono">{formatDuration(timer.duration || 0)}</p>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps) {
     const { toast } = useToast();
@@ -83,13 +48,9 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         driverInfo,
         vehicleInfo,
         additionalNotes,
-        timers,
-        dutyStartTime,
-        dutyEndTime,
         engineStartHours,
         engineEndHours,
         finalEngineDuration,
-        runtimeHoursFleetop
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -113,13 +74,19 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imei: vehicleInfo.imeiNumber })
             });
-            if (!res.ok) throw new Error("API request failed");
+            if (!res.ok) {
+                const errorData = await res.json();
+                 const errorMessage = errorData.error === 'No ignition data' 
+                    ? 'No ignition data from Fleetop. The generator may not have been started yet.' 
+                    : 'API request failed.';
+                throw new Error(errorMessage);
+            }
             const data = await res.json();
             const hours = data.engineOnHours || "N/A";
             setLiveHours(hours);
             toast({ title: "Live Engine Hours", description: `Current reading: ${hours}`});
-        } catch(e) {
-            toast({ title: "Error", description: "Failed to fetch live hours.", variant: "destructive"});
+        } catch(e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive"});
         } finally {
             setIsLoadingData(false);
         }
@@ -212,24 +179,12 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                  )}
             </CardContent>
              <CardContent>
-                <Button onClick={fetchLiveEngineHours} disabled={isLoadingData || !vehicleInfo || status !== 'Active'}>
+                <Button onClick={fetchLiveEngineHours} disabled={isLoadingData || !vehicleInfo || !['Active', 'Completed'].includes(status)}>
                     {isLoadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />}
                     Fetch Live Engine Hours
                 </Button>
             </CardContent>
         </Card>
-
-        {timers && timers.length > 0 && (
-            <Card>
-                <CardHeader><CardTitle>Manual Usage Logs</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                    {timers.map(timer => (
-                        <TimerLogCard key={timer.id} timer={timer} />
-                    ))}
-                </CardContent>
-            </Card>
-        )}
-
     </div>
   );
 }
