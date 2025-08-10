@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   name: string;
@@ -72,7 +73,7 @@ export interface Booking {
   dutyEndTime?: Date;
   engineStartHours?: string;
   engineEndHours?: string;
-  finalEngineDuration?: string;
+  finalEngineDuration?: string | null;
   runtimeHoursFleetop?: string;
   lastFleetopFetchAt?: { seconds: number, nanoseconds: number } | Date;
 }

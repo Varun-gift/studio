@@ -48,9 +48,8 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         driverInfo,
         vehicleInfo,
         additionalNotes,
-        engineStartHours,
         engineEndHours,
-        finalEngineDuration,
+        dutyStartTime
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -175,9 +174,8 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                 <CardTitle>Duty & Runtime</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <DetailItem icon={Clock} label="Engine Start Hours" value={engineStartHours} />
-                <DetailItem icon={Clock} label="Engine End Hours" value={engineEndHours} />
-                <DetailItem icon={Power} label="Final Engine Duration" value={finalEngineDuration} />
+                 <DetailItem icon={Clock} label="Duty Start Time" value={dutyStartTime ? format(dutyStartTime, 'Pp') : 'Not Started'} />
+                <DetailItem icon={Clock} label="Engine End Hours (at Duty End)" value={engineEndHours} />
                  {liveHours && (
                      <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}

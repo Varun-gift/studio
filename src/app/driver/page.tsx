@@ -18,20 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const parseDuration = (durationStr: string): number => {
-    if (!durationStr || !durationStr.includes(':')) return 0;
-    const parts = durationStr.split(':');
-    const hours = parseInt(parts[0], 10) || 0;
-    const minutes = parseInt(parts[1], 10) || 0;
-    return hours * 60 + minutes;
-};
-
 export default function DriverDashboard() {
   const { user, loading, name, role } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
-  const [isFetchingHours, setIsFetchingHours] = useState<string | null>(null);
+  const [isUpdatingDuty, setIsUpdatingDuty] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -98,16 +90,13 @@ export default function DriverDashboard() {
         toast({ title: "IMEI not found", description: "Vehicle has no IMEI number.", variant: "destructive" });
         return null;
     }
-
-    setIsFetchingHours(booking.id);
+    
     try {
         const res = await fetch('/api/fleetop/hours', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 imei: imeiNumber,
-                // For live/current hours, a recent range is needed.
-                // The API route defaults to last 24h if start/end are null.
                 start: booking.dutyStartTime?.toISOString(),
                 end: new Date().toISOString()
             })
@@ -126,92 +115,66 @@ export default function DriverDashboard() {
         console.error("Error fetching engine hours:", error);
         toast({ title: "API Error", description: error.message, variant: "destructive" });
         return null;
-    } finally {
-        setIsFetchingHours(null);
     }
  };
   
  const handleStartDuty = async (bookingId: string) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingDoc = await getDoc(bookingRef);
-    if (!bookingDoc.exists()) {
-        toast({ title: "Error", description: "Booking not found.", variant: "destructive"});
+    if (!bookingDoc.exists() || !bookingDoc.data().vehicleInfo?.imeiNumber) {
+        toast({ title: "Cannot Start Duty", description: "Booking is incomplete or has no vehicle with an IMEI number assigned.", variant: "destructive"});
         return;
-    }
-    const bookingData = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
-    
-    if(!bookingData.vehicleInfo?.imeiNumber) {
-         toast({ title: "Cannot Start Duty", description: "No vehicle with an IMEI number is assigned.", variant: "destructive"});
-         return;
     }
 
-    const startHours = await fetchEngineHours(bookingData);
-    if (startHours === null) {
-        toast({ title: "Failed", description: "Could not get start engine hours. Duty not started.", variant: "destructive"});
-        return;
-    }
-    
+    setIsUpdatingDuty(bookingId);
     try {
         await updateDoc(bookingRef, { 
             status: 'Active',
             dutyStartTime: serverTimestamp(),
-            engineStartHours: startHours,
+            // No longer fetching start hours here
         });
-        toast({ title: "Duty Started", description: `Engine start hours recorded: ${startHours}. Booking is now active.` });
+        toast({ title: "Duty Started", description: "Booking is now active. User and Admin can now fetch live hours." });
     } catch(error) {
         console.error("Error starting duty: ", error);
         toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
+    } finally {
+        setIsUpdatingDuty(null);
     }
   }
 
   const handleEndDuty = async (bookingId: string) => {
+    setIsUpdatingDuty(bookingId);
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingDoc = await getDoc(bookingRef);
     if (!bookingDoc.exists()) {
         toast({ title: "Error", description: "Booking not found.", variant: "destructive"});
+        setIsUpdatingDuty(null);
         return;
     }
     const booking = { id: bookingDoc.id, ...bookingDoc.data() } as Booking;
 
     const endHours = await fetchEngineHours(booking);
     if (endHours === null) {
-        toast({ title: "Failed", description: "Could not get end engine hours. Duty not ended.", variant: "destructive"});
+        toast({ title: "Failed", description: "Could not get end engine hours from API. Duty not ended.", variant: "destructive"});
+        setIsUpdatingDuty(null);
         return;
     }
     
-    const startMinutes = parseDuration(booking.engineStartHours || '0:0');
-    const endMinutes = parseDuration(endHours);
-    
-    let finalEngineDuration = '00:00';
-    if (endMinutes >= startMinutes) {
-        const durationInMinutes = endMinutes - startMinutes;
-        const hours = Math.floor(durationInMinutes / 60);
-        const minutes = durationInMinutes % 60;
-        finalEngineDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-    } else {
-        toast({ title: "Warning", description: "End hours are less than start hours. Duration may be incorrect.", variant: "default" });
-    }
-
     try {
         await updateDoc(bookingRef, { 
             status: 'Completed',
             dutyEndTime: serverTimestamp(),
             engineEndHours: endHours,
-            finalEngineDuration: finalEngineDuration
+            finalEngineDuration: null, // No longer calculating duration
         });
-        toast({ title: "Duty Ended", description: `Engine end hours: ${endHours}. Total duration: ${finalEngineDuration}` });
+        toast({ title: "Duty Ended", description: `Final engine hours recorded: ${endHours}` });
     } catch(error) {
         console.error("Error ending duty: ", error);
         toast({ title: "Error", description: "Could not end duty.", variant: "destructive"});
+    } finally {
+        setIsUpdatingDuty(null);
     }
   }
-  
-  const handleViewLiveHours = async (booking: Booking) => {
-      const liveHours = await fetchEngineHours(booking);
-      if (liveHours !== null) {
-          toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${liveHours}`});
-      }
-  };
 
   const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
     const baseHours = 5;
@@ -302,17 +265,14 @@ export default function DriverDashboard() {
                               </CardContent>
                               <CardFooter className="flex flex-col gap-2 items-stretch">
                                   {booking.status === 'Approved' && (
-                                       <Button onClick={() => handleStartDuty(booking.id)} disabled={isFetchingHours === booking.id}>
-                                           {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4" />} Start Duty
+                                       <Button onClick={() => handleStartDuty(booking.id)} disabled={isUpdatingDuty === booking.id}>
+                                           {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4" />} Start Duty
                                        </Button>
                                   )}
                                   {booking.status === 'Active' && (
                                       <>
-                                          <Button onClick={() => handleViewLiveHours(booking)} variant="outline" disabled={isFetchingHours === booking.id}>
-                                              {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Cpu className="mr-2 h-4 w-4"/>} View Live Hours
-                                          </Button>
-                                          <Button onClick={() => handleEndDuty(booking.id)} variant="destructive" disabled={isFetchingHours === booking.id}>
-                                              {isFetchingHours === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
+                                          <Button onClick={() => handleEndDuty(booking.id)} variant="destructive" disabled={isUpdatingDuty === booking.id}>
+                                              {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
                                           </Button>
                                       </>
                                   )}

@@ -164,9 +164,8 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Duty & Engine Hours</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <DetailItem icon={Clock} label="Engine Start Hours" value={booking.engineStartHours} />
-                <DetailItem icon={Clock} label="Engine End Hours" value={booking.engineEndHours} />
-                <DetailItem icon={Power} label="Final Engine Duration" value={booking.finalEngineDuration} />
+                <DetailItem icon={Clock} label="Duty Start Time" value={booking.dutyStartTime ? format(booking.dutyStartTime, 'Pp') : 'N/A'} />
+                <DetailItem icon={Clock} label="Engine End Hours (at Duty End)" value={booking.engineEndHours} />
                  {liveHours && (
                      <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
                  )}
