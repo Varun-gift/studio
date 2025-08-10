@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react';
 
 import { useUsers } from '@/hooks/use-users';
 import { useVehicles } from '@/hooks/use-vehicles';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Booking, User, Vehicle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -115,9 +115,6 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange }: AssignDriv
                 imeiNumber: selectedVehicle.imeiNumber,
                 vehicleModel: selectedVehicle.vehicleModel,
             },
-            // Also update the top-level fields for easier access and backward compatibility
-            imeiNumber: selectedVehicle.imeiNumber,
-            vehicleNumber: selectedVehicle.plateNumber,
             status: 'Approved',
         });
 
@@ -197,7 +194,7 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange }: AssignDriv
                       ) : (
                         vehicles.map((vehicle: Vehicle) => (
                           <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.vehicleName} ({vehicle.vehicleModel})
+                            {vehicle.vehicleName} ({vehicle.plateNumber})
                           </SelectItem>
                         ))
                       )}

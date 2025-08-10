@@ -9,15 +9,16 @@ import { CalendarView } from '@/components/admin/calendar-view';
 import { ProfileView } from '@/components/admin/profile-view';
 import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, Settings, LogOut } from 'lucide-react';
+import { Home, Calendar, Bell, Settings, LogOut, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNav } from '@/components/admin/bottom-nav';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
+import { VehicleManager } from '@/components/admin/vehicle-manager';
 
 
 export default function AdminPage() {
@@ -38,6 +39,7 @@ export default function AdminPage() {
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
+    { name: 'vehicles', icon: Truck, label: 'Vehicles' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
 
@@ -47,6 +49,8 @@ export default function AdminPage() {
         return <AdminDashboard />;
       case 'calendar':
         return <CalendarView />;
+      case 'vehicles':
+        return <VehicleManager />;
       case 'profile':
         return <ProfileView />;
       default:
@@ -99,7 +103,7 @@ export default function AdminPage() {
               </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-             <h1 className="text-lg font-semibold sm:text-xl">Admin Home</h1>
+             <h1 className="text-lg font-semibold sm:text-xl capitalize">{activeTab}</h1>
           </div>
           <div className="relative ml-auto flex-1 md:grow-0">
              <Button variant="ghost" size="icon">

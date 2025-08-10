@@ -2,9 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { Home, Calendar, Package, User } from 'lucide-react';
+import { Home, Calendar, Truck, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBookings } from '@/hooks/use-bookings';
 
 interface BottomNavProps {
   activeTab: string;
@@ -12,18 +11,17 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
-    const { bookings } = useBookings({ status: 'Pending' });
-    const pendingCount = bookings.length;
 
   const navItems = [
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
+    { name: 'vehicles', icon: Truck, label: 'Vehicles' },
     { name: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-background md:hidden z-20">
-      <div className="grid grid-cols-3 h-16">
+      <div className="grid grid-cols-4 h-16">
         {navItems.map((item) => {
             const isActive = activeTab === item.name;
             return (

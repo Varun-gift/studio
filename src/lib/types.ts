@@ -23,6 +23,7 @@ export interface Vehicle {
     status: 'active' | 'inactive' | 'in-maintenance';
 }
 
+
 export interface Generator {
   id: string;
   name: string;
@@ -55,14 +56,10 @@ export interface Booking {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
-  imeiNumber?: string; 
-  vehicleNumber?: string; 
   driverInfo?: {
       driverId: string;
       name: string;
       contact: string;
-      electricianName?: string;
-      electricianContact?: string;
   };
   vehicleInfo?: {
       vehicleId: string;
@@ -76,4 +73,6 @@ export interface Booking {
   engineStartHours?: string;
   engineEndHours?: string;
   finalEngineDuration?: string;
+  runtimeHoursFleetop?: string;
+  lastFleetopFetchAt?: { seconds: number, nanoseconds: number } | Date;
 }
