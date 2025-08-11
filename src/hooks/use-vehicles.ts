@@ -20,8 +20,10 @@ export function useVehicles({ status }: UseVehiclesProps = {}) {
     setError(null);
 
     const vehiclesRef = collection(db, 'vehicles');
+    // Removed orderBy when filtering by status to prevent index error.
+    // Sorting can be done client-side if needed.
     const q = status
-      ? query(vehiclesRef, where('status', '==', status), orderBy('vehicleName', 'asc'))
+      ? query(vehiclesRef, where('status', '==', status))
       : query(vehiclesRef, orderBy('vehicleName', 'asc'));
 
     const unsubscribe = onSnapshot(
@@ -32,6 +34,12 @@ export function useVehicles({ status }: UseVehiclesProps = {}) {
             id: doc.id,
             ...doc.data(),
           })) as Vehicle[];
+          
+          // Client-side sorting when a status filter is applied.
+          if(status) {
+              allVehicles.sort((a, b) => a.vehicleName.localeCompare(b.vehicleName));
+          }
+
           setVehicles(allVehicles);
         } catch (err) {
           console.error('Error processing vehicle data:', err);
