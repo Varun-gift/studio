@@ -17,6 +17,8 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { GENERATORS_DATA } from '@/lib/generators';
 import { ADDONS_DATA } from '@/lib/addons';
+import { AmgLogo } from '@/components/amg-logo';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -208,54 +210,149 @@ export default function BookRentalPage() {
   };
 
    const handleDownloadEstimate = () => {
-    const doc = new jsPDF();
-    const bookingDetails = form.getValues();
+        const doc = new jsPDF();
+        const bookingDetails = form.getValues();
 
-    doc.setFontSize(20);
-    doc.text('Booking Estimate - AMG POWER', 14, 22);
-    doc.setFontSize(12);
-    doc.text(`Date: ${format(new Date(), 'PPP')}`, 14, 30);
-    
-    doc.setFontSize(14);
-    doc.text('Customer Details', 14, 45);
-    autoTable(doc, {
-        startY: 50,
-        body: [['Name', bookingDetails.name], ['Email', bookingDetails.email], ['Phone', bookingDetails.phone], ['Company', bookingDetails.company || 'N/A'], ['Booking Date', format(bookingDetails.bookingDate, 'PPP')], ['Location', bookingDetails.location]],
-        theme: 'grid', styles: { fontSize: 10 },
-    });
-    
-    let tableStartY = (doc as any).lastAutoTable.finalY + 15;
-    
-    doc.setFontSize(14);
-    doc.text('Generators Estimate', 14, tableStartY);
-    autoTable(doc, {
-        startY: tableStartY + 5,
-        head: [['Generator', 'Base Cost (5 hrs)', 'Additional Hours', 'Additional Cost', 'Subtotal']],
-        body: estimate.generatorItems.map(item => [`1 x ${item.kvaCategory} KVA`, `₹${item.baseCost.toLocaleString()}`, `${item.additionalHours} hrs`, `₹${item.additionalCost.toLocaleString()}`, `₹${item.total.toLocaleString()}`]),
-        theme: 'striped', headStyles: { fillColor: [255, 79, 0] },
-    });
+        // Constants for layout
+        const pageMargin = 14;
+        const primaryColor = '#FF4F00';
+        const darkBlueColor = '#00008B';
+        const blackColor = '#000000';
+        const grayColor = '#808080';
 
-    tableStartY = (doc as any).lastAutoTable.finalY;
+        // --- HEADER ---
+        // Logo - Simplified SVG rendering
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(primaryColor);
+        doc.text('AMG', pageMargin, 20);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(blackColor);
+        doc.text('ASHIK MOBILE GENERATORS', pageMargin + 12, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(grayColor);
+        doc.text('POWER ALWAYS', pageMargin, 25);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(blackColor);
+        doc.text('Supply of Power Generators (Sound Proof Only)', pageMargin, 30);
+        doc.text('PAN : ACTPR5143E, GSTIN : 29ACTPR5143E1Z5', pageMargin, 34);
 
-    if (estimate.addonItems.length > 0) {
+        doc.text('Tel : 41464355', 200, 20, { align: 'right' });
+        doc.text('Telefax : 26780168', 200, 24, { align: 'right' });
+        doc.text('Mobile : 98450 38487', 200, 28, { align: 'right' });
+        
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(primaryColor);
+        doc.line(pageMargin, 38, 210 - pageMargin, 38);
+        
+        doc.setFontSize(8);
+        doc.text('# 848, 85, N.S. Palya Main Road, 3rd Cross, Bannerghatta Road, Near Shopper\'s Stop, Bangalore - 76. Email : ashikmobilegenerators@gmail.com&amgen@mail.com', 105, 42, { align: 'center' });
+        
+        doc.setLineWidth(0.8);
+        doc.setDrawColor(blackColor);
+        doc.line(pageMargin, 45, 210 - pageMargin, 45);
+
+        // --- QUOTATION TITLE ---
         doc.setFontSize(14);
-        doc.text('Add-ons Estimate', 14, tableStartY + 15);
+        doc.setFont('helvetica', 'bold');
+        doc.text('QUOTATION', 105, 53, { align: 'center' });
+        doc.line(90, 54, 120, 54);
+
+        // --- CUSTOMER & BOOKING INFO ---
         autoTable(doc, {
-            startY: tableStartY + 20,
-            head: [['Item', 'Quantity', 'Unit Price', 'Total']],
-            body: estimate.addonItems.map(item => [item.name, item.quantity, `₹${item.price.toLocaleString()}`, `₹${item.total.toLocaleString()}`]),
-            theme: 'striped', headStyles: { fillColor: [255, 79, 0] },
+            startY: 60,
+            body: [
+                [
+                    { content: `To,\n${bookingDetails.phone}`, styles: { cellWidth: 91 } },
+                    { content: `Date : ${format(new Date(), 'dd-MM-yyyy')}\nPlace of Supply : ${bookingDetails.location}\nState Code : 29\nClient's GST No :\nClient's PAN No :`, styles: { cellWidth: 91 } }
+                ]
+            ],
+            theme: 'grid',
+            styles: {
+                fontSize: 10,
+                valign: 'top',
+                lineWidth: 0.2,
+                lineColor: [0, 0, 0]
+            }
         });
-        tableStartY = (doc as any).lastAutoTable.finalY;
-    }
+        
+        // --- ITEMS TABLE ---
+        const tableBody = [];
+        let serialNumber = 1;
 
-    const finalY = (doc as any).lastAutoTable.finalY;
-    doc.setFontSize(14);
-    doc.text('Grand Total:', 14, finalY + 15);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`₹${estimate.grandTotal.toLocaleString()}`, 200, finalY + 15, { align: 'right' });
+        // Generator Items
+        if (estimate.generatorItems.length > 0) {
+            tableBody.push([
+                { content: 'Service Providing for Soundproof Mobile Generators', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } }
+            ]);
+            estimate.generatorItems.forEach(item => {
+                const totalHours = 5 + item.additionalHours;
+                const description = 
+                    `${item.kvaCategory} KVA Rent On ${format(bookingDetails.bookingDate, 'dd-MM-yyyy')}\n` +
+                    `Genset Running ${totalHours} Hours 00 Minutes\n` +
+                    `(Total ${totalHours} Hours 00 Minutes)`;
 
-    doc.save('booking-estimate.pdf');
+                const cost = `Rs. ${item.baseCost.toLocaleString()}\nRs. ${item.additionalCost.toLocaleString()}`;
+                
+                tableBody.push([
+                    { content: serialNumber++, styles: { halign: 'center' } },
+                    { content: description },
+                    { content: cost, styles: { halign: 'right' } },
+                    { content: `Rs. ${item.total.toLocaleString()}`, styles: { halign: 'right' } }
+                ]);
+            });
+        }
+        
+        // Addon Items
+        if (estimate.addonItems.length > 0) {
+             tableBody.push([
+                { content: 'Additional Items & Services', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } }
+            ]);
+            estimate.addonItems.forEach(item => {
+                 const description = `${item.name} (Qty: ${item.quantity})`;
+                 const cost = `Rs. ${item.price.toLocaleString()}`;
+                 tableBody.push([
+                    { content: serialNumber++, styles: { halign: 'center' } },
+                    { content: description },
+                    { content: cost, styles: { halign: 'right' } },
+                    { content: `Rs. ${item.total.toLocaleString()}`, styles: { halign: 'right' } }
+                ]);
+            });
+        }
+        
+        // Grand Total Row
+         tableBody.push([
+                { content: 'Grand Total', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: `Rs. ${estimate.grandTotal.toLocaleString()}`, styles: { halign: 'right', fontStyle: 'bold' } }
+        ]);
+
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY,
+            head: [['S.No', 'Description', 'Cost', 'Amount']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [220, 220, 220],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' }, // S.No
+                1: { cellWidth: 90 }, // Description
+                2: { cellWidth: 38, halign: 'right' }, // Cost
+                3: { cellWidth: 38, halign: 'right' }  // Amount
+            },
+            didParseCell: function(data) {
+                if(data.cell.section === 'head') {
+                    data.cell.styles.lineColor = [0,0,0];
+                    data.cell.styles.lineWidth = 0.2;
+                }
+            }
+        });
+
+        doc.save('quotation.pdf');
   };
 
   return (
@@ -460,3 +557,5 @@ export default function BookRentalPage() {
     </div>
   );
 }
+
+    
