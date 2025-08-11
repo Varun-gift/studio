@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -18,7 +19,6 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { GENERATORS_DATA } from '@/lib/generators';
 import { ADDONS_DATA } from '@/lib/addons';
-import { AmgLogo } from '@/components/amg-logo';
 
 
 import { Button } from '@/components/ui/button';
@@ -185,17 +185,23 @@ export default function BookRentalPage() {
 
     try {
       const bookingData = {
-        ...data,
-        bookingDate: data.bookingDate,
         userId: user.uid,
         userEmail: user.email,
         userName: data.name,
         phone: data.phone,
         companyName: data.company,
+        location: data.location,
+        bookingDate: data.bookingDate,
+        additionalNotes: data.additionalNotes,
         status: 'Pending' as const,
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
-        generators: data.generators.map(g => ({...g})),
+        generators: data.generators.map((g, index) => ({
+            id: `gen_${index + 1}`,
+            kvaCategory: g.kvaCategory,
+            additionalHours: g.additionalHours,
+            status: 'Pending' as const,
+        })),
         addons: data.addons?.filter(a => a.quantity > 0) || [],
       };
 
@@ -217,12 +223,10 @@ export default function BookRentalPage() {
         // Constants for layout
         const pageMargin = 14;
         const primaryColor = '#FF4F00';
-        const darkBlueColor = '#00008B';
         const blackColor = '#000000';
         const grayColor = '#808080';
 
         // --- HEADER ---
-        // Logo - Simplified SVG rendering
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(primaryColor);
         doc.text('AMG', pageMargin, 20);

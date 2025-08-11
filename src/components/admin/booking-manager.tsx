@@ -63,10 +63,18 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
     }
   };
   
-  const handleAssignDriver = (booking: Booking) => {
+  const handleAssignDriverClick = (e: React.MouseEvent, booking: Booking) => {
+    e.stopPropagation();
     setSelectedBookingForDriver(booking);
     setIsAssignDriverOpen(true);
   };
+  
+  const handleBookingUpdate = (updatedBooking: Booking) => {
+      // This function is a prop for AssignDriverDialog to update the state here
+      // but useBookings hook should handle the update automatically via onSnapshot.
+      // We can use it to close the dialog.
+      setIsAssignDriverOpen(false);
+  }
 
   const renderSkeleton = () => (
     Array.from({ length: 3 }).map((_, index) => (
@@ -116,27 +124,16 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                 </CardHeader>
                 <CardContent className="flex-1 space-y-4">
                     <div className='space-y-1'>
-                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" /> Generators</p>
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" /> Generators ({booking.generators.length})</p>
                       <div className="text-sm text-foreground pl-2">
-                        {booking.generators.map((g, i) => <div key={i}>{`1 x ${g.kvaCategory} KVA`}</div>)}
+                        {booking.generators.map((g, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                                <span>{g.kvaCategory} KVA</span>
+                                <Badge variant={getStatusVariant(g.status, true) as any} className="text-xs">{g.status}</Badge>
+                            </div>
+                        ))}
                       </div>
                     </div>
-                     {booking.driverInfo && (
-                        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                            <div className="flex items-center gap-2">
-                                <Truck className="h-3 w-3"/>
-                                <span>{booking.driverInfo.name}</span>
-                            </div>
-                        </div>
-                     )}
-                     {booking.vehicleInfo && (
-                        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                            <div className="flex items-center gap-2">
-                                <Car className="h-3 w-3"/>
-                                <span>{booking.vehicleInfo.vehicleName}</span>
-                            </div>
-                        </div>
-                     )}
                 </CardContent>
                 <CardContent className="flex justify-between items-center">
                     <div className="font-bold">
@@ -156,12 +153,15 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleAssignDriver(booking)}>
-                                <Truck className='mr-2'/> Assign Driver/Vehicle
+                            <DropdownMenuItem onClick={(e) => handleAssignDriverClick(e, booking)}>
+                                <Truck className='mr-2'/> Assign Jobs
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Approved')}>
-                                <Check className='mr-2'/> Approve
+                                <Check className='mr-2'/> Approve Booking
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Completed')}>
+                                <Check className='mr-2'/> Mark as Complete
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(booking.id, 'Rejected')}>
                                 <UserX className='mr-2' /> Reject
@@ -177,13 +177,14 @@ export function BookingManager({ statusFilter, onSelectBooking }: BookingManager
         )}
       </div>
       
-      {selectedBookingForDriver && (
+      
         <AssignDriverDialog
           booking={selectedBookingForDriver}
           isOpen={isAssignDriverOpen}
           onOpenChange={setIsAssignDriverOpen}
+          onBookingUpdate={handleBookingUpdate}
         />
-      )}
+      
     </>
   );
 }

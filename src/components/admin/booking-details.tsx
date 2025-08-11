@@ -5,9 +5,9 @@
 import * as React from 'react';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Wrench, FileText } from 'lucide-react';
-import type { Booking, Timer } from '@/lib/types';
+import type { Booking, Timer, BookedGenerator } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -24,27 +24,27 @@ interface BookingDetailsProps {
 export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
-    const [liveHours, setLiveHours] = React.useState<string | null>(null);
+    const [liveHours, setLiveHours] = React.useState<{[key: string]: string | null}>({});
 
-    const fetchLiveEngineHours = async () => {
-        if (!booking.vehicleInfo?.imeiNumber) {
-            toast({ title: "Error", description: "No IMEI number assigned to this booking.", variant: "destructive"});
+    const fetchLiveEngineHours = async (generator: BookedGenerator) => {
+        if (!generator.vehicleInfo?.imeiNumber) {
+            toast({ title: "Error", description: "No IMEI number assigned to this generator.", variant: "destructive"});
             return;
         }
-        if (!booking.timers || booking.timers.length === 0) {
-            toast({ title: "Error", description: "Duty has not started yet.", variant: "destructive"});
+        if (!generator.timers || generator.timers.length === 0) {
+            toast({ title: "Error", description: "Duty has not started yet for this generator.", variant: "destructive"});
             return;
         }
 
         setIsLoading(true);
-        setLiveHours(null);
+        setLiveHours(prev => ({...prev, [generator.id]: null}));
         try {
             const res = await fetch('/api/fleetop/hours', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    imei: booking.vehicleInfo.imeiNumber,
-                    start: booking.timers[0].startTime.toISOString(),
+                    imei: generator.vehicleInfo.imeiNumber,
+                    start: generator.timers[0].startTime.toISOString(),
                     end: new Date().toISOString()
                 })
             });
@@ -57,7 +57,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             }
             const data = await res.json();
             const hours = data.engineOnHours || "N/A";
-            setLiveHours(hours);
+            setLiveHours(prev => ({...prev, [generator.id]: hours}));
             toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${hours}`});
         } catch(e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive"});
@@ -68,13 +68,14 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
     
     const calculateTotalRuntime = (timers: Timer[] = []): string => {
         const totalMilliseconds = timers.reduce((acc, timer) => {
-            if (timer.startTime && timer.endTime) {
-                return acc + (timer.endTime.getTime() - timer.startTime.getTime());
+            const endTime = timer.endTime ? timer.endTime : new Date(); // Use current time if not ended
+            if (timer.startTime) {
+                return acc + (endTime.getTime() - timer.startTime.getTime());
             }
             return acc;
         }, 0);
         
-        if(totalMilliseconds === 0) return '0 minutes';
+        if(totalMilliseconds === 0) return '0h 0m';
 
         const totalSeconds = Math.floor(totalMilliseconds / 1000);
         const hours = Math.floor(totalSeconds / 3600);
@@ -115,9 +116,6 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 <CardTitle>Booking Information</CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
-                    {booking.status === 'Active' && booking.isPaused && (
-                       <Badge variant="secondary">Paused</Badge>
-                    )}
                     <span className="text-sm text-muted-foreground">
                         Booked on {booking.createdAt ? format(booking.createdAt as Date, 'PPP') : 'N/A'}
                     </span>
@@ -129,18 +127,6 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                     <DetailItem icon={MapPin} label="Location" value={booking.location} />
                     <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
                      {booking.additionalNotes && <DetailItem icon={FileText} label="Additional Notes" value={booking.additionalNotes} />}
-                </div>
-                <Separator/>
-                <div className="space-y-4">
-                    <h4 className="font-semibold text-foreground flex items-center gap-2"><Package className="h-5 w-5"/> Generators Requested</h4>
-                    <div className="space-y-2">
-                    {booking.generators.map((genGroup, index) => (
-                        <div key={index} className="flex justify-between items-start text-sm p-3 rounded-md bg-muted/50">
-                           <p className="font-semibold">1 x {genGroup.kvaCategory} KVA</p>
-                           <p className="text-xs text-muted-foreground">Addtl. Hours: {genGroup.additionalHours || 0}</p>
-                        </div>
-                    ))}
-                    </div>
                 </div>
                  {booking.addons && booking.addons.length > 0 && (
                      <>
@@ -173,29 +159,52 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
           </CardContent>
         </Card>
         
-        <Card>
-            <CardHeader> <CardTitle>Driver & Vehicle</CardTitle> </CardHeader>
-            <CardContent className="space-y-4">
-                {booking.driverInfo ? ( <> <DetailItem icon={Truck} label="Driver Name" value={booking.driverInfo.name} /> <Separator /> <DetailItem icon={Phone} label="Driver Contact" value={booking.driverInfo.contact} /> </> ) : ( <p className="text-sm text-muted-foreground text-center py-4">No driver assigned.</p> )}
-                {booking.vehicleInfo ? ( <> <Separator /> <DetailItem icon={Truck} label="Vehicle" value={`${booking.vehicleInfo.vehicleName} (${booking.vehicleInfo.plateNumber})`} /> </> ) : ( <p className="text-sm text-muted-foreground text-center py-4">No vehicle assigned.</p> )}
-            </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Duty & Engine Hours</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(booking.timers)} />
-                <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={booking.runtimeHoursFleetop} />
-                 {liveHours && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} /> )}
-            </CardContent>
-            {['Active', 'Completed'].includes(booking.status) && (
-                <CardFooter>
-                    <Button onClick={fetchLiveEngineHours} disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Fetch Live Engine Hours
-                    </Button>
-                </CardFooter>
-            )}
-        </Card>
+        <div className="lg:col-span-3">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Generator Jobs</CardTitle>
+                    <CardDescription>Status and details for each assigned generator.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {booking.generators.map(gen => (
+                        <Card key={gen.id} className="p-4">
+                           <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-bold text-lg">{gen.kvaCategory} KVA</p>
+                                    <p className="text-xs text-muted-foreground">ID: {gen.id}</p>
+                                </div>
+                                <Badge variant={getStatusVariant(gen.status, true) as any}>{gen.status}</Badge>
+                           </div>
+                           <Separator className="my-4" />
+                           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                {gen.driverInfo && gen.vehicleInfo ? (
+                                    <>
+                                        <DetailItem icon={User} label="Driver" value={gen.driverInfo.name}/>
+                                        <DetailItem icon={Truck} label="Vehicle" value={`${gen.vehicleInfo.vehicleName} (${gen.vehicleInfo.plateNumber})`} />
+                                        <DetailItem icon={Cpu} label="IMEI" value={gen.vehicleInfo.imeiNumber} />
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Unassigned</p>
+                                )}
+                           </div>
+                           <Separator className="my-4" />
+                           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen.timers)} />
+                               <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={gen.runtimeHoursFleetop} />
+                                {liveHours[gen.id] && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours[gen.id]} /> )}
+                           </div>
+                           {['Active', 'Completed', 'Paused'].includes(gen.status) && (
+                                <div className="mt-4">
+                                    <Button onClick={() => fetchLiveEngineHours(gen)} disabled={isLoading} size="sm">
+                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Fetch Live Hours
+                                    </Button>
+                                </div>
+                            )}
+                        </Card>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   );

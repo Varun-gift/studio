@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Booking } from '@/lib/types';
+import type { Booking, BookedGenerator } from '@/lib/types';
 
 interface UseBookingsProps {
   status?: Booking['status'] | null;
@@ -26,13 +27,23 @@ export function useBookings({ status }: UseBookingsProps = {}) {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const bookingsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
+
+        // Convert timestamps within the nested generators array
+        const generators: BookedGenerator[] = (data.generators || []).map((gen: any) => ({
+          ...gen,
+          timers: (gen.timers || []).map((timer: any) => ({
+            ...timer,
+            startTime: timer.startTime ? (timer.startTime as any).toDate() : undefined,
+            endTime: timer.endTime ? (timer.endTime as any).toDate() : undefined,
+          }))
+        }));
+
         return {
           id: doc.id,
           ...data,
           bookingDate: (data.bookingDate as any).toDate(),
           createdAt: (data.createdAt as any).toDate(),
-          dutyStartTime: data.dutyStartTime ? (data.dutyStartTime as any).toDate() : undefined,
-          dutyEndTime: data.dutyEndTime ? (data.dutyEndTime as any).toDate() : undefined,
+          generators: generators,
         } as Booking;
       });
       setBookings(bookingsData);

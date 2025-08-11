@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Booking, Timer } from '@/lib/types';
+import type { Booking, BookedGenerator } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from './ui/skeleton';
 import { format } from 'date-fns';
@@ -37,25 +37,22 @@ export function RentalHistory() {
         const bookingsDataPromises = snapshot.docs.map(async (doc) => {
             const data = doc.data();
 
-            // Fetch timers sub-collection
-            const timersCollectionRef = collection(db, 'bookings', doc.id, 'timers');
-            const timersSnapshot = await getDocs(query(timersCollectionRef, orderBy('startTime', 'asc')));
-            const timers: Timer[] = timersSnapshot.docs.map(timerDoc => {
-                const timerData = timerDoc.data();
-                return {
-                    id: timerDoc.id,
-                    ...timerData,
-                    startTime: (timerData.startTime as any).toDate(),
-                    endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
-                } as Timer;
-            });
+            // The 'timers' are now inside each generator object, so we need to process them there.
+            const generators: BookedGenerator[] = (data.generators || []).map((gen: any) => ({
+                ...gen,
+                timers: (gen.timers || []).map((timer: any) => ({
+                    ...timer,
+                    startTime: timer.startTime ? (timer.startTime as any).toDate() : undefined,
+                    endTime: timer.endTime ? (timer.endTime as any).toDate() : undefined,
+                }))
+            }));
 
             return {
                 id: doc.id,
                 ...data,
                 bookingDate: (data.bookingDate as any).toDate(),
                 createdAt: (data.createdAt as any).toDate(),
-                timers: timers,
+                generators,
             } as Booking;
         });
         

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, onSnapshot, query, where, serverTimestamp, getDoc, collection, addDoc, getDocs, orderBy } from 'firebase/firestore';
-import type { Booking, Timer } from '@/lib/types';
+import { doc, updateDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs, orderBy, query, where, writeBatch } from 'firebase/firestore';
+import type { Booking, Timer, BookedGenerator } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
@@ -17,11 +18,16 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface AssignedGeneratorJob extends BookedGenerator {
+    bookingId: string;
+    booking: Booking;
+}
+
 export default function DriverDashboard() {
   const { user, loading, name, role } = useAuth();
   const router = useRouter();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [jobs, setJobs] = useState<AssignedGeneratorJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const [isUpdatingDuty, setIsUpdatingDuty] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -37,72 +43,68 @@ export default function DriverDashboard() {
 
   useEffect(() => {
     if (user?.uid) {
-      setBookingsLoading(true);
+      setJobsLoading(true);
       const bookingsQuery = query(
         collection(db, 'bookings'),
-        where('driverInfo.driverId', '==', user.uid)
+        where('status', 'in', ['Approved', 'Active'])
       );
 
       const unsubscribe = onSnapshot(bookingsQuery, async (snapshot) => {
         try {
-          const bookingsPromises = snapshot.docs.map(async (bookingDoc) => {
-            const bookingData = bookingDoc.data();
-            
-            const timersCollectionRef = collection(db, 'bookings', bookingDoc.id, 'timers');
-            const timersSnapshot = await getDocs(query(timersCollectionRef, orderBy('startTime', 'asc')));
-            const timers = timersSnapshot.docs.map(timerDoc => {
-                const timerData = timerDoc.data();
-                return {
-                    id: timerDoc.id,
-                    ...timerData,
-                    startTime: (timerData.startTime as any)?.toDate(),
-                    endTime: timerData.endTime ? (timerData.endTime as any).toDate() : undefined,
-                } as Timer;
-            });
-            
-            return {
-              id: bookingDoc.id,
-              ...bookingData,
-              bookingDate: (bookingData.bookingDate as any).toDate(),
-              createdAt: (bookingData.createdAt as any).toDate(),
-              timers: timers,
-              isPaused: bookingData.isPaused ?? false,
-            } as Booking;
-          });
+          const assignedJobs: AssignedGeneratorJob[] = [];
 
-          const driverBookings = await Promise.all(bookingsPromises);
+          for (const bookingDoc of snapshot.docs) {
+            const bookingData = bookingDoc.data() as Booking;
+
+            const assignedGenerators = bookingData.generators?.filter(
+                (g) => g.driverInfo?.driverId === user.uid
+            ) || [];
+
+            if (assignedGenerators.length > 0) {
+                const booking = {
+                    id: bookingDoc.id,
+                    ...bookingData,
+                    bookingDate: (bookingData.bookingDate as any).toDate(),
+                    createdAt: (bookingData.createdAt as any).toDate(),
+                } as Booking;
+
+                for (const generator of assignedGenerators) {
+                     assignedJobs.push({
+                        ...generator,
+                        bookingId: bookingDoc.id,
+                        booking: booking
+                     });
+                }
+            }
+          }
           
-          const sortedBookings = driverBookings.sort((a, b) => {
-            const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : (a.createdAt as any).seconds * 1000;
-            const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : (b.createdAt as any).seconds * 1000;
-            return dateB - dateA;
-          });
+          assignedJobs.sort((a, b) => b.booking.createdAt.getTime() - a.booking.createdAt.getTime());
+          setJobs(assignedJobs);
 
-          setBookings(sortedBookings);
         } catch (error) {
           console.error("Error processing bookings snapshot:", error);
-          toast({ title: "Error", description: "Could not process booking updates.", variant: "destructive"});
+          toast({ title: "Error", description: "Could not process job updates.", variant: "destructive"});
         } finally {
-          setBookingsLoading(false);
+          setJobsLoading(false);
         }
       }, (error) => {
-        console.error("Error fetching driver bookings:", error);
-        toast({ title: "Error", description: "Could not fetch bookings. Please try again later.", variant: "destructive"});
-        setBookingsLoading(false);
+        console.error("Error fetching driver jobs:", error);
+        toast({ title: "Error", description: "Could not fetch jobs. Please try again later.", variant: "destructive"});
+        setJobsLoading(false);
       });
 
-      return () => unsubscribe(); // Cleanup listener on component unmount
+      return () => unsubscribe();
     }
   }, [user?.uid, toast]);
   
- const fetchEngineHours = async (booking: Booking): Promise<string | null> => {
-    const imeiNumber = booking.vehicleInfo?.imeiNumber;
+ const fetchEngineHours = async (job: AssignedGeneratorJob): Promise<string | null> => {
+    const imeiNumber = job.vehicleInfo?.imeiNumber;
     if (!imeiNumber) {
         toast({ title: "IMEI not found", description: "Vehicle has no IMEI number.", variant: "destructive" });
         return null;
     }
     
-    const dutyStartTime = booking.timers?.[0]?.startTime;
+    const dutyStartTime = job.timers?.[0]?.startTime;
     if (!dutyStartTime) {
        toast({ title: "Duty not started", description: "Cannot fetch hours before duty starts.", variant: "destructive" });
        return null;
@@ -135,16 +137,52 @@ export default function DriverDashboard() {
         return null;
     }
  };
-  
- const handleStartDuty = async (bookingId: string) => {
+ 
+  const updateGeneratorInBooking = async (bookingId: string, generatorId: string, updates: Partial<BookedGenerator>) => {
     const bookingRef = doc(db, 'bookings', bookingId);
-    setIsUpdatingDuty(bookingId);
+    const bookingSnap = await getDoc(bookingRef);
+    if (!bookingSnap.exists()) throw new Error("Booking not found");
+
+    const bookingData = bookingSnap.data() as Booking;
+    const updatedGenerators = bookingData.generators.map(g => {
+        if (g.id === generatorId) {
+            return { ...g, ...updates };
+        }
+        return g;
+    });
+
+    // Also update overall booking status to Active if any generator becomes active
+    const isAnyGeneratorActive = updatedGenerators.some(g => g.status === 'Active');
+    const newBookingStatus = isAnyGeneratorActive ? 'Active' : bookingData.status;
+
+    await updateDoc(bookingRef, { 
+        generators: updatedGenerators,
+        status: newBookingStatus,
+     });
+  };
+
+ const handleStartDuty = async (job: AssignedGeneratorJob) => {
+    setIsUpdatingDuty(job.id);
     try {
-        const timersRef = collection(db, 'bookings', bookingId, 'timers');
-        await addDoc(timersRef, { startTime: serverTimestamp() });
-        await updateDoc(bookingRef, { status: 'Active', isPaused: false });
+        const newTimer = { startTime: new Date() }; // Use client-side date for optimistic update
+        const updates: Partial<BookedGenerator> = { 
+            status: 'Active',
+            timers: [...(job.timers || []), newTimer]
+        };
         
-        toast({ title: "Duty Started", description: "Booking is now active and generator is running." });
+        const bookingRef = doc(db, 'bookings', job.bookingId);
+        const bookingSnap = await getDoc(bookingRef);
+        const bookingData = bookingSnap.data() as Booking;
+        const updatedGenerators = bookingData.generators.map(g => 
+            g.id === job.id ? { ...g, ...updates, timers: [...(g.timers || []), { startTime: serverTimestamp() }] } : g
+        );
+
+        await updateDoc(bookingRef, { 
+            generators: updatedGenerators,
+            status: 'Active', // Set overall booking to active
+        });
+        
+        toast({ title: "Duty Started", description: "Generator is now active." });
     } catch(error) {
         console.error("Error starting duty: ", error);
         toast({ title: "Error", description: "Could not start duty.", variant: "destructive"});
@@ -153,25 +191,30 @@ export default function DriverDashboard() {
     }
   }
 
-  const handlePauseGenerator = async (booking: Booking) => {
-      const activeTimer = booking.timers?.find(t => !t.endTime);
+  const handlePauseGenerator = async (job: AssignedGeneratorJob) => {
+      const activeTimer = job.timers?.find(t => !t.endTime);
       if (!activeTimer) {
           toast({ title: "Error", description: "No active timer to pause.", variant: "destructive" });
           return;
       }
       
-      setIsUpdatingDuty(booking.id);
-      const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
-      const bookingRef = doc(db, 'bookings', booking.id);
+      setIsUpdatingDuty(job.id);
       try {
-          await updateDoc(timerRef, { endTime: serverTimestamp() });
-          await updateDoc(bookingRef, { isPaused: true });
-          
-          setBookings(currentBookings => 
-            currentBookings.map(b => b.id === booking.id ? {...b, isPaused: true} : b)
-          );
+        const bookingRef = doc(db, 'bookings', job.bookingId);
+        const bookingSnap = await getDoc(bookingRef);
+        const bookingData = bookingSnap.data() as Booking;
 
-          toast({ title: "Generator Paused", description: "Generator timer has been paused." });
+        const updatedGenerators = bookingData.generators.map(g => {
+            if (g.id === job.id) {
+                const updatedTimers = g.timers?.map(t => t.startTime === activeTimer.startTime ? { ...t, endTime: serverTimestamp() } : t) || [];
+                return { ...g, status: 'Paused' as const, timers: updatedTimers };
+            }
+            return g;
+        });
+
+        await updateDoc(bookingRef, { generators: updatedGenerators });
+        
+        toast({ title: "Generator Paused", description: "Generator timer has been paused." });
       } catch (error) {
           console.error("Error pausing generator: ", error);
           toast({ title: "Error", description: "Could not pause generator.", variant: "destructive" });
@@ -180,19 +223,23 @@ export default function DriverDashboard() {
       }
   };
 
-  const handleResumeGenerator = async (bookingId: string) => {
-      setIsUpdatingDuty(bookingId);
-      const timersRef = collection(db, 'bookings', bookingId, 'timers');
-      const bookingRef = doc(db, 'bookings', bookingId);
+  const handleResumeGenerator = async (job: AssignedGeneratorJob) => {
+      setIsUpdatingDuty(job.id);
       try {
-          await addDoc(timersRef, { startTime: serverTimestamp() });
-          await updateDoc(bookingRef, { isPaused: false });
+        const bookingRef = doc(db, 'bookings', job.bookingId);
+        const bookingSnap = await getDoc(bookingRef);
+        const bookingData = bookingSnap.data() as Booking;
 
-          setBookings(currentBookings => 
-            currentBookings.map(b => b.id === bookingId ? {...b, isPaused: false} : b)
-          );
+        const updatedGenerators = bookingData.generators.map(g => {
+            if (g.id === job.id) {
+                 return { ...g, status: 'Active' as const, timers: [...(g.timers || []), { startTime: serverTimestamp() }] };
+            }
+            return g;
+        });
 
-          toast({ title: "Generator Resumed", description: "Generator timer has resumed." });
+        await updateDoc(bookingRef, { generators: updatedGenerators });
+
+        toast({ title: "Generator Resumed", description: "Generator timer has resumed." });
       } catch (error) {
           console.error("Error resuming generator: ", error);
           toast({ title: "Error", description: "Could not resume generator.", variant: "destructive" });
@@ -201,17 +248,16 @@ export default function DriverDashboard() {
       }
   };
 
-  const handleEndDuty = async (booking: Booking) => {
-    setIsUpdatingDuty(booking.id);
-    const bookingRef = doc(db, 'bookings', booking.id);
+  const handleEndDuty = async (job: AssignedGeneratorJob) => {
+    setIsUpdatingDuty(job.id);
     
-    const activeTimer = booking.timers?.find(t => !t.endTime);
+    // Finalize any active timer
+    const activeTimer = job.timers?.find(t => !t.endTime);
     if(activeTimer) {
-         const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
-         await updateDoc(timerRef, { endTime: serverTimestamp() });
+        await handlePauseGenerator(job); // Pause first to record end time
     }
 
-    const endHours = await fetchEngineHours(booking);
+    const endHours = await fetchEngineHours(job);
     if (endHours === null) {
         toast({ title: "Failed", description: "Could not get final engine hours from API. Duty not ended.", variant: "destructive"});
         setIsUpdatingDuty(null);
@@ -219,10 +265,9 @@ export default function DriverDashboard() {
     }
     
     try {
-        await updateDoc(bookingRef, { 
+        await updateGeneratorInBooking(job.bookingId, job.id, {
             status: 'Completed',
-            runtimeHoursFleetop: endHours,
-            isPaused: false,
+            runtimeHoursFleetop: endHours
         });
         toast({ title: "Duty Ended", description: `Final engine hours recorded: ${endHours}` });
     } catch(error) {
@@ -232,19 +277,6 @@ export default function DriverDashboard() {
         setIsUpdatingDuty(null);
     }
   }
-
-  const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
-    const baseHours = 5;
-    const additional = gen.additionalHours || 0;
-    const totalHours = baseHours + additional;
-    return `1 x ${gen.kvaCategory} KVA (${totalHours} hrs)`;
-  }
-
-  const isGeneratorRunning = (booking: Booking) => {
-      if(booking.status !== 'Active') return false;
-      return !booking.isPaused;
-  }
-
 
   if (loading || !user || (role && role !== 'driver')) {
     return (
@@ -271,91 +303,78 @@ export default function DriverDashboard() {
             </Button>
         </header>
         <main className="flex-1 p-4 md:p-6 space-y-6">
-            <h1 className="text-2xl font-bold">Your Assigned Bookings</h1>
-            {bookingsLoading ? (
+            <h1 className="text-2xl font-bold">Your Assigned Jobs</h1>
+            {jobsLoading ? (
                  <div className="flex justify-center mt-8">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin" />
                  </div>
-            ) : bookings.length === 0 ? (
+            ) : jobs.length === 0 ? (
                 <Card>
                     <CardContent className="pt-6">
-                        <p className="text-center text-muted-foreground">You have no bookings assigned to you yet.</p>
+                        <p className="text-center text-muted-foreground">You have no jobs assigned to you yet.</p>
                     </CardContent>
                 </Card>
             ) : (
                 <ScrollArea className="w-full">
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-4">
-                      {bookings.map(booking => {
-                          const isRunning = isGeneratorRunning(booking);
+                      {jobs.map(job => {
+                          const isRunning = job.status === 'Active';
                           return (
-                            <Card key={booking.id} className="min-w-[300px] flex flex-col">
+                            <Card key={`${job.bookingId}-${job.id}`} className="min-w-[300px] flex flex-col">
                               <CardHeader>
-                                  <CardTitle className="truncate">{booking.userName}</CardTitle>
-                                  <CardDescription>{format(booking.bookingDate, 'PPP')}</CardDescription>
+                                  <CardTitle className="truncate">{job.booking.userName}</CardTitle>
+                                  <CardDescription>{format(job.booking.bookingDate, 'PPP')}</CardDescription>
                               </CardHeader>
                               <CardContent className="space-y-4 flex-1">
                                   <div className="flex items-center justify-between">
-                                      <span className="text-muted-foreground">Status</span>
-                                      <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                                      <span className="text-muted-foreground">Generator Status</span>
+                                      <Badge variant={getStatusVariant(job.status, true) as any}>{job.status}</Badge>
                                   </div>
-                                   {booking.status === 'Active' && (
-                                     <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">Generator</span>
-                                        <Badge variant={isRunning ? 'success' : 'secondary'}>
-                                            {isRunning ? 'Running' : 'Paused'}
-                                        </Badge>
-                                    </div>
-                                   )}
                                   <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Generators</h4>
-                                    <ul className="list-disc list-inside text-sm text-muted-foreground">
-                                        {booking.generators.map((gen, idx) => (
-                                            <li key={idx}>{formatGeneratorDetails(gen)}</li>
-                                        ))}
-                                    </ul>
+                                    <h4 className="font-semibold text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Your Assigned Generator</h4>
+                                     <p className="text-sm text-muted-foreground">{job.kvaCategory} KVA</p>
                                   </div>
-                                  {booking.vehicleInfo && (
+                                  {job.vehicleInfo && (
                                      <div className="space-y-2">
                                         <h4 className="font-semibold text-sm flex items-center gap-2"><Car className="h-4 w-4" /> Vehicle</h4>
-                                         <p className="text-sm text-muted-foreground">{booking.vehicleInfo.vehicleName} ({booking.vehicleInfo.plateNumber})</p>
+                                         <p className="text-sm text-muted-foreground">{job.vehicleInfo.vehicleName} ({job.vehicleInfo.plateNumber})</p>
                                       </div>
                                   )}
                                   <div className="space-y-2">
                                       <h4 className="font-semibold">Customer Details</h4>
                                       <div className="flex items-center gap-2 text-sm">
                                           <UserIcon className="h-4 w-4 text-muted-foreground" />
-                                          <span className='truncate'>{booking.userName}</span>
+                                          <span className='truncate'>{job.booking.userName}</span>
                                       </div>
                                       <div className="flex items-center gap-2 text-sm">
                                           <Phone className="h-4 w-4 text-muted-foreground" />
-                                          <span className="truncate">{booking.userEmail}</span>
+                                          <span className="truncate">{job.booking.userEmail}</span>
                                       </div>
                                       <p className="text-sm text-muted-foreground pt-2">
-                                         <span className='font-semibold text-foreground'>Location:</span> <span className="line-clamp-2">{booking.location}</span>
+                                         <span className='font-semibold text-foreground'>Location:</span> <span className="line-clamp-2">{job.booking.location}</span>
                                       </p>
                                   </div>
                               </CardContent>
                               <CardFooter className="flex flex-col gap-2 items-stretch">
-                                  {booking.status === 'Approved' && (
-                                       <Button onClick={() => handleStartDuty(booking.id)} disabled={isUpdatingDuty === booking.id}>
-                                           {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4" />} Start Duty
+                                  {job.status === 'Assigned' && (
+                                       <Button onClick={() => handleStartDuty(job)} disabled={isUpdatingDuty === job.id}>
+                                           {isUpdatingDuty === job.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4" />} Start Duty
                                        </Button>
                                   )}
-                                  {booking.status === 'Active' && (
-                                      <div className="grid grid-cols-2 gap-2">
-                                         {isRunning ? (
-                                             <Button onClick={() => handlePauseGenerator(booking)} variant="secondary" disabled={isUpdatingDuty === booking.id}>
-                                                {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Pause className="mr-2 h-4 w-4"/>} Pause
-                                             </Button>
-                                         ) : (
-                                              <Button onClick={() => handleResumeGenerator(booking.id)} disabled={isUpdatingDuty === booking.id}>
-                                                {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2 h-4 w-4"/>} Resume
-                                              </Button>
-                                         )}
-                                          <Button onClick={() => handleEndDuty(booking)} variant="destructive" disabled={isUpdatingDuty === booking.id || isRunning}>
-                                              {isUpdatingDuty === booking.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
-                                          </Button>
-                                      </div>
+                                  {job.status === 'Active' && (
+                                      <Button onClick={() => handlePauseGenerator(job)} variant="secondary" disabled={isUpdatingDuty === job.id}>
+                                        {isUpdatingDuty === job.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Pause className="mr-2 h-4 w-4"/>} Pause
+                                      </Button>
+                                  )}
+                                  {job.status === 'Paused' && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Button onClick={() => handleResumeGenerator(job)} disabled={isUpdatingDuty === job.id}>
+                                        {isUpdatingDuty === job.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2 h-4 w-4"/>} Resume
+                                      </Button>
+                                      <Button onClick={() => handleEndDuty(job)} variant="destructive" disabled={isUpdatingDuty === job.id}>
+                                          {isUpdatingDuty === job.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PowerOff className="mr-2 h-4 w-4"/>} End Duty
+                                      </Button>
+                                    </div>
                                   )}
                               </CardFooter>
                             </Card>

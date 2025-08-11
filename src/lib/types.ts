@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   name: string;
@@ -37,9 +38,26 @@ export interface Generator {
   pricePerAdditionalHour: number;
 }
 
-export interface GeneratorGroup {
+export interface BookedGenerator {
+  id: string; // Unique ID for this instance within the booking
   kvaCategory: string;
   additionalHours?: number;
+  // Individual assignment and status
+  driverInfo?: {
+      driverId: string;
+      name: string;
+      contact: string;
+  };
+  vehicleInfo?: {
+      vehicleId: string;
+      vehicleName: string;
+      plateNumber: string;
+      imeiNumber: string;
+      vehicleModel: string;
+  };
+  status: 'Pending' | 'Assigned' | 'Active' | 'Paused' | 'Completed';
+  timers?: Timer[];
+  runtimeHoursFleetop?: string;
 }
 
 export interface Addon {
@@ -48,6 +66,7 @@ export interface Addon {
     price: number;
     unit: string;
     imageUrl: string;
+    'data-ai-hint'?: string;
 }
 
 export interface SelectedAddon {
@@ -68,27 +87,12 @@ export interface Booking {
   userName: string;
   companyName?: string;
   phone?: string;
-  generators: GeneratorGroup[];
+  generators: BookedGenerator[]; // Changed from GeneratorGroup[]
   addons?: SelectedAddon[];
   location: string;
   bookingDate: Date;
   additionalNotes?: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Active' | 'Completed' | 'Cancelled';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Completed' | 'Cancelled' | 'Active'; // Overall booking status
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
-  driverInfo?: {
-      driverId: string;
-      name: string;
-      contact: string;
-  };
-  vehicleInfo?: {
-      vehicleId: string;
-      vehicleName: string;
-      plateNumber: string;
-      imeiNumber: string;
-      vehicleModel: string;
-  };
-  timers?: Timer[];
-  runtimeHoursFleetop?: string;
-  isPaused?: boolean;
 }
