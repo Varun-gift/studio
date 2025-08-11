@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -23,7 +22,7 @@ interface BookingDetailsProps {
 
 export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [loadingStates, setLoadingStates] = React.useState<{[key: string]: boolean}>({});
     const [liveHours, setLiveHours] = React.useState<{[key: string]: string | null}>({});
 
     const fetchLiveEngineHours = async (generator: BookedGenerator) => {
@@ -36,8 +35,9 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             return;
         }
 
-        setIsLoading(true);
+        setLoadingStates(prev => ({...prev, [generator.id]: true}));
         setLiveHours(prev => ({...prev, [generator.id]: null}));
+
         try {
             const res = await fetch('/api/fleetop/hours', {
                 method: 'POST',
@@ -62,7 +62,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         } catch(e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive"});
         } finally {
-            setIsLoading(false);
+            setLoadingStates(prev => ({...prev, [generator.id]: false}));
         }
     };
     
@@ -195,8 +195,9 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                            </div>
                            {['Active', 'Completed', 'Paused'].includes(gen.status) && (
                                 <div className="mt-4">
-                                    <Button onClick={() => fetchLiveEngineHours(gen)} disabled={isLoading} size="sm">
-                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Fetch Live Hours
+                                    <Button onClick={() => fetchLiveEngineHours(gen)} disabled={loadingStates[gen.id]} size="sm">
+                                        {loadingStates[gen.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Fetch Live Hours
                                     </Button>
                                 </div>
                             )}
