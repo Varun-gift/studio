@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power, Pause } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Wrench, Pause } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { ADDONS_DATA } from '@/lib/addons';
 
 
 interface BookingDetailsViewProps {
@@ -45,6 +46,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         location,
         estimatedCost,
         generators,
+        addons,
         driverInfo,
         vehicleInfo,
         additionalNotes,
@@ -99,6 +101,10 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
             setIsLoadingData(false);
         }
     };
+    
+    const getAddonName = (addonId: string) => {
+      return ADDONS_DATA.find(a => a.id === addonId)?.name || 'Unknown Item';
+    }
 
 
   return (
@@ -142,16 +148,31 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
 
         <Card>
             <CardHeader>
-                <CardTitle>Generators</CardTitle>
+                <CardTitle>Items Requested</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-                {generators.map((gen, index) => (
-                    <DetailItem key={index} icon={Package} label={`1 x ${gen.kvaCategory} KVA`}>
-                        <p className="text-xs text-muted-foreground">
-                             {formatGeneratorDetails(gen)}
-                        </p>
-                    </DetailItem>
-                ))}
+            <CardContent className="space-y-4">
+                <DetailItem icon={Package} label="Generators">
+                     <div className="text-sm text-muted-foreground space-y-2 pt-2">
+                         {generators.map((gen, index) => (
+                            <div key={index}>
+                                <p>1 x {gen.kvaCategory} KVA</p>
+                                <p className="text-xs">{formatGeneratorDetails(gen)}</p>
+                            </div>
+                        ))}
+                    </div>
+                </DetailItem>
+                {addons && addons.length > 0 && (
+                    <>
+                        <Separator/>
+                        <DetailItem icon={Wrench} label="Add-ons">
+                            <div className="text-sm text-muted-foreground space-y-2 pt-2">
+                                {addons.map((addon, index) => (
+                                    <p key={index}>{addon.quantity} x {getAddonName(addon.addonId)}</p>
+                                ))}
+                            </div>
+                        </DetailItem>
+                    </>
+                )}
             </CardContent>
         </Card>
         

@@ -3,17 +3,18 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistance } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Power, Pause } from 'lucide-react';
+import { format } from 'date-fns';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Wrench, FileText } from 'lucide-react';
 import type { Booking, Timer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { ADDONS_DATA } from '@/lib/addons';
 
 interface BookingDetailsProps {
   booking: Booking;
@@ -43,7 +44,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     imei: booking.vehicleInfo.imeiNumber,
-                    start: booking.timers[0].startTime.toISOString(), // Use first timer's start time
+                    start: booking.timers[0].startTime.toISOString(),
                     end: new Date().toISOString()
                 })
             });
@@ -91,6 +92,10 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         </div>
     </div>
   );
+  
+  const getAddonName = (addonId: string) => {
+      return ADDONS_DATA.find(a => a.id === addonId)?.name || 'Unknown Item';
+  }
 
   return (
     <div className="space-y-6">
@@ -108,10 +113,10 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         <Card className="lg:col-span-2">
             <CardHeader>
                 <CardTitle>Booking Information</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
                     {booking.status === 'Active' && booking.isPaused && (
-                       <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
+                       <Badge variant="secondary">Paused</Badge>
                     )}
                     <span className="text-sm text-muted-foreground">
                         Booked on {booking.createdAt ? format(booking.createdAt as Date, 'PPP') : 'N/A'}
@@ -123,37 +128,44 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                     <DetailItem icon={Calendar} label="Booking Date" value={format(booking.bookingDate, 'PPP')} />
                     <DetailItem icon={MapPin} label="Location" value={booking.location} />
                     <DetailItem icon={BadgeIndianRupee} label="Estimated Cost" value={`₹${booking.estimatedCost.toLocaleString()}`} />
+                     {booking.additionalNotes && <DetailItem icon={FileText} label="Additional Notes" value={booking.additionalNotes} />}
                 </div>
+                <Separator/>
                 <div className="space-y-4">
-                    <h4 className="font-semibold text-foreground">Generators Requested</h4>
+                    <h4 className="font-semibold text-foreground flex items-center gap-2"><Package className="h-5 w-5"/> Generators Requested</h4>
                     <div className="space-y-2">
                     {booking.generators.map((genGroup, index) => (
                         <div key={index} className="flex justify-between items-start text-sm p-3 rounded-md bg-muted/50">
-                            <div className="flex items-start gap-3">
-                                <Package className="h-5 w-5 mt-1" />
-                                <div>
-                                    <p className="font-semibold">1 x {genGroup.kvaCategory} KVA</p>
-                                    <p className="text-xs text-muted-foreground">
-                                       Additional Hours: {genGroup.additionalHours || 0}
-                                    </p>
-                                </div>
-                            </div>
+                           <p className="font-semibold">1 x {genGroup.kvaCategory} KVA</p>
+                           <p className="text-xs text-muted-foreground">Addtl. Hours: {genGroup.additionalHours || 0}</p>
                         </div>
                     ))}
                     </div>
                 </div>
+                 {booking.addons && booking.addons.length > 0 && (
+                     <>
+                        <Separator/>
+                        <div className="space-y-4">
+                            <h4 className="font-semibold text-foreground flex items-center gap-2"><Wrench className="h-5 w-5"/> Add-ons Requested</h4>
+                            <div className="space-y-2">
+                                {booking.addons.map((addon, index) => (
+                                    <div key={index} className="flex justify-between items-center text-sm p-3 rounded-md bg-muted/50">
+                                        <p>{getAddonName(addon.addonId)}</p>
+                                        <p className="text-muted-foreground">Qty: {addon.quantity}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                 )}
             </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Customer</CardTitle>
-          </CardHeader>
+          <CardHeader> <CardTitle>Customer</CardTitle> </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-                <Avatar>
-                    <AvatarFallback>{booking.userName?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
+                <Avatar> <AvatarFallback>{booking.userName?.charAt(0) || 'U'}</AvatarFallback> </Avatar>
                 <DetailItem icon={User} label="Name" value={booking.userName} />
             </div>
             <Separator />
@@ -162,27 +174,10 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         </Card>
         
         <Card>
-            <CardHeader>
-                <CardTitle>Driver & Vehicle</CardTitle>
-            </CardHeader>
+            <CardHeader> <CardTitle>Driver & Vehicle</CardTitle> </CardHeader>
             <CardContent className="space-y-4">
-                {booking.driverInfo ? (
-                    <>
-                        <DetailItem icon={Truck} label="Driver Name" value={booking.driverInfo.name} />
-                        <Separator />
-                        <DetailItem icon={Phone} label="Driver Contact" value={booking.driverInfo.contact} />
-                    </>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No driver assigned.</p>
-                )}
-                 {booking.vehicleInfo ? (
-                    <>
-                       <Separator />
-                       <DetailItem icon={Truck} label="Vehicle" value={`${booking.vehicleInfo.vehicleName} (${booking.vehicleInfo.plateNumber})`} />
-                    </>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No vehicle assigned.</p>
-                )}
+                {booking.driverInfo ? ( <> <DetailItem icon={Truck} label="Driver Name" value={booking.driverInfo.name} /> <Separator /> <DetailItem icon={Phone} label="Driver Contact" value={booking.driverInfo.contact} /> </> ) : ( <p className="text-sm text-muted-foreground text-center py-4">No driver assigned.</p> )}
+                {booking.vehicleInfo ? ( <> <Separator /> <DetailItem icon={Truck} label="Vehicle" value={`${booking.vehicleInfo.vehicleName} (${booking.vehicleInfo.plateNumber})`} /> </> ) : ( <p className="text-sm text-muted-foreground text-center py-4">No vehicle assigned.</p> )}
             </CardContent>
         </Card>
 
@@ -191,20 +186,16 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
             <CardContent className="space-y-4">
                 <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(booking.timers)} />
                 <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={booking.runtimeHoursFleetop} />
-                 {liveHours && (
-                     <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} />
-                 )}
+                 {liveHours && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours} /> )}
             </CardContent>
             {['Active', 'Completed'].includes(booking.status) && (
                 <CardFooter>
                     <Button onClick={fetchLiveEngineHours} disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Fetch Live Engine Hours
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Fetch Live Engine Hours
                     </Button>
                 </CardFooter>
             )}
         </Card>
-
       </div>
     </div>
   );

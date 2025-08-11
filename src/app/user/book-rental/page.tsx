@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { GENERATORS_DATA } from '@/lib/generators';
+import { ADDONS_DATA } from '@/lib/addons';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,11 +25,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash, Plus, Download, Send, Loader2 } from 'lucide-react';
+import { Trash, Plus, Download, Send, Loader2, Package, Wrench } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 const generatorGroupSchema = z.object({
   kvaCategory: z.string().min(1, 'Please select a KVA category.'),
   additionalHours: z.number().min(0, 'Additional hours cannot be negative.').optional().default(0),
+});
+
+const addonSchema = z.object({
+  addonId: z.string(),
+  quantity: z.number().min(1, "Quantity must be at least 1."),
 });
 
 const bookingFormSchema = z.object({
@@ -40,18 +49,27 @@ const bookingFormSchema = z.object({
   additionalNotes: z.string().optional(),
   bookingDate: z.date({ required_error: "Booking date is required." }),
   generators: z.array(generatorGroupSchema).min(1, "Please add at least one generator."),
+  addons: z.array(addonSchema).optional(),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 interface Estimate {
-  items: {
+  generatorItems: {
     kvaCategory: string;
     baseCost: number;
     additionalHours: number;
     additionalCost: number;
     total: number;
   }[];
+  addonItems: {
+      name: string;
+      quantity: number;
+      price: number;
+      total: number;
+  }[];
+  generatorsTotal: number;
+  addonsTotal: number;
   grandTotal: number;
 }
 
@@ -72,13 +90,36 @@ export default function BookRentalPage() {
       additionalNotes: '',
       bookingDate: new Date(),
       generators: [{ kvaCategory: '', additionalHours: 0 }],
+      addons: [],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: generatorFields, append: appendGenerator, remove: removeGenerator } = useFieldArray({
     control: form.control,
     name: "generators",
   });
+
+  const { fields: addonFields, append: appendAddon, remove: removeAddon, update: updateAddon } = useFieldArray({
+      control: form.control,
+      name: "addons",
+  });
+  
+  const watchedGenerators = useWatch({ control: form.control, name: 'generators' });
+  const watchedAddons = useWatch({ control: form.control, name: 'addons' });
+  
+  const handleAddonCheckedChange = (checked: boolean, addonId: string) => {
+    const existingIndex = addonFields.findIndex(field => field.addonId === addonId);
+    if (checked) {
+        if (existingIndex === -1) {
+            appendAddon({ addonId, quantity: 1 });
+        }
+    } else {
+        if (existingIndex !== -1) {
+            removeAddon(existingIndex);
+        }
+    }
+  };
+
 
   useEffect(() => {
     if (user) {
@@ -91,39 +132,44 @@ export default function BookRentalPage() {
       });
     }
   }, [user, name, email, phone, company, form]);
-  
-  const watchedGenerators = useWatch({
-    control: form.control,
-    name: 'generators',
-  });
 
   const estimate = React.useMemo<Estimate>(() => {
-    const items = watchedGenerators
+    const generatorItems = watchedGenerators
       .filter(gen => gen.kvaCategory)
       .map(gen => {
         const generatorData = GENERATORS_DATA.find(g => g.kva === gen.kvaCategory);
         if (!generatorData) return null;
 
         const additionalHours = gen.additionalHours || 0;
-
         const baseCost = generatorData.basePrice;
         const additionalCost = generatorData.pricePerAdditionalHour * additionalHours;
         const total = baseCost + additionalCost;
         
-        return {
-          kvaCategory: gen.kvaCategory,
-          baseCost,
-          additionalHours,
-          additionalCost,
-          total,
-        };
+        return { kvaCategory: gen.kvaCategory, baseCost, additionalHours, additionalCost, total };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const grandTotal = items.reduce((acc, item) => acc + item.total, 0);
+    const generatorsTotal = generatorItems.reduce((acc, item) => acc + item.total, 0);
+
+    const addonItems = (watchedAddons ?? [])
+        .map(item => {
+            const addonData = ADDONS_DATA.find(a => a.id === item.addonId);
+            if (!addonData) return null;
+            return {
+                name: addonData.name,
+                quantity: item.quantity,
+                price: addonData.price,
+                total: addonData.price * item.quantity,
+            };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
     
-    return { items, grandTotal };
-  }, [watchedGenerators]);
+    const addonsTotal = addonItems.reduce((acc, item) => acc + item.total, 0);
+
+    const grandTotal = generatorsTotal + addonsTotal;
+    
+    return { generatorItems, addonItems, generatorsTotal, addonsTotal, grandTotal };
+  }, [watchedGenerators, watchedAddons]);
 
 
   const submitBooking = async (data: BookingFormValues) => {
@@ -147,6 +193,7 @@ export default function BookRentalPage() {
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
         generators: data.generators.map(g => ({...g})),
+        addons: data.addons?.filter(a => a.quantity > 0) || [],
       };
 
       await addDoc(collection(db, 'bookings'), bookingData);
@@ -171,41 +218,36 @@ export default function BookRentalPage() {
     
     doc.setFontSize(14);
     doc.text('Customer Details', 14, 45);
-    doc.setFontSize(10);
     autoTable(doc, {
         startY: 50,
-        body: [
-            ['Name', bookingDetails.name],
-            ['Email', bookingDetails.email],
-            ['Phone', bookingDetails.phone],
-            ['Company', bookingDetails.company || 'N/A'],
-            ['Booking Date', format(bookingDetails.bookingDate, 'PPP')],
-            ['Location', bookingDetails.location],
-        ],
-        theme: 'grid',
-        styles: { fontSize: 10 },
+        body: [['Name', bookingDetails.name], ['Email', bookingDetails.email], ['Phone', bookingDetails.phone], ['Company', bookingDetails.company || 'N/A'], ['Booking Date', format(bookingDetails.bookingDate, 'PPP')], ['Location', bookingDetails.location]],
+        theme: 'grid', styles: { fontSize: 10 },
     });
     
-    const tableStartY = (doc as any).lastAutoTable.finalY + 15;
+    let tableStartY = (doc as any).lastAutoTable.finalY + 15;
     
     doc.setFontSize(14);
-    doc.text('Estimate Details', 14, tableStartY);
-    
-    const tableData = estimate.items.map(item => [
-        `1 x ${item.kvaCategory} KVA`,
-        `₹${item.baseCost.toLocaleString()}`,
-        `${item.additionalHours} hrs`,
-        `₹${item.additionalCost.toLocaleString()}`,
-        `₹${item.total.toLocaleString()}`,
-    ]);
-
+    doc.text('Generators Estimate', 14, tableStartY);
     autoTable(doc, {
         startY: tableStartY + 5,
         head: [['Generator', 'Base Cost (5 hrs)', 'Additional Hours', 'Additional Cost', 'Subtotal']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [255, 79, 0] },
+        body: estimate.generatorItems.map(item => [`1 x ${item.kvaCategory} KVA`, `₹${item.baseCost.toLocaleString()}`, `${item.additionalHours} hrs`, `₹${item.additionalCost.toLocaleString()}`, `₹${item.total.toLocaleString()}`]),
+        theme: 'striped', headStyles: { fillColor: [255, 79, 0] },
     });
+
+    tableStartY = (doc as any).lastAutoTable.finalY;
+
+    if (estimate.addonItems.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Add-ons Estimate', 14, tableStartY + 15);
+        autoTable(doc, {
+            startY: tableStartY + 20,
+            head: [['Item', 'Quantity', 'Unit Price', 'Total']],
+            body: estimate.addonItems.map(item => [item.name, item.quantity, `₹${item.price.toLocaleString()}`, `₹${item.total.toLocaleString()}`]),
+            theme: 'striped', headStyles: { fillColor: [255, 79, 0] },
+        });
+        tableStartY = (doc as any).lastAutoTable.finalY;
+    }
 
     const finalY = (doc as any).lastAutoTable.finalY;
     doc.setFontSize(14);
@@ -221,16 +263,13 @@ export default function BookRentalPage() {
       <Card>
         <CardHeader>
           <CardTitle>Book a Generator Rental</CardTitle>
-          <CardDescription>Fill in the details below to request your generators.</CardDescription>
+          <CardDescription>Fill in the details below to request your generators and any add-ons.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(submitBooking)} className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Left side - Form inputs */}
             <div className="md:col-span-2 space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Customer Information</CardTitle>
-                </CardHeader>
+                <CardHeader> <CardTitle>Customer Information</CardTitle> </CardHeader>
                 <CardContent className="grid sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Full Name</Label>
@@ -258,62 +297,100 @@ export default function BookRentalPage() {
                   </div>
                    <div className="grid gap-2 sm:col-span-2">
                       <Label htmlFor="bookingDate">Booking Date</Label>
-                      <Input 
-                        type="date"
-                        {...form.register('bookingDate', { valueAsDate: true })}
-                        min={new Date().toISOString().split("T")[0]}
-                      />
+                      <Input type="date" {...form.register('bookingDate', { valueAsDate: true })} min={new Date().toISOString().split("T")[0]} />
                        {form.formState.errors.bookingDate && <p className="text-destructive text-sm">{form.formState.errors.bookingDate.message}</p>}
                    </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generator Selection</CardTitle>
-                  <CardDescription>Add each generator unit you require individually.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
-                       {fields.length > 1 && (
-                         <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(index)}>
-                            <Trash className="h-4 w-4 text-destructive" />
-                         </Button>
-                       )}
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="grid gap-2 sm:col-span-3">
-                          <Label>Generator (KVA)</Label>
-                           <Select onValueChange={(value) => form.setValue(`generators.${index}.kvaCategory`, value)} defaultValue={field.kvaCategory}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select KVA" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {GENERATORS_DATA.map(gen => (
-                                <SelectItem key={gen.id} value={gen.kva}>
-                                    {gen.kva} KVA (Base: ₹{gen.basePrice.toLocaleString()})
-                                </SelectItem>
-                                ))}
-                            </SelectContent>
-                           </Select>
-                           {form.formState.errors.generators?.[index]?.kvaCategory && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.kvaCategory?.message}</p>}
-                        </div>
-                      </div>
-                       <div className="grid gap-2">
-                          <Label>Additional Hours (after first 5)</Label>
-                          <Input type="number" min="0" {...form.register(`generators.${index}.additionalHours`, { valueAsNumber: true })} placeholder="0" />
-                          <p className="text-xs text-muted-foreground">First 5 hours included. Additional hours at ₹850/hr.</p>
-                          {form.formState.errors.generators?.[index]?.additionalHours && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.additionalHours?.message}</p>}
-                        </div>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" onClick={() => append({ kvaCategory: '', additionalHours: 0 })}>
-                    <Plus className="mr-2 h-4 w-4"/>
-                    Add Another Generator
-                  </Button>
-                   {form.formState.errors.generators && !form.formState.errors.generators.root && <p className="text-destructive text-sm">{form.formState.errors.generators.message}</p>}
-                </CardContent>
-              </Card>
+              <Tabs defaultValue="generators" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="generators"><Package className="mr-2 h-4 w-4"/>Generators</TabsTrigger>
+                    <TabsTrigger value="addons"><Wrench className="mr-2 h-4 w-4"/>Add-ons</TabsTrigger>
+                </TabsList>
+                <TabsContent value="generators">
+                    <Card>
+                        <CardHeader>
+                        <CardTitle>Generator Selection</CardTitle>
+                        <CardDescription>Add each generator unit you require individually.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                        {generatorFields.map((field, index) => (
+                            <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
+                            {generatorFields.length > 1 && (
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeGenerator(index)}>
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                            )}
+                            <div className="grid sm:grid-cols-3 gap-4">
+                                <div className="grid gap-2 sm:col-span-3">
+                                <Label>Generator (KVA)</Label>
+                                <Select onValueChange={(value) => form.setValue(`generators.${index}.kvaCategory`, value)} defaultValue={field.kvaCategory}>
+                                    <SelectTrigger> <SelectValue placeholder="Select KVA" /> </SelectTrigger>
+                                    <SelectContent>
+                                        {GENERATORS_DATA.map(gen => ( <SelectItem key={gen.id} value={gen.kva}> {gen.kva} KVA (Base: ₹{gen.basePrice.toLocaleString()}) </SelectItem> ))}
+                                    </SelectContent>
+                                </Select>
+                                {form.formState.errors.generators?.[index]?.kvaCategory && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.kvaCategory?.message}</p>}
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Additional Hours (after first 5)</Label>
+                                <Input type="number" min="0" {...form.register(`generators.${index}.additionalHours`, { valueAsNumber: true })} placeholder="0" />
+                                <p className="text-xs text-muted-foreground">First 5 hours included. Additional hours at ₹850/hr.</p>
+                                {form.formState.errors.generators?.[index]?.additionalHours && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.additionalHours?.message}</p>}
+                            </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" onClick={() => appendGenerator({ kvaCategory: '', additionalHours: 0 })}>
+                            <Plus className="mr-2 h-4 w-4"/> Add Another Generator
+                        </Button>
+                        {form.formState.errors.generators && !form.formState.errors.generators.root && <p className="text-destructive text-sm">{form.formState.errors.generators.message}</p>}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="addons">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Add-on Items</CardTitle>
+                            <CardDescription>Select any additional items you require.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {ADDONS_DATA.map((addon, index) => {
+                                const selectedAddonIndex = addonFields.findIndex(field => field.addonId === addon.id);
+                                const isSelected = selectedAddonIndex !== -1;
+                                return (
+                                    <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div className="flex items-center gap-4">
+                                            <Checkbox
+                                                id={`addon-${addon.id}`}
+                                                checked={isSelected}
+                                                onCheckedChange={(checked) => handleAddonCheckedChange(!!checked, addon.id)}
+                                            />
+                                            <div>
+                                                <Label htmlFor={`addon-${addon.id}`} className="font-medium">{addon.name}</Label>
+                                                <p className="text-xs text-muted-foreground">₹{addon.price.toLocaleString()} {addon.unit}</p>
+                                            </div>
+                                        </div>
+                                        {isSelected && (
+                                             <div className="grid gap-2 w-24">
+                                                <Label htmlFor={`quantity-${addon.id}`} className="sr-only">Quantity</Label>
+                                                <Input
+                                                    id={`quantity-${addon.id}`}
+                                                    type="number"
+                                                    min="1"
+                                                    {...form.register(`addons.${selectedAddonIndex}.quantity`, { valueAsNumber: true })}
+                                                    defaultValue={1}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+              </Tabs>
               
               <Card>
                   <CardHeader><CardTitle>Additional Notes</CardTitle></CardHeader>
@@ -321,63 +398,56 @@ export default function BookRentalPage() {
                       <Textarea placeholder="Any special instructions or details?" {...form.register('additionalNotes')} />
                   </CardContent>
               </Card>
-
             </div>
 
-            {/* Right side - Estimate */}
             <div className="md:col-span-1">
               <Card className="sticky top-4">
-                <CardHeader>
-                  <CardTitle>Booking Estimate</CardTitle>
-                </CardHeader>
+                <CardHeader> <CardTitle>Booking Estimate</CardTitle> </CardHeader>
                 <CardContent className="space-y-4">
-                  {estimate.items.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">Select a generator to see your estimate.</p>
+                  {estimate.generatorItems.length === 0 && estimate.addonItems.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">Select items to see your estimate.</p>
                   ) : (
-                    estimate.items.map((item, index) => (
-                      <div key={index} className="space-y-2 pb-2">
-                        <p className="font-semibold">1 x {item.kvaCategory} KVA</p>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Base Cost (incl. 5 hrs)</span>
-                          <span>₹{item.baseCost.toLocaleString()}</span>
+                    <>
+                     {estimate.generatorItems.length > 0 && (
+                        <div className="space-y-4">
+                            <h4 className="font-semibold">Generators</h4>
+                            {estimate.generatorItems.map((item, index) => (
+                                <div key={index} className="space-y-2 pb-2">
+                                    <p className="font-semibold text-sm">1 x {item.kvaCategory} KVA</p>
+                                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Base Cost (5 hrs)</span><span>₹{item.baseCost.toLocaleString()}</span></div>
+                                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Additional ({item.additionalHours} hrs)</span><span>₹{item.additionalCost.toLocaleString()}</span></div>
+                                </div>
+                            ))}
+                            <Separator/>
+                            <div className="flex justify-between font-medium"><p>Generators Total</p><p>₹{estimate.generatorsTotal.toLocaleString()}</p></div>
                         </div>
-                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Additional ({item.additionalHours} hrs)</span>
-                          <span>₹{item.additionalCost.toLocaleString()}</span>
-                        </div>
-                         <div className="flex justify-between text-sm font-medium">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span>₹{item.total.toLocaleString()}</span>
-                        </div>
-                         {index < estimate.items.length - 1 && <Separator className="mt-4" />}
+                     )}
+                     {estimate.addonItems.length > 0 && (
+                         <div className="space-y-4 pt-4">
+                             <h4 className="font-semibold">Add-ons</h4>
+                             {estimate.addonItems.map((item, index) => (
+                                 <div key={index} className="flex justify-between text-sm">
+                                     <span className="text-muted-foreground">{item.name} (x{item.quantity})</span>
+                                     <span>₹{item.total.toLocaleString()}</span>
+                                 </div>
+                             ))}
+                             <Separator/>
+                             <div className="flex justify-between font-medium"><p>Add-ons Total</p><p>₹{estimate.addonsTotal.toLocaleString()}</p></div>
+                         </div>
+                     )}
+                      <Separator className="my-4" />
+                      <div className="flex justify-between font-bold text-lg pt-2">
+                          <span>Grand Total</span>
+                          <span>₹{estimate.grandTotal.toLocaleString()}</span>
                       </div>
-                    ))
-                  )}
-                  {estimate.items.length > 0 && (
-                     <>
-                        <Separator />
-                        <div className="flex justify-between font-bold text-lg pt-2">
-                            <span>Grand Total</span>
-                            <span>₹{estimate.grandTotal.toLocaleString()}</span>
-                        </div>
-                     </>
+                    </>
                   )}
                 </CardContent>
                 <CardFooter className="flex-col gap-2 items-stretch">
-                   <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={handleDownloadEstimate}
-                      disabled={isSubmitting || estimate.items.length === 0}
-                    >
-                       <Download className="mr-2 h-4 w-4" />
-                       Download Estimate
+                   <Button type="button" variant="outline" onClick={handleDownloadEstimate} disabled={isSubmitting || estimate.grandTotal === 0}>
+                       <Download className="mr-2 h-4 w-4" /> Download Estimate
                    </Button>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isSubmitting || estimate.items.length === 0}
-                    >
+                    <Button type="submit" className="w-full" disabled={isSubmitting || estimate.grandTotal === 0}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                         Send Booking Request
                     </Button>

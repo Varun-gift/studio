@@ -43,6 +43,18 @@ export interface GeneratorGroup {
   additionalHours?: number;
 }
 
+export interface Addon {
+    id: string;
+    name: string;
+    price: number;
+    unit: string;
+}
+
+export interface SelectedAddon {
+    addonId: string;
+    quantity: number;
+}
+
 export interface Timer {
     id: string;
     startTime: Date;
@@ -57,6 +69,7 @@ export interface Booking {
   companyName?: string;
   phone?: string;
   generators: GeneratorGroup[];
+  addons?: SelectedAddon[];
   location: string;
   bookingDate: Date;
   additionalNotes?: string;
