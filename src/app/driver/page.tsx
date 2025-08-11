@@ -66,6 +66,7 @@ export default function DriverDashboard() {
               bookingDate: (bookingData.bookingDate as any).toDate(),
               createdAt: (bookingData.createdAt as any).toDate(),
               timers: timers,
+              isPaused: bookingData.isPaused ?? false,
             } as Booking;
           });
 
@@ -101,7 +102,6 @@ export default function DriverDashboard() {
         return null;
     }
     
-    // Fetch hours for the entire duty period
     const dutyStartTime = booking.timers?.[0]?.startTime;
     if (!dutyStartTime) {
        toast({ title: "Duty not started", description: "Cannot fetch hours before duty starts.", variant: "destructive" });
@@ -122,7 +122,6 @@ export default function DriverDashboard() {
         const data = await res.json();
         
         if (!res.ok) {
-            // Handle "No ignition data" as 0 hours, not an error.
             if (data.error === 'No ignition data') {
                 return "00:00:00"; 
             }
@@ -141,10 +140,9 @@ export default function DriverDashboard() {
     const bookingRef = doc(db, 'bookings', bookingId);
     setIsUpdatingDuty(bookingId);
     try {
-        // Start duty and create the first timer
         const timersRef = collection(db, 'bookings', bookingId, 'timers');
         await addDoc(timersRef, { startTime: serverTimestamp() });
-        await updateDoc(bookingRef, { status: 'Active' });
+        await updateDoc(bookingRef, { status: 'Active', isPaused: false });
         
         toast({ title: "Duty Started", description: "Booking is now active and generator is running." });
     } catch(error) {
@@ -164,8 +162,15 @@ export default function DriverDashboard() {
       
       setIsUpdatingDuty(booking.id);
       const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
+      const bookingRef = doc(db, 'bookings', booking.id);
       try {
           await updateDoc(timerRef, { endTime: serverTimestamp() });
+          await updateDoc(bookingRef, { isPaused: true });
+          
+          setBookings(currentBookings => 
+            currentBookings.map(b => b.id === booking.id ? {...b, isPaused: true} : b)
+          );
+
           toast({ title: "Generator Paused", description: "Generator timer has been paused." });
       } catch (error) {
           console.error("Error pausing generator: ", error);
@@ -178,8 +183,15 @@ export default function DriverDashboard() {
   const handleResumeGenerator = async (bookingId: string) => {
       setIsUpdatingDuty(bookingId);
       const timersRef = collection(db, 'bookings', bookingId, 'timers');
+      const bookingRef = doc(db, 'bookings', bookingId);
       try {
           await addDoc(timersRef, { startTime: serverTimestamp() });
+          await updateDoc(bookingRef, { isPaused: false });
+
+          setBookings(currentBookings => 
+            currentBookings.map(b => b.id === bookingId ? {...b, isPaused: false} : b)
+          );
+
           toast({ title: "Generator Resumed", description: "Generator timer has resumed." });
       } catch (error) {
           console.error("Error resuming generator: ", error);
@@ -193,7 +205,6 @@ export default function DriverDashboard() {
     setIsUpdatingDuty(booking.id);
     const bookingRef = doc(db, 'bookings', booking.id);
     
-    // Ensure any active timer is stopped first.
     const activeTimer = booking.timers?.find(t => !t.endTime);
     if(activeTimer) {
          const timerRef = doc(db, 'bookings', booking.id, 'timers', activeTimer.id);
@@ -211,6 +222,7 @@ export default function DriverDashboard() {
         await updateDoc(bookingRef, { 
             status: 'Completed',
             runtimeHoursFleetop: endHours,
+            isPaused: false,
         });
         toast({ title: "Duty Ended", description: `Final engine hours recorded: ${endHours}` });
     } catch(error) {
@@ -230,7 +242,7 @@ export default function DriverDashboard() {
 
   const isGeneratorRunning = (booking: Booking) => {
       if(booking.status !== 'Active') return false;
-      return booking.timers?.some(t => !t.endTime) ?? false;
+      return !booking.isPaused;
   }
 
 

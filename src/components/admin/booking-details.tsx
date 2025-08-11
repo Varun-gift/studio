@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { format, formatDistance } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Power } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Power, Pause } from 'lucide-react';
 import type { Booking, Timer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,6 +110,9 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 <CardTitle>Booking Information</CardTitle>
                 <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge>
+                    {booking.status === 'Active' && booking.isPaused && (
+                       <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
+                    )}
                     <span className="text-sm text-muted-foreground">
                         Booked on {booking.createdAt ? format(booking.createdAt as Date, 'PPP') : 'N/A'}
                     </span>

@@ -77,4 +77,5 @@ export interface Booking {
   };
   timers?: Timer[];
   runtimeHoursFleetop?: string;
+  isPaused?: boolean;
 }

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Phone, MapPin, Package, Truck, BadgeIndianRupee, FileText, Cpu, Car, Clock, Power, Pause } from 'lucide-react';
 import type { Booking } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +49,7 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
         vehicleInfo,
         additionalNotes,
         runtimeHoursFleetop,
+        isPaused,
     } = booking;
 
     const formatGeneratorDetails = (gen: Booking['generators'][0]) => {
@@ -121,7 +122,12 @@ export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps)
                             Booked on {createdAt ? format(createdAt as Date, 'PPP') : 'N/A'}
                         </CardDescription>
                     </div>
-                    <Badge variant={getStatusVariant(status)}>{status}</Badge>
+                     <div className="flex items-center gap-2">
+                        {status === 'Active' && isPaused && (
+                           <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
+                        )}
+                        <Badge variant={getStatusVariant(status)}>{status}</Badge>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
