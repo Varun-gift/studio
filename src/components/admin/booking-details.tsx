@@ -8,7 +8,7 @@ import type { Booking, Timer, BookedGenerator } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getStatusVariant } from '@/lib/utils';
+import { getStatusVariant, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -68,15 +68,14 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
     
     const calculateTotalRuntime = (gen: BookedGenerator): string => {
         const timers = gen.timers || [];
-        const isPaused = gen.status === 'Paused';
+        const isActive = gen.status === 'Active';
 
         const totalMilliseconds = timers.reduce((acc, timer) => {
             const startTime = timer.startTime;
-            // If the generator is paused, we don't use the current time for the active timer.
-            const endTime = timer.endTime || (isPaused ? startTime : new Date());
+            const endTime = timer.endTime || (isActive ? new Date() : timer.startTime);
 
             if (startTime) {
-                return acc + (endTime.getTime() - startTime.getTime());
+                 return acc + (endTime.getTime() - startTime.getTime());
             }
             return acc;
         }, 0);
@@ -90,10 +89,10 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         return `${hours}h ${minutes}m`;
     }
 
-  const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
+  const DetailItem = ({ icon: Icon, label, value, className }: { icon: React.ElementType, label: string, value: React.ReactNode, className?: string }) => (
     <div className="flex items-start gap-3">
         <Icon className="h-5 w-5 text-muted-foreground mt-1" />
-        <div className="flex-1">
+        <div className={cn("flex-1", className)}>
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="font-medium">{value || 'N/A'}</p>
         </div>
@@ -195,7 +194,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                            </div>
                            <Separator className="my-4" />
                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen)} />
+                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen)} className={cn(gen.status === 'Paused' && 'opacity-60')} />
                                <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={gen.runtimeHoursFleetop} />
                                 {liveHours[gen.id] && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours[gen.id]} /> )}
                            </div>
