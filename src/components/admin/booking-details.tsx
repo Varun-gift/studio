@@ -66,16 +66,22 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
         }
     };
     
-    const calculateTotalRuntime = (timers: Timer[] = []): string => {
+    const calculateTotalRuntime = (gen: BookedGenerator): string => {
+        const timers = gen.timers || [];
+        const isPaused = gen.status === 'Paused';
+
         const totalMilliseconds = timers.reduce((acc, timer) => {
-            const endTime = timer.endTime ? timer.endTime : new Date(); // Use current time if not ended
-            if (timer.startTime) {
-                return acc + (endTime.getTime() - timer.startTime.getTime());
+            const startTime = timer.startTime;
+            // If the generator is paused, we don't use the current time for the active timer.
+            const endTime = timer.endTime || (isPaused ? startTime : new Date());
+
+            if (startTime) {
+                return acc + (endTime.getTime() - startTime.getTime());
             }
             return acc;
         }, 0);
         
-        if(totalMilliseconds === 0) return '0h 0m';
+        if(totalMilliseconds <= 0) return '0h 0m';
 
         const totalSeconds = Math.floor(totalMilliseconds / 1000);
         const hours = Math.floor(totalSeconds / 3600);
@@ -189,7 +195,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                            </div>
                            <Separator className="my-4" />
                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen.timers)} />
+                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen)} />
                                <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={gen.runtimeHoursFleetop} />
                                 {liveHours[gen.id] && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours[gen.id]} /> )}
                            </div>
