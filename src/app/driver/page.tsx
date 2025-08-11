@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs, orderBy, query, where, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, serverTimestamp, collection, getDoc, getDocs, orderBy, query, where, writeBatch } from 'firebase/firestore';
 import type { Booking, Timer, BookedGenerator } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -116,7 +115,7 @@ export default function DriverDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 imei: imeiNumber,
-                start: dutyStartTime.toISOString(),
+                start: (dutyStartTime as any).toDate ? (dutyStartTime as any).toDate().toISOString() : new Date(dutyStartTime).toISOString(),
                 end: new Date().toISOString()
             })
         });
