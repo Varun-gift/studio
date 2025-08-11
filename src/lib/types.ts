@@ -1,5 +1,4 @@
 
-
 export interface User {
   id: string;
   name: string;
@@ -48,6 +47,7 @@ export interface Addon {
     name: string;
     price: number;
     unit: string;
+    imageUrl: string;
 }
 
 export interface SelectedAddon {

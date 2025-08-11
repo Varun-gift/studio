@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import Image from 'next/image';
 
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
@@ -452,30 +453,41 @@ export default function BookRentalPage() {
                             <CardTitle>Add-on Items</CardTitle>
                             <CardDescription>Select any additional items you require.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            {ADDONS_DATA.map((addon, index) => {
+                        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {ADDONS_DATA.map((addon) => {
                                 const selectedAddonIndex = addonFields.findIndex(field => field.addonId === addon.id);
                                 const isSelected = selectedAddonIndex !== -1;
                                 return (
-                                    <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                        <div className="flex items-center gap-4">
+                                    <div key={addon.id} className="relative p-3 border rounded-lg flex flex-col items-start gap-4">
+                                        <div className="relative w-full h-24 rounded-md overflow-hidden mb-2">
+                                            <Image 
+                                                src={addon.imageUrl} 
+                                                alt={addon.name} 
+                                                fill
+                                                className="object-cover"
+                                                data-ai-hint={addon['data-ai-hint']}
+                                            />
+                                        </div>
+                                        <div className="flex items-start gap-3 w-full">
                                             <Checkbox
                                                 id={`addon-${addon.id}`}
                                                 checked={isSelected}
                                                 onCheckedChange={(checked) => handleAddonCheckedChange(!!checked, addon.id)}
+                                                className="mt-1"
                                             />
-                                            <div>
+                                            <div className="flex-1">
                                                 <Label htmlFor={`addon-${addon.id}`} className="font-medium">{addon.name}</Label>
                                                 <p className="text-xs text-muted-foreground">₹{addon.price.toLocaleString()} {addon.unit}</p>
                                             </div>
                                         </div>
                                         {isSelected && (
-                                             <div className="grid gap-2 w-24">
-                                                <Label htmlFor={`quantity-${addon.id}`} className="sr-only">Quantity</Label>
+                                             <div className="grid gap-2 w-full pt-2 mt-2 border-t">
+                                                <Label htmlFor={`quantity-${addon.id}`} className="text-sm">Quantity</Label>
                                                 <Input
                                                     id={`quantity-${addon.id}`}
                                                     type="number"
                                                     min="1"
+                                                    className="h-8"
                                                     {...form.register(`addons.${selectedAddonIndex}.quantity`, { valueAsNumber: true })}
                                                     defaultValue={1}
                                                 />
@@ -557,5 +569,3 @@ export default function BookRentalPage() {
     </div>
   );
 }
-
-    
