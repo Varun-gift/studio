@@ -167,7 +167,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {booking.generators.map(gen => (
-                        <Card key={gen.id} className="p-4">
+                        <Card key={`${booking.id}-${gen.id}`} className="p-4">
                            <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-bold text-lg">{gen.kvaCategory} KVA</p>
