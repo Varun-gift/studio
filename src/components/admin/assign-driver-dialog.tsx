@@ -121,7 +121,7 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange, onBookingUpd
             driverInfo: {
                 driverId: values.driverId,
                 name: selectedDriver.name,
-                contact: selectedDriver.phone || selectedDriver.email,
+                contact: selectedDriver.phone ?? selectedDriver.email,
             },
             vehicleInfo: {
                 vehicleId: selectedVehicle.id,
@@ -140,6 +140,7 @@ export function AssignDriverDialog({ booking, isOpen, onOpenChange, onBookingUpd
 
         await updateDoc(bookingRef, {
             generators: updatedGenerators,
+            driverIds: arrayUnion(values.driverId),
         });
 
         toast({

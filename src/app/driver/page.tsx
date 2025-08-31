@@ -9,11 +9,10 @@ import {
   doc,
   updateDoc,
   onSnapshot,
-  serverTimestamp,
   collection,
   getDoc,
   query,
-  where
+  where,
 } from 'firebase/firestore';
 import type { Booking, BookedGenerator } from '@/lib/types';
 import {
@@ -22,7 +21,7 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
@@ -37,7 +36,7 @@ import {
   PowerOff,
   Car,
   Play,
-  Pause
+  Pause,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -70,7 +69,7 @@ export default function DriverDashboard() {
       setJobsLoading(true);
       const bookingsQuery = query(
         collection(db, 'bookings'),
-        where('status', 'in', ['Approved', 'Active'])
+        where('driverIds', 'array-contains', user.uid)
       );
 
       const unsubscribe = onSnapshot(
@@ -80,26 +79,28 @@ export default function DriverDashboard() {
             const assignedJobs: AssignedGeneratorJob[] = [];
 
             for (const bookingDoc of snapshot.docs) {
-              const bookingData = bookingDoc.data() as Booking;
+              const bookingData = bookingDoc.data();
+
+              const booking = {
+                id: bookingDoc.id,
+                ...bookingData,
+                bookingDate: (bookingData.bookingDate as any).toDate(),
+                createdAt: (bookingData.createdAt as any).toDate(),
+              } as Booking;
 
               const assignedGenerators =
-                bookingData.generators?.filter(
+                booking.generators?.filter(
                   (g) => g.driverInfo?.driverId === user.uid
                 ) || [];
 
-              if (assignedGenerators.length > 0) {
-                const booking = {
-                  id: bookingDoc.id,
-                  ...bookingData,
-                  bookingDate: (bookingData.bookingDate as any).toDate(),
-                  createdAt: (bookingData.createdAt as any).toDate()
-                } as Booking;
 
-                for (const generator of assignedGenerators) {
+              for (const generator of assignedGenerators) {
+                // Only show generators that are not yet completed
+                if (generator.status !== 'Completed') {
                   assignedJobs.push({
                     ...generator,
                     bookingId: bookingDoc.id,
-                    booking: booking
+                    booking: booking,
                   });
                 }
               }
@@ -107,7 +108,7 @@ export default function DriverDashboard() {
 
             assignedJobs.sort(
               (a, b) =>
-                b.booking.createdAt.getTime() - a.booking.createdAt.getTime()
+                a.booking.createdAt.getTime() - b.booking.createdAt.getTime()
             );
             setJobs(assignedJobs);
           } catch (error) {
@@ -115,7 +116,7 @@ export default function DriverDashboard() {
             toast({
               title: 'Error',
               description: 'Could not process job updates.',
-              variant: 'destructive'
+              variant: 'destructive',
             });
           } finally {
             setJobsLoading(false);
@@ -126,7 +127,7 @@ export default function DriverDashboard() {
           toast({
             title: 'Error',
             description: 'Could not fetch jobs. Please try again later.',
-            variant: 'destructive'
+            variant: 'destructive',
           });
           setJobsLoading(false);
         }
@@ -150,54 +151,46 @@ export default function DriverDashboard() {
       g.id === generatorId ? { ...g, ...updates } : g
     );
 
+    // Check if any generator is active to set the main booking status
     const isAnyGeneratorActive = updatedGenerators.some(
-      (g) => g.status === 'Active'
+        (g) => g.status === 'Active'
     );
-    const newBookingStatus = isAnyGeneratorActive
-      ? 'Active'
-      : bookingData.status;
+    const areAllGeneratorsCompleted = updatedGenerators.every(
+        (g) => g.status === 'Completed'
+    );
+
+    let newBookingStatus = bookingData.status;
+    if (areAllGeneratorsCompleted) {
+        newBookingStatus = 'Completed';
+    } else if (isAnyGeneratorActive) {
+        newBookingStatus = 'Active';
+    }
+
 
     await updateDoc(bookingRef, {
       generators: updatedGenerators,
-      status: newBookingStatus
+      status: newBookingStatus,
     });
   };
 
   const handleStartDuty = async (job: AssignedGeneratorJob) => {
     setIsUpdatingDuty(job.id);
     try {
-      const bookingRef = doc(db, 'bookings', job.bookingId);
-      const bookingSnap = await getDoc(bookingRef);
-      if (!bookingSnap.exists()) throw new Error('Booking not found');
-
-      const bookingData = bookingSnap.data() as Booking;
-
-      const updatedGenerators = bookingData.generators.map((g) => {
-        if (g.id === job.id) {
-          return {
-            ...g,
-            status: 'Active',
-            timers: [...(g.timers || []), { startTime: new Date() }] // ✅ safe in array
-          };
-        }
-        return g;
-      });
-
-      await updateDoc(bookingRef, {
-        generators: updatedGenerators,
-        status: 'Active'
+      await updateGeneratorInBooking(job.bookingId, job.id, {
+        status: 'Active',
+        timers: [...(job.timers || []), { startTime: new Date() }],
       });
 
       toast({
         title: 'Duty Started',
-        description: 'Generator is now active.'
+        description: 'Generator is now active.',
       });
     } catch (error) {
       console.error('Error starting duty: ', error);
       toast({
         title: 'Error',
         description: 'Could not start duty.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsUpdatingDuty(null);
@@ -210,42 +203,33 @@ export default function DriverDashboard() {
       toast({
         title: 'Error',
         description: 'No active timer to pause.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
 
     setIsUpdatingDuty(job.id);
     try {
-      const bookingRef = doc(db, 'bookings', job.bookingId);
-      const bookingSnap = await getDoc(bookingRef);
-      const bookingData = bookingSnap.data() as Booking;
+      const updatedTimers =
+        job.timers?.map((t) =>
+          !t.endTime ? { ...t, endTime: new Date() } : t
+        ) || [];
 
-      const updatedGenerators = bookingData.generators.map((g) => {
-        if (g.id === job.id) {
-          const updatedTimers =
-            g.timers?.map((t) =>
-              t.startTime === activeTimer.startTime
-                ? { ...t, endTime: new Date() } // ✅ safe
-                : t
-            ) || [];
-          return { ...g, status: 'Paused' as const, timers: updatedTimers };
-        }
-        return g;
+      await updateGeneratorInBooking(job.bookingId, job.id, {
+        status: 'Paused',
+        timers: updatedTimers,
       });
-
-      await updateDoc(bookingRef, { generators: updatedGenerators });
 
       toast({
         title: 'Generator Paused',
-        description: 'Generator timer has been paused.'
+        description: 'Generator timer has been paused.',
       });
     } catch (error) {
       console.error('Error pausing generator: ', error);
       toast({
         title: 'Error',
         description: 'Could not pause generator.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsUpdatingDuty(null);
@@ -255,66 +239,72 @@ export default function DriverDashboard() {
   const handleResumeGenerator = async (job: AssignedGeneratorJob) => {
     setIsUpdatingDuty(job.id);
     try {
-      const bookingRef = doc(db, 'bookings', job.bookingId);
-      const bookingSnap = await getDoc(bookingRef);
-      const bookingData = bookingSnap.data() as Booking;
-
-      const updatedGenerators = bookingData.generators.map((g) => {
-        if (g.id === job.id) {
-          return {
-            ...g,
-            status: 'Active' as const,
-            timers: [...(g.timers || []), { startTime: new Date() }] // ✅ safe
-          };
-        }
-        return g;
+      await updateGeneratorInBooking(job.bookingId, job.id, {
+        status: 'Active',
+        timers: [...(job.timers || []), { startTime: new Date() }],
       });
-
-      await updateDoc(bookingRef, { generators: updatedGenerators });
 
       toast({
         title: 'Generator Resumed',
-        description: 'Generator timer has resumed.'
+        description: 'Generator timer has resumed.',
       });
     } catch (error) {
       console.error('Error resuming generator: ', error);
       toast({
         title: 'Error',
         description: 'Could not resume generator.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsUpdatingDuty(null);
     }
   };
 
+  const calculateTotalRuntime = (timers: NonNullable<BookedGenerator['timers']>) => {
+    return timers.reduce((acc, timer) => {
+      if (timer.endTime) {
+        return acc + (timer.endTime.getTime() - timer.startTime.getTime());
+      }
+      return acc;
+    }, 0);
+  };
+  
   const handleEndDuty = async (job: AssignedGeneratorJob) => {
     setIsUpdatingDuty(job.id);
 
-    const activeTimer = job.timers?.find((t) => !t.endTime);
-    if (activeTimer) {
-      await handlePauseGenerator(job);
+    let finalTimers = job.timers || [];
+    // If there's an active timer, close it.
+    if (job.status === 'Active') {
+        finalTimers = finalTimers.map(t => t.endTime ? t : {...t, endTime: new Date()});
     }
 
     try {
+      const totalMilliseconds = calculateTotalRuntime(finalTimers);
+      const hours = Math.floor(totalMilliseconds / 3600000);
+      const minutes = Math.floor((totalMilliseconds % 3600000) / 60000);
+      const finalRuntime = `${hours}h ${minutes}m`;
+        
       await updateGeneratorInBooking(job.bookingId, job.id, {
-        status: 'Completed'
+        status: 'Completed',
+        timers: finalTimers,
+        runtimeHoursFleetop: finalRuntime, // Reusing this field for manual time
       });
       toast({
         title: 'Duty Ended',
-        description: 'Final engine hours recorded.'
+        description: `Final runtime: ${finalRuntime}.`,
       });
     } catch (error) {
       console.error('Error ending duty: ', error);
       toast({
         title: 'Error',
         description: 'Could not end duty.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsUpdatingDuty(null);
     }
   };
+
 
   if (loading || !user || (role && role !== 'driver')) {
     return (
@@ -457,18 +447,32 @@ export default function DriverDashboard() {
                         </Button>
                       )}
                       {job.status === 'Active' && (
-                        <Button
-                          onClick={() => handlePauseGenerator(job)}
-                          variant="secondary"
-                          disabled={isUpdatingDuty === job.id}
-                        >
-                          {isUpdatingDuty === job.id ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Pause className="mr-2 h-4 w-4" />
-                          )}{' '}
-                          Pause
-                        </Button>
+                         <div className="grid grid-cols-2 gap-2">
+                            <Button
+                            onClick={() => handlePauseGenerator(job)}
+                            variant="secondary"
+                            disabled={isUpdatingDuty === job.id}
+                            >
+                            {isUpdatingDuty === job.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Pause className="mr-2 h-4 w-4" />
+                            )}{' '}
+                            Pause
+                            </Button>
+                             <Button
+                                onClick={() => handleEndDuty(job)}
+                                variant="destructive"
+                                disabled={isUpdatingDuty === job.id}
+                            >
+                                {isUpdatingDuty === job.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                <PowerOff className="mr-2 h-4 w-4" />
+                                )}{' '}
+                                End Duty
+                            </Button>
+                         </div>
                       )}
                       {job.status === 'Paused' && (
                         <div className="grid grid-cols-2 gap-2">

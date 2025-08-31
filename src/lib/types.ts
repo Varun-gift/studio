@@ -75,7 +75,6 @@ export interface SelectedAddon {
 }
 
 export interface Timer {
-    id: string;
     startTime: Date;
     endTime?: Date;
 }
@@ -95,4 +94,5 @@ export interface Booking {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Voided' | 'Completed' | 'Cancelled' | 'Active'; // Overall booking status
   estimatedCost: number;
   createdAt: { seconds: number, nanoseconds: number } | Date;
+  driverIds?: string[];
 }
