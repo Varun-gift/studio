@@ -4,15 +4,13 @@
 import * as React from 'react';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, User, Phone, MapPin, Package, BadgeIndianRupee, Cpu, Truck, Clock, Wrench, FileText } from 'lucide-react';
-import type { Booking, Timer, BookedGenerator } from '@/lib/types';
+import type { Booking, BookedGenerator } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 import { ADDONS_DATA } from '@/lib/addons';
 
 interface BookingDetailsProps {
@@ -21,73 +19,35 @@ interface BookingDetailsProps {
 }
 
 export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
-    const { toast } = useToast();
-    const [loadingStates, setLoadingStates] = React.useState<{[key: string]: boolean}>({});
-    const [liveHours, setLiveHours] = React.useState<{[key: string]: string | null}>({});
 
-    const fetchLiveEngineHours = async (generator: BookedGenerator) => {
-        if (!generator.vehicleInfo?.imeiNumber) {
-            toast({ title: "Error", description: "No IMEI number assigned to this generator.", variant: "destructive"});
-            return;
-        }
-        if (!generator.timers || generator.timers.length === 0) {
-            toast({ title: "Error", description: "Duty has not started yet for this generator.", variant: "destructive"});
-            return;
-        }
+  const calculateTotalRuntime = (gen: BookedGenerator): string => {
+      const timers = gen.timers || [];
+      if (timers.length === 0) return gen.runtimeHoursFleetop || '0h 0m'; // Use final if available
+      
+      const isActive = gen.status === 'Active';
 
-        setLoadingStates(prev => ({...prev, [generator.id]: true}));
-        setLiveHours(prev => ({...prev, [generator.id]: null}));
+      const totalMilliseconds = timers.reduce((acc, timer) => {
+          const startTime = timer.startTime instanceof Date ? timer.startTime : new Date((timer.startTime as any).seconds * 1000);
+          // If the timer is active, calculate up to the current time. Otherwise, use its end time.
+          const endTime = !timer.endTime 
+            ? (isActive ? new Date() : startTime) 
+            : (timer.endTime instanceof Date ? timer.endTime : new Date((timer.endTime as any).seconds * 1000));
+          
+          if (startTime) {
+               return acc + (endTime.getTime() - startTime.getTime());
+          }
+          return acc;
+      }, 0);
+      
+      if (totalMilliseconds <= 0 && gen.runtimeHoursFleetop) return gen.runtimeHoursFleetop;
+      if (totalMilliseconds <= 0) return '0h 0m';
 
-        try {
-            const res = await fetch('/api/fleetop/hours', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    imei: generator.vehicleInfo.imeiNumber,
-                    start: generator.timers[0].startTime.toISOString(),
-                    end: new Date().toISOString()
-                })
-            });
-             if (!res.ok) {
-                const errorData = await res.json();
-                const errorMessage = errorData.error === 'No ignition data' 
-                    ? 'No ignition data from Fleetop for the active period.' 
-                    : 'API request failed.';
-                throw new Error(errorMessage);
-            }
-            const data = await res.json();
-            const hours = data.engineOnHours || "N/A";
-            setLiveHours(prev => ({...prev, [generator.id]: hours}));
-            toast({ title: "Live Engine Hours", description: `Current reading from Fleetop: ${hours}`});
-        } catch(e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive"});
-        } finally {
-            setLoadingStates(prev => ({...prev, [generator.id]: false}));
-        }
-    };
-    
-    const calculateTotalRuntime = (gen: BookedGenerator): string => {
-        const timers = gen.timers || [];
-        const isActive = gen.status === 'Active';
+      const totalSeconds = Math.floor(totalMilliseconds / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
 
-        const totalMilliseconds = timers.reduce((acc, timer) => {
-            const startTime = timer.startTime;
-            const endTime = timer.endTime || (isActive ? new Date() : timer.startTime);
-
-            if (startTime) {
-                 return acc + (endTime.getTime() - startTime.getTime());
-            }
-            return acc;
-        }, 0);
-        
-        if(totalMilliseconds <= 0) return '0h 0m';
-
-        const totalSeconds = Math.floor(totalMilliseconds / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-        return `${hours}h ${minutes}m`;
-    }
+      return `${hours}h ${minutes}m`;
+  }
 
   const DetailItem = ({ icon: Icon, label, value, className }: { icon: React.ElementType, label: string, value: React.ReactNode, className?: string }) => (
     <div className="flex items-start gap-3">
@@ -160,7 +120,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                 <DetailItem icon={User} label="Name" value={booking.userName} />
             </div>
             <Separator />
-            <DetailItem icon={Phone} label="Email" value={booking.userEmail} />
+            <DetailItem icon={Phone} label="Contact" value={booking.phone || booking.userEmail} />
           </CardContent>
         </Card>
         
@@ -194,18 +154,8 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
                            </div>
                            <Separator className="my-4" />
                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                               <DetailItem icon={Clock} label="Calculated Runtime" value={calculateTotalRuntime(gen)} className={cn(gen.status === 'Paused' && 'opacity-60')} />
-                               <DetailItem icon={Clock} label="Final Runtime (Fleetop)" value={gen.runtimeHoursFleetop} />
-                                {liveHours[gen.id] && ( <DetailItem icon={Cpu} label="Live Engine Hours (from Fleetop)" value={liveHours[gen.id]} /> )}
+                               <DetailItem icon={Clock} label="Total Runtime" value={calculateTotalRuntime(gen)} className={cn(gen.status === 'Paused' && 'opacity-60')} />
                            </div>
-                           {['Active', 'Completed', 'Paused'].includes(gen.status) && (
-                                <div className="mt-4">
-                                    <Button onClick={() => fetchLiveEngineHours(gen)} disabled={loadingStates[gen.id]} size="sm">
-                                        {loadingStates[gen.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Fetch Live Hours
-                                    </Button>
-                                </div>
-                            )}
                         </Card>
                     ))}
                 </CardContent>

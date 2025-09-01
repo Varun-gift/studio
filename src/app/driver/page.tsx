@@ -68,7 +68,6 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (user?.uid) {
       setJobsLoading(true);
-      // The query to fetch bookings where the current user is a driver.
       const bookingsQuery = query(
         collection(db, 'bookings'),
         where('driverIds', 'array-contains', user.uid)
@@ -81,12 +80,12 @@ export default function DriverDashboard() {
             const assignedJobs: AssignedGeneratorJob[] = [];
             for (const bookingDoc of snapshot.docs) {
               const bookingData = bookingDoc.data();
-              
-              // Skip completed bookings client-side
+
+              // Client-side filtering to exclude completed jobs
               if (bookingData.status === 'Completed') {
                 continue;
               }
-
+              
               const booking = {
                 id: bookingDoc.id,
                 ...bookingData,
@@ -94,18 +93,27 @@ export default function DriverDashboard() {
                 createdAt: (bookingData.createdAt as any).toDate(),
               } as Booking;
 
-              // Filter for the generators assigned to the current driver.
-              const assignedGenerators = booking.generators?.filter(
-                (g) => g.driverInfo?.driverId === user.uid
-              ) || [];
+              const assignedGenerators =
+                booking.generators?.filter(
+                  (g) => g.driverInfo?.driverId === user.uid
+                ) || [];
 
               for (const generator of assignedGenerators) {
-                // We only want to show jobs that are not yet completed
                 if (generator.status !== 'Completed') {
                   assignedJobs.push({
                     ...generator,
                     bookingId: bookingDoc.id,
-                    booking: booking,
+                    booking: {
+                      ...booking,
+                      // Ensure nested timestamps are converted for client-side use
+                      generators: (booking.generators || []).map(g => ({
+                        ...g,
+                        timers: (g.timers || []).map(t => ({
+                          startTime: t.startTime ? new Date((t.startTime as any).seconds * 1000) : new Date(),
+                          endTime: t.endTime ? new Date((t.endTime as any).seconds * 1000) : undefined,
+                        })),
+                      })),
+                    },
                   });
                 }
               }
@@ -168,7 +176,11 @@ export default function DriverDashboard() {
       newBookingStatus = 'Completed';
     } else if (isAnyGeneratorActive) {
       newBookingStatus = 'Active';
+    } else if (!isAnyGeneratorActive && bookingData.status === 'Active') {
+      // If no generators are active but booking was, set to approved (implies all are paused or assigned)
+       newBookingStatus = 'Approved';
     }
+
 
     await updateDoc(bookingRef, {
       generators: updatedGenerators,
@@ -181,7 +193,7 @@ export default function DriverDashboard() {
     try {
       await updateGeneratorInBooking(job.bookingId, job.id, {
         status: 'Active',
-        timers: [...(job.timers || []), { startTime: new Date() }],
+        timers: [{ startTime: new Date() }], // Start with a fresh timer array
       });
 
       toast({
@@ -265,8 +277,11 @@ export default function DriverDashboard() {
 
   const calculateTotalRuntime = (timers: NonNullable<BookedGenerator['timers']>) => {
     return timers.reduce((acc, timer) => {
-      if (timer.endTime) {
-        return acc + (timer.endTime.getTime() - timer.startTime.getTime());
+      if (timer.endTime && timer.startTime) {
+        // Ensure both start and end times are valid Date objects before calculation
+        const startTime = timer.startTime instanceof Date ? timer.startTime : new Date((timer.startTime as any).seconds * 1000);
+        const endTime = timer.endTime instanceof Date ? timer.endTime : new Date((timer.endTime as any).seconds * 1000);
+        return acc + (endTime.getTime() - startTime.getTime());
       }
       return acc;
     }, 0);
@@ -290,7 +305,7 @@ export default function DriverDashboard() {
       await updateGeneratorInBooking(job.bookingId, job.id, {
         status: 'Completed',
         timers: finalTimers,
-        runtimeHoursFleetop: finalRuntime,
+        runtimeHoursFleetop: finalRuntime, // Re-using this field for calculated runtime
       });
       toast({
         title: 'Duty Ended',
@@ -308,7 +323,7 @@ export default function DriverDashboard() {
     }
   };
 
-  if (loading || !user || (role && role !== 'driver')) {
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -421,7 +436,7 @@ export default function DriverDashboard() {
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-muted-foreground" />
                           <span className="truncate">
-                            {job.booking.userEmail}
+                            {job.booking.phone || job.booking.userEmail}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground pt-2">
