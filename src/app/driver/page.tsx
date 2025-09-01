@@ -68,6 +68,7 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (user?.uid) {
       setJobsLoading(true);
+      // The query to fetch bookings where the current user is a driver.
       const bookingsQuery = query(
         collection(db, 'bookings'),
         where('driverIds', 'array-contains', user.uid)
@@ -78,9 +79,13 @@ export default function DriverDashboard() {
         async (snapshot) => {
           try {
             const assignedJobs: AssignedGeneratorJob[] = [];
-
             for (const bookingDoc of snapshot.docs) {
               const bookingData = bookingDoc.data();
+              
+              // Skip completed bookings client-side
+              if (bookingData.status === 'Completed') {
+                continue;
+              }
 
               const booking = {
                 id: bookingDoc.id,
@@ -89,14 +94,13 @@ export default function DriverDashboard() {
                 createdAt: (bookingData.createdAt as any).toDate(),
               } as Booking;
 
-              const assignedGenerators =
-                booking.generators?.filter(
-                  (g) => g.driverInfo?.driverId === user.uid
-                ) || [];
-
+              // Filter for the generators assigned to the current driver.
+              const assignedGenerators = booking.generators?.filter(
+                (g) => g.driverInfo?.driverId === user.uid
+              ) || [];
 
               for (const generator of assignedGenerators) {
-                // Only show generators that are not yet completed
+                // We only want to show jobs that are not yet completed
                 if (generator.status !== 'Completed') {
                   assignedJobs.push({
                     ...generator,
@@ -106,7 +110,6 @@ export default function DriverDashboard() {
                 }
               }
             }
-
             assignedJobs.sort(
               (a, b) =>
                 a.booking.createdAt.getTime() - b.booking.createdAt.getTime()
@@ -154,19 +157,18 @@ export default function DriverDashboard() {
 
     // Check if any generator is active to set the main booking status
     const isAnyGeneratorActive = updatedGenerators.some(
-        (g) => g.status === 'Active'
+      (g) => g.status === 'Active'
     );
     const areAllGeneratorsCompleted = updatedGenerators.every(
-        (g) => g.status === 'Completed'
+      (g) => g.status === 'Completed'
     );
 
     let newBookingStatus = bookingData.status;
     if (areAllGeneratorsCompleted) {
-        newBookingStatus = 'Completed';
+      newBookingStatus = 'Completed';
     } else if (isAnyGeneratorActive) {
-        newBookingStatus = 'Active';
+      newBookingStatus = 'Active';
     }
-
 
     await updateDoc(bookingRef, {
       generators: updatedGenerators,
@@ -269,14 +271,14 @@ export default function DriverDashboard() {
       return acc;
     }, 0);
   };
-  
+
   const handleEndDuty = async (job: AssignedGeneratorJob) => {
     setIsUpdatingDuty(job.id);
 
     let finalTimers = job.timers || [];
     // If there's an active timer, close it.
     if (job.status === 'Active') {
-        finalTimers = finalTimers.map(t => t.endTime ? t : {...t, endTime: new Date()});
+      finalTimers = finalTimers.map(t => t.endTime ? t : { ...t, endTime: new Date() });
     }
 
     try {
@@ -284,11 +286,11 @@ export default function DriverDashboard() {
       const hours = Math.floor(totalMilliseconds / 3600000);
       const minutes = Math.floor((totalMilliseconds % 3600000) / 60000);
       const finalRuntime = `${hours}h ${minutes}m`;
-        
+
       await updateGeneratorInBooking(job.bookingId, job.id, {
         status: 'Completed',
         timers: finalTimers,
-        runtimeHoursFleetop: finalRuntime, // Reusing this field for manual time
+        runtimeHoursFleetop: finalRuntime,
       });
       toast({
         title: 'Duty Ended',
@@ -305,7 +307,6 @@ export default function DriverDashboard() {
       setIsUpdatingDuty(null);
     }
   };
-
 
   if (loading || !user || (role && role !== 'driver')) {
     return (
@@ -448,32 +449,32 @@ export default function DriverDashboard() {
                         </Button>
                       )}
                       {job.status === 'Active' && (
-                         <div className="grid grid-cols-2 gap-2">
-                            <Button
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
                             onClick={() => handlePauseGenerator(job)}
                             variant="secondary"
                             disabled={isUpdatingDuty === job.id}
-                            >
+                          >
                             {isUpdatingDuty === job.id ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
-                                <Pause className="mr-2 h-4 w-4" />
+                              <Pause className="mr-2 h-4 w-4" />
                             )}{' '}
                             Pause
-                            </Button>
-                             <Button
-                                onClick={() => handleEndDuty(job)}
-                                variant="destructive"
-                                disabled={isUpdatingDuty === job.id}
-                            >
-                                {isUpdatingDuty === job.id ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                <PowerOff className="mr-2 h-4 w-4" />
-                                )}{' '}
-                                End Duty
-                            </Button>
-                         </div>
+                          </Button>
+                          <Button
+                            onClick={() => handleEndDuty(job)}
+                            variant="destructive"
+                            disabled={isUpdatingDuty === job.id}
+                          >
+                            {isUpdatingDuty === job.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <PowerOff className="mr-2 h-4 w-4" />
+                            )}{' '}
+                            End Duty
+                          </Button>
+                        </div>
                       )}
                       {job.status === 'Paused' && (
                         <div className="grid grid-cols-2 gap-2">
