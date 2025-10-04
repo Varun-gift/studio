@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useBookings } from '@/hooks/use-bookings';
-import { GENERATORS_DATA } from '@/lib/generators';
+import { useGenerators } from '@/hooks/use-generators';
 import { Generator } from '@/lib/types';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -16,31 +16,35 @@ interface RecommendedForYouProps {
 }
 
 export function RecommendedForYou({ setActiveTab }: RecommendedForYouProps) {
-    const { bookings, loading } = useBookings({ status: null });
+    const { bookings, loading: loadingBookings } = useBookings({ status: null });
+    const { generators, loading: loadingGenerators } = useGenerators();
     const [recommendations, setRecommendations] = React.useState<Generator[]>([]);
 
     React.useEffect(() => {
-        if (!loading && bookings.length > 0) {
-            const kvaFrequency: { [key: string]: number } = {};
+        const loading = loadingBookings || loadingGenerators;
+        if (!loading && generators.length > 0) {
+            if (bookings.length > 0) {
+                const kvaFrequency: { [key: string]: number } = {};
 
-            bookings.forEach(booking => {
-                booking.generators.forEach(genGroup => {
-                    kvaFrequency[genGroup.kvaCategory] = (kvaFrequency[genGroup.kvaCategory] || 0) + genGroup.quantity;
+                bookings.forEach(booking => {
+                    booking.generators.forEach(genGroup => {
+                        kvaFrequency[genGroup.kvaCategory] = (kvaFrequency[genGroup.kvaCategory] || 0) + 1; // Simplified from quantity
+                    });
                 });
-            });
 
-            const sortedKva = Object.keys(kvaFrequency).sort((a, b) => kvaFrequency[b] - kvaFrequency[a]);
-            const topKva = sortedKva.slice(0, 5);
+                const sortedKva = Object.keys(kvaFrequency).sort((a, b) => kvaFrequency[b] - kvaFrequency[a]);
+                const topKva = sortedKva.slice(0, 5);
 
-            const recommendedGenerators = GENERATORS_DATA.filter(gen => topKva.includes(gen.kva));
-            
-            setRecommendations(recommendedGenerators.length > 0 ? recommendedGenerators : GENERATORS_DATA.slice(0, 5));
-        } else if (!loading) {
-             setRecommendations(GENERATORS_DATA.slice(0, 5));
+                const recommendedGenerators = generators.filter(gen => topKva.includes(gen.kva));
+                
+                setRecommendations(recommendedGenerators.length > 0 ? recommendedGenerators : generators.slice(0, 5));
+            } else {
+                setRecommendations(generators.slice(0, 5));
+            }
         }
-    }, [bookings, loading]);
+    }, [bookings, generators, loadingBookings, loadingGenerators]);
 
-    if (loading) {
+    if (loadingGenerators) {
         return (
             <div>
                 <Skeleton className="h-8 w-1/3 mb-4" />

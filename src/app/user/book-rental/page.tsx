@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { GENERATORS_DATA } from '@/lib/generators';
+import { useGenerators } from '@/hooks/use-generators';
 import { useAddons } from '@/hooks/use-addons';
 
 
@@ -79,6 +79,7 @@ interface Estimate {
 
 export default function BookRentalPage() {
   const { user, name, email, phone, company } = useAuth();
+  const { generators: GENERATORS_DATA, loading: loadingGenerators } = useGenerators();
   const { addons: ADDONS_DATA, loading: loadingAddons } = useAddons();
   const { toast } = useToast();
   const router = useRouter();
@@ -174,7 +175,7 @@ export default function BookRentalPage() {
     const grandTotal = generatorsTotal + addonsTotal;
     
     return { generatorItems, addonItems, generatorsTotal, addonsTotal, grandTotal };
-  }, [watchedGenerators, watchedAddons, ADDONS_DATA]);
+  }, [watchedGenerators, watchedAddons, GENERATORS_DATA, ADDONS_DATA]);
 
 
   const submitBooking = async (data: BookingFormValues) => {
@@ -199,7 +200,7 @@ export default function BookRentalPage() {
         estimatedCost: estimate.grandTotal,
         createdAt: serverTimestamp(),
         generators: data.generators.map((g, index) => ({
-            id: `gen_${index + 1}`,
+            id: `gen_${Date.now()}_${index + 1}`,
             kvaCategory: g.kvaCategory,
             additionalHours: g.additionalHours,
             status: 'Pending' as const,
@@ -442,7 +443,7 @@ export default function BookRentalPage() {
                                 <Select onValueChange={(value) => form.setValue(`generators.${index}.kvaCategory`, value)} defaultValue={field.kvaCategory}>
                                     <SelectTrigger> <SelectValue placeholder="Select KVA" /> </SelectTrigger>
                                     <SelectContent>
-                                        {GENERATORS_DATA.map(gen => ( <SelectItem key={gen.id} value={gen.kva}> {gen.kva} KVA (Base: ₹{gen.basePrice.toLocaleString()}) </SelectItem> ))}
+                                        {loadingGenerators ? <SelectItem value="loading" disabled>Loading...</SelectItem> : GENERATORS_DATA.map(gen => ( <SelectItem key={gen.id} value={gen.kva}> {gen.kva} KVA (Base: ₹{gen.basePrice.toLocaleString()}) </SelectItem> ))}
                                     </SelectContent>
                                 </Select>
                                 {form.formState.errors.generators?.[index]?.kvaCategory && <p className="text-destructive text-sm">{form.formState.errors.generators[index]?.kvaCategory?.message}</p>}
@@ -585,5 +586,3 @@ export default function BookRentalPage() {
     </div>
   );
 }
-
-    

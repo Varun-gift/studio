@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
 import { VehicleManager } from '@/components/admin/vehicle-manager';
 import { AddonManager } from '@/components/admin/addon-manager';
+import { GeneratorManager } from '@/components/admin/generator-manager';
 
 
 export default function AdminPage() {
@@ -41,6 +42,7 @@ export default function AdminPage() {
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'vehicles', icon: Truck, label: 'Vehicles' },
+    { name: 'generators', icon: Truck, label: 'Generators' },
     { name: 'addons', icon: Wrench, label: 'Add-ons' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
@@ -53,6 +55,8 @@ export default function AdminPage() {
         return <CalendarView />;
       case 'vehicles':
         return <VehicleManager />;
+      case 'generators':
+        return <GeneratorManager />;
       case 'addons':
         return <AddonManager />;
       case 'profile':

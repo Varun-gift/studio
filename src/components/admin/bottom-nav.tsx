@@ -16,13 +16,14 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'vehicles', icon: Truck, label: 'Vehicles' },
+    { name: 'generators', icon: Truck, label: 'Generators' },
     { name: 'addons', icon: Wrench, label: 'Add-ons' },
     { name: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-background md:hidden z-20">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-6 h-16">
         {navItems.map((item) => {
             const isActive = activeTab === item.name;
             return (
@@ -35,7 +36,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
                     )}
                 >
                     <item.icon className="h-6 w-6" />
-                    <span>{item.label}</span>
+                    <span className="text-[10px]">{item.label}</span>
                     {isActive && (
                         <div className="absolute bottom-0 h-0.5 w-8 bg-primary rounded-full" />
                     )}
