@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +28,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { sendPasswordResetLink } from '@/app/actions';
-import { AmgLogo } from '@/components/amg-logo';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-sm">
          <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <AmgLogo className="h-12 w-12" />
+             <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
              <h2 className="text-2xl font-bold tracking-wider text-foreground">AMG</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-muted-foreground">POWER ALWAYS</p>

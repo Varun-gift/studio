@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -12,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { AmgLogo } from '@/components/amg-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm border-0 shadow-none">
         <CardHeader className="text-center space-y-2">
            <div className="flex justify-center items-center gap-2">
-             <AmgLogo className="h-12 w-12 text-brand-orange-primary" />
+            <Image src="https://static.wixstatic.com/media/98dac2_72e59aa0510243c0936c2b4a3880c891~mv2.png" alt="AMG Logo" width={48} height={48} />
              <h2 className="text-2xl font-bold tracking-wider text-brand-orange-primary">AMG</h2>
            </div>
            <p className="text-xs tracking-[0.2em] text-brand-blue-darker">POWER ALWAYS</p>
