@@ -61,9 +61,6 @@ const generatorSchema = z.object({
   kva: z.string().min(1, 'KVA rating is required.'),
   imageUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
   description: z.string().min(1, 'Description is required.'),
-  power: z.string().min(1, 'Power output is required.'),
-  output: z.string().min(1, 'Voltage/Phase is required.'),
-  fuelType: z.enum(['Diesel', 'Gasoline', 'Propane']),
   basePrice: z.number().min(0, 'Base price cannot be negative.'),
   pricePerAdditionalHour: z.number().min(0, 'Price cannot be negative.'),
 });
@@ -84,9 +81,6 @@ export function GeneratorManager() {
       kva: '',
       imageUrl: '',
       description: '',
-      power: '',
-      output: '',
-      fuelType: 'Diesel',
       basePrice: 0,
       pricePerAdditionalHour: 0,
     },
@@ -94,16 +88,20 @@ export function GeneratorManager() {
 
   React.useEffect(() => {
     if (editingGenerator) {
-      form.reset(editingGenerator);
+      form.reset({
+        name: editingGenerator.name,
+        kva: editingGenerator.kva,
+        imageUrl: editingGenerator.imageUrl,
+        description: editingGenerator.description,
+        basePrice: editingGenerator.basePrice,
+        pricePerAdditionalHour: editingGenerator.pricePerAdditionalHour,
+      });
     } else {
       form.reset({
         name: '',
         kva: '',
         imageUrl: '',
         description: '',
-        power: '',
-        output: '',
-        fuelType: 'Diesel',
         basePrice: 0,
         pricePerAdditionalHour: 0,
       });
@@ -309,34 +307,6 @@ export function GeneratorManager() {
                   </FormItem>
                 )}
               />
-               <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="power"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Power (kW)</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g., 49.6 kW" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="output"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Output</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g., 240V, Single-Phase" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

@@ -31,9 +31,6 @@ export interface Generator {
   kva: string;
   imageUrl: string;
   description: string;
-  power: string;
-  output: string;
-  fuelType: 'Diesel' | 'Gasoline' | 'Propane';
   basePrice: number;
   pricePerAdditionalHour: number;
 }
