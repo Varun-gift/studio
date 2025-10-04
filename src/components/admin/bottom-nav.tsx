@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Home, Calendar, Truck, User, Wrench } from 'lucide-react';
+import { Home, Calendar, Truck, User, Wrench, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavProps {
@@ -16,7 +16,7 @@ export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'vehicles', icon: Truck, label: 'Vehicles' },
-    { name: 'generators', icon: Truck, label: 'Generators' },
+    { name: 'generators', icon: Power, label: 'Generators' },
     { name: 'addons', icon: Wrench, label: 'Add-ons' },
     { name: 'profile', icon: User, label: 'Profile' },
   ];

@@ -11,7 +11,7 @@ import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, Settings, LogOut, Truck, Wrench } from 'lucide-react';
+import { Home, Calendar, Bell, Settings, LogOut, Truck, Wrench, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,7 +42,7 @@ export default function AdminPage() {
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'vehicles', icon: Truck, label: 'Vehicles' },
-    { name: 'generators', icon: Truck, label: 'Generators' },
+    { name: 'generators', icon: Power, label: 'Generators' },
     { name: 'addons', icon: Wrench, label: 'Add-ons' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
