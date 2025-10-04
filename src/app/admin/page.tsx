@@ -11,7 +11,7 @@ import { Sidebar } from '@/components/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, Bell, Settings, LogOut, Truck } from 'lucide-react';
+import { Home, Calendar, Bell, Settings, LogOut, Truck, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ import { BottomNav } from '@/components/admin/bottom-nav';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PanelLeft } from 'lucide-react';
 import { VehicleManager } from '@/components/admin/vehicle-manager';
+import { AddonManager } from '@/components/admin/addon-manager';
 
 
 export default function AdminPage() {
@@ -40,6 +41,7 @@ export default function AdminPage() {
     { name: 'home', icon: Home, label: 'Home' },
     { name: 'calendar', icon: Calendar, label: 'Calendar' },
     { name: 'vehicles', icon: Truck, label: 'Vehicles' },
+    { name: 'addons', icon: Wrench, label: 'Add-ons' },
     { name: 'profile', icon: Settings, label: 'Profile' },
   ];
 
@@ -51,6 +53,8 @@ export default function AdminPage() {
         return <CalendarView />;
       case 'vehicles':
         return <VehicleManager />;
+      case 'addons':
+        return <AddonManager />;
       case 'profile':
         return <ProfileView />;
       default:

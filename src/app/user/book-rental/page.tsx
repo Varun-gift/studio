@@ -18,7 +18,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { GENERATORS_DATA } from '@/lib/generators';
-import { ADDONS_DATA } from '@/lib/addons';
+import { useAddons } from '@/hooks/use-addons';
 
 
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Trash, Plus, Download, Send, Loader2, Package, Wrench } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '../ui/skeleton';
 
 
 const generatorGroupSchema = z.object({
@@ -78,6 +79,7 @@ interface Estimate {
 
 export default function BookRentalPage() {
   const { user, name, email, phone, company } = useAuth();
+  const { addons: ADDONS_DATA, loading: loadingAddons } = useAddons();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -172,7 +174,7 @@ export default function BookRentalPage() {
     const grandTotal = generatorsTotal + addonsTotal;
     
     return { generatorItems, addonItems, generatorsTotal, addonsTotal, grandTotal };
-  }, [watchedGenerators, watchedAddons]);
+  }, [watchedGenerators, watchedAddons, ADDONS_DATA]);
 
 
   const submitBooking = async (data: BookingFormValues) => {
@@ -359,6 +361,16 @@ export default function BookRentalPage() {
 
         doc.save('quotation.pdf');
   };
+  
+  const renderAddonSkeletons = () => (
+    Array.from({ length: 4 }).map((_, index) => (
+      <div key={index} className="p-3 border rounded-lg space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    ))
+  );
 
   return (
     <div className="container mx-auto p-4 pb-24 md:pb-4">
@@ -458,14 +470,14 @@ export default function BookRentalPage() {
                             <CardDescription>Select any additional items you require.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {ADDONS_DATA.map((addon) => {
+                            {loadingAddons ? renderAddonSkeletons() : ADDONS_DATA.map((addon) => {
                                 const selectedAddonIndex = addonFields.findIndex(field => field.addonId === addon.id);
                                 const isSelected = selectedAddonIndex !== -1;
                                 return (
                                     <div key={addon.id} className="relative p-3 border rounded-lg flex flex-col items-start gap-4">
                                         <div className="relative w-full h-24 rounded-md overflow-hidden mb-2">
                                             <Image 
-                                                src={addon.imageUrl} 
+                                                src={addon.imageUrl || 'https://placehold.co/100x100.png'} 
                                                 alt={addon.name} 
                                                 fill
                                                 className="object-cover"

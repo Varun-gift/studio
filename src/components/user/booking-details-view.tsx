@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { getStatusVariant } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { ADDONS_DATA } from '@/lib/addons';
+import { useAddons } from '@/hooks/use-addons';
 
 interface BookingDetailsViewProps {
   booking: Booking;
@@ -29,6 +29,7 @@ const DetailItem = ({ icon: Icon, label, value, children }: { icon: React.Elemen
 );
 
 export function BookingDetailsView({ booking, onBack }: BookingDetailsViewProps) {
+    const { addons: ADDONS_DATA, loading: loadingAddons } = useAddons();
     const {
         id,
         bookingDate,

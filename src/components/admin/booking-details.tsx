@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { getStatusVariant, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ADDONS_DATA } from '@/lib/addons';
+import { useAddons } from '@/hooks/use-addons';
 
 interface BookingDetailsProps {
   booking: Booking;
@@ -19,6 +19,7 @@ interface BookingDetailsProps {
 }
 
 export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
+  const { addons, loading: loadingAddons } = useAddons();
 
   const calculateTotalRuntime = (gen: BookedGenerator): string => {
       const timers = gen.timers || [];
@@ -60,7 +61,7 @@ export function BookingDetails({ booking, onBack }: BookingDetailsProps) {
   );
   
   const getAddonName = (addonId: string) => {
-      return ADDONS_DATA.find(a => a.id === addonId)?.name || 'Unknown Item';
+      return addons.find(a => a.id === addonId)?.name || 'Unknown Item';
   }
 
   return (
