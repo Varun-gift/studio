@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Trash, Plus, Download, Send, Loader2, Package, Wrench } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const generatorGroupSchema = z.object({
@@ -585,3 +585,5 @@ export default function BookRentalPage() {
     </div>
   );
 }
+
+    
